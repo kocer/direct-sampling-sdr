@@ -18,13 +18,15 @@ The power amplifier increases the transmit power to a maximum of 100 W.
 | Frequency range | 1.8 MHz to 54 MHz |
 | Receive channels | 4, phase coherent |
 | Transmit channels | 4 |
-| ADC | AD9251, 14 bit, 65 MSPS |
-| DAC | AD9767, 14 bit, 125 MSPS |
+| ADC | AD9251BCPZ-80, 14 bit, dual, 80 MSPS |
+| DAC | AD9767, 14 bit, dual, operated at 80 MSPS |
 | FPGA | Lattice ECP5 LFE5U-25F, BG256 |
 | Filter bands | 7 for each channel |
 | Amplifier power | 5, 10, 25, 50, 75 and 100 W |
 | Amplifier class | A, at all power levels |
 | Host interface | 2 x gigabit ethernet |
+| Sample clock | 80.000 MHz VCXO, ABLNO-V |
+| Clock jitter | 81 fs narrow band, 162 fs wide band |
 | Reference | 10 MHz external, or GPS |
 
 ## The three boards
@@ -74,14 +76,24 @@ A direct-sampling receiver has none of these stages. The ADC samples the
 antenna signal. The remaining signal path is digital, thus it is exact
 and it does not change with the temperature.
 
-The clock is the primary limit. The jitter of the clock sets the
-maximum signal-to-noise ratio:
+The clock sets the limit at high frequency. The jitter of the clock
+gives this maximum signal-to-noise ratio:
 
     SNR = -20 x log10(2 x pi x f x t_jitter)
 
-At 30 MHz with 1 ps of jitter the limit is 74.5 dB. The ADC gives 70 dB.
-Thus the clock must have less than 1 ps of jitter. The design uses a
-VCXO and a fan-out buffer for this reason.
+The VCXO contributes 60 fs and the fan-out buffer adds 54 fs in a narrow
+band or 150 fs in a wide band. Together they give 81 fs and 162 fs.
+
+| Input frequency | Jitter | SNR limit | What limits the result |
+|---|---|---|---|
+| 30 MHz | 81 fs | 96 dB | The noise of the ADC |
+| 500 MHz | 81 fs | 72 dB | At the limit |
+| 500 MHz | 162 fs | 66 dB | The jitter of the clock |
+
+In the amateur bands the noise of the ADC is the limit and the clock is
+not. The clock becomes the limit only when the receiver undersamples
+near 500 MHz. A better clock part costs ten times more, and 66 dB is
+still 11 effective bits.
 
 ## Why four coherent channels
 
