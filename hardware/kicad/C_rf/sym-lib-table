@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "dogrudan-sdr")(type "KiCad")(uri "${KIPRJMOD}/../lib/dogrudan-sdr.kicad_sym")(options "")(descr "proje sembolleri"))
+)

@@ -1,0 +1,25 @@
+(version 1)
+
+# Kenar montaj konnektorleri. Pedleri kart kenarina DEGMEK zorunda:
+# SMA'nin ve kart-arasi baglantinin isi bu. Varsayilan kenar boslugu
+# kurali bunlari hata sayiyor (57 adet), oysa tasarim boyle.
+(rule "kenar montaj pedleri"
+  (condition "A.memberOfGroup('kenar_montaj')")
+  (constraint edge_clearance (min 0mm)))
+
+# 50 ohm mikroserit, 6 katmanli yigin, 0.2 mm dielektrik, er=4.3
+# -> ~0.35 mm iz genisligi. RF aglari bu genislikte kalmali.
+(rule "RF 50 ohm"
+  (condition "A.NetClass == 'RF'")
+  (constraint track_width (min 0.30mm) (opt 0.35mm) (max 0.40mm)))
+
+# LVDS saat ve veri ciftleri
+(rule "LVDS cift"
+  (condition "A.NetClass == 'LVDS'")
+  (constraint diff_pair_gap (min 0.15mm) (opt 0.20mm))
+  (constraint track_width (min 0.15mm) (opt 0.18mm)))
+
+# Guc izleri: 100 W PA'nin surucu hatti degil ama 5 A'e kadar
+(rule "guc"
+  (condition "A.NetClass == 'GUC'")
+  (constraint track_width (min 1.0mm)))

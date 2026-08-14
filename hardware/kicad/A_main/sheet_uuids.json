@@ -1,0 +1,11 @@
+{
+ "01_power": "fe101c52-e855-4d9e-97bf-e08752fb7386",
+ "02_clock": "e0d5595d-decd-4c6e-8aee-68381a6322b5",
+ "03_adc": "362029de-7b03-4e65-9528-2e5e64ac27eb",
+ "04_dac": "fcf8b2ed-b9de-45ef-990c-787fae61d649",
+ "05_sdram": "7cb4d86f-7f58-4fad-ac4b-b0b485400926",
+ "06_ethernet": "0d752f57-f9c0-4bd8-8039-3e6b1a79b5d9",
+ "07_fpga_power": "a375d619-0dc1-4f7c-9ed3-df114f8b8ae3",
+ "08_control": "0829f5ac-f0ec-41ed-8f26-d82aa7baf27d",
+ "__root__": "767654fd-9f45-4cd6-b804-feb2bba6af42"
+}

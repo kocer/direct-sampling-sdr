@@ -1,0 +1,9 @@
+{
+ "01_power": "3a5de2f0-7990-491f-92a0-cd09cc6a7baf",
+ "02_protect": "1856ec17-695d-4718-9ffb-eff68a751fa1",
+ "03_filter": "6ab75bda-2e4e-4833-9c48-4715b3556c07",
+ "04_atten": "acf1b0fc-c332-4d46-94e3-ebeb6ce4acfd",
+ "05_driver": "9b5b15e5-c863-466e-a6a2-ad35d27a6e31",
+ "06_iface": "3b0027e5-4c5f-4c8f-8687-4f4ceedc90c5",
+ "__root__": "5bb1be6f-3675-4239-9159-d0571804004a"
+}
