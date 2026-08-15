@@ -61,6 +61,18 @@ if true; then
   # pcb_kur'un kuvvet-guduml u yerlesimiyle kaliyordu. Zincir
   # calisiyor gorunuyor, uretilen kart yanlis.
   # Ozet satiri ancak kayit basariliysa yaziliyor; onu ariyoruz.
+  # TEMEL DENETIM — YERLESIMDEN ONCE, EN ALT KATMAN.
+  #
+  # Sembolun pin numarasi ayak izinin ped numarasiyla tutmuyorsa
+  # netlist o baglantiyi sessizce dusuruyor; ERC semaya bakip teli
+  # goruyor, DRC bagsiz pedi ihlal saymiyor. Bu oturumda kart
+  # olduren hatalarin hepsi bu katmandaydi (ADC'nin acik pedi,
+  # PHY'nin yanlis paketi, kristalin govdeye giden XO ucu).
+  #
+  # BURADA DURUYOR cunku asagisi bosa gider: hatali bir semadan
+  # uretilen yerlesim ve saatlerce koşan yonlendirme cope gider.
+  python3 temel_denetim.py $K 2>/dev/null | grep -aE "=> KART|UYARI" || true
+  python3 temel_denetim.py $K >/dev/null 2>&1 || { echo "HATA: sembol/ayak izi uyusmuyor"; exit 1; }
   ozet=$(python3 gercek_yerlesim.py $K 2>/dev/null | grep -a "kritik parca elle")
   if [ -z "$ozet" ]; then
       echo "HATA: yerlesim uygulanmadi"; exit 1

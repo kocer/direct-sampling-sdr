@@ -133,7 +133,12 @@ s.sym(G, "U11", "PGA-103+", 375, 150, fp=FG)
 s.pin_label(G, "1", 375, 150, 0, "D1_IN", "input", d=7.62)
 s.pin_label(G, "3", 375, 150, 0, "D1_OUT", "output", d=7.62)
 s.pin_power(G, "2", 375, 150, 0, "GND", d=5.08)
-s.pin_power(G, "4", 375, 150, 0, "GND", d=10.16)
+# SOT-89'DA TAB AYRI BIR PIN DEGIL, PED 2'NIN KENDISI.
+# Sembol acik pedi "4 = GND_TAB" diye ayri modelliyordu ama
+# ayak izinde (SOT-89-3) uc ped var ve ortadaki buyuk ped
+# zaten tab. Pin 4'e yazilan GND hicbir pede gitmiyordu.
+# Zararsizdi (GND ped 2'den geliyor) ama imzasi AD9251'in
+# acik ped hatasiyla ayni; sembolden kaldirildi.
 # bias tee: besleme RF cikisindan
 s.sym(L, "L10", "1uH bogucu", 420, 130, rot=90, fp=FL)
 s.pin_label(L, "1", 420, 130, 90, "D1_OUT", "passive")
