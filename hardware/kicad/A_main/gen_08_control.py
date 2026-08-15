@@ -211,7 +211,24 @@ s.pin_label(CMP, "3", 505, 325, 0, "REF10_AC", "input")
 s.pin_label(CMP, "1", 505, 325, 0, "REF10_BIAS", "input")
 s.pin_label(CMP, "4", 505, 325, 0, "+3V3", "input")
 s.pin_power(CMP, "2", 505, 325, 0, "GND")
-s.pin_label(CMP, "6", 505, 325, 0, "+3V3", "input")   # ~SHDN aktif-dusuk
+# SHDN TOPRAGA, BESLEMEYE DEGIL — POLARITE TERSTI.
+# Burada "+3V3" yaziyordu ve yanina "~SHDN aktif-dusuk" notu
+# dusulmustu. TLV3501'in SHDN'i AKTIF-YUKSEK; sembolde de ustu
+# cizgisiz "SHDN" yaziyor, ipucu oradaydi.
+#
+# TI SBOS321E §7.4.1 Shutdown, birebir:
+#   "When the shutdown pin is high, the device draws approximately
+#    2 uA, and the output goes to high impedance. When the shutdown
+#    pin is low, the TLV3501 is active. When the TLV3501 shutdown
+#    feature is not used, connect the shutdown pin to the most
+#    negative supply."
+#
+# Yani +3V3'e bagli haliyle komparator SUREKLI KAPALIYDI ve cikisi
+# yuksek empedansta kaliyordu: harici 10 MHz referans girisi
+# (GPSDO / etalon disiplini) hic calismazdi. ERC bunu goremez —
+# bagli bir guc pini, kural ihlali yok. Tek besleme oldugu icin
+# "en negatif besleme" = GND.
+s.pin_power(CMP, "6", 505, 325, 0, "GND")   # SHDN aktif-YUKSEK -> GND
 s.sym(C, "C902", "100nF", 545, 300, rot=90, fp=FC)
 s.pin_label(C, "1", 545, 300, 90, "+3V3", "input")
 s.pin_power(C, "2", 545, 300, 90, "GND")

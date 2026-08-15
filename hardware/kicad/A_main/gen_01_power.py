@@ -184,16 +184,50 @@ buck("U2", 245, 125, "+3V3", "+1V1", "L2", ("R5", "10k"), ("R6", "26.7k"),
 s.text("HASSAS RAYLAR — her biri AYRI LDO, AYRI ADA. Anahtarlamalidan BESLENMEZ (§1).",
        20, 185)
 
+# LDO'LARIN GIRIS VE CIKIS KONDANSATORLERI — HICBIRI YOKTU.
+# Yedi regulatorun (U3 + U4..U9) tek bir kondansatoru yoktu. En
+# yakin +3V3 kapasitesi 18-37 mm oteydi, cikis raylarininki 40-94 mm.
+# O mesafede kondansator regulatorun donguse hicbir sey katmaz:
+# aradaki iz endüktansi (~1 nH/mm) LDO'nun gordugu empedansi
+# yukseltiyor ve dogrudan kararlilik meselesi.
+#
+# ADP150 veri sayfasi (Rev. G, "Capacitor Selection"): girise ve
+# cikisa 1 uF X5R/X7R seramik ZORUNLU; "output capacitor ... is
+# required for stability". TPS7A20 (TI SBVS340) da en az 1 uF
+# giris + 1 uF cikis istiyor.
+#
+# Kondansatorsuz bir LDO carpik calismaz — SALINIR. Cikista
+# yuz kHz mertebesinde bir salinim olur ve o ray neyi besliyorsa
+# (ADC AVDD, VCXO, FPGA VCCAUX) onun gurultu tabanina biner.
+# Aranmasi en zor hata sinifi: her sey "calisiyor" gorunur,
+# yalnizca spektrum kotudur.
+#
+# ERC neden gormedi: eksik bir kondansator kural ihlali degil.
+# Bir netlist "bu regulatorun kondansatoru olmali" bilmiyor.
+def ldo_kaplar(r_in, r_out, x, giris, cikis, y=205):
+    """Bir LDO'nun giris/cikis 1 uF'lari — govdenin iki yaninda."""
+    for ref, dx, ag in ((r_in, -14, giris), (r_out, 14, cikis)):
+        s.sym(C, ref, "1uF", x + dx, y + 14, rot=90, fp=FC)
+        s.pin_label(C, "1", x + dx, y + 14, 90, ag, "input")
+        s.pin_power(C, "2", x + dx, y + 14, 90, "GND")
+
+
 s.sym(LDO, "U3", "TPS7A2033", 40, 205, fp=FSOT)
 s.pin_label(LDO, "1", 40, 205, 0, "+3V3", "input")
 s.pin_label(LDO, "3", 40, 205, 0, "+3V3", "input")
 s.pin_label(LDO, "5", 40, 205, 0, "+1V8", "output")
 
 s.pin_power(LDO, "2", 40, 205, 0, "GND")
+ldo_kaplar("C10", "C11", 40, "+3V3", "+1V8")
 s.text("+1V8\\nFPGA VCCIO\\nbanka 6/3", 30, 219, 1.2)
 
 # ARALIK 55 mm. Once 10 mm koymustum, U4 ile U5 govdesi ust uste
 # bindi — SVG'ye bakmadan fark edilmiyordu.
+# ADP150 basina (giris kondansatoru, cikis kondansatoru).
+# C10/C11 U3'un; C12..C23 alti ADP150'nin. C7-C46 araligi bostu.
+ADP_KAP = {"U8": ("C12", "C13"), "U4": ("C14", "C15"),
+           "U5": ("C16", "C17"), "U6": ("C18", "C19"),
+           "U7": ("C20", "C21"), "U9": ("C22", "C23")}
 rails = [("U8", "+2V5", "FPGA VCCAUX\\nZORUNLU", 100),
          ("U4", "+1V8_A", "ADC AVDD", 155),
          ("U5", "+1V8_D", "ADC DRVDD", 210),
@@ -210,6 +244,8 @@ for ref, out, what, x in rails:
     s.pin_label(ADP, "5", x, 205, 0, out, "output")
     s.pin_power(ADP, "2", x, 205, 0, "GND")
     s.nc(*s.P(ADP, "4", x, 205))
+    # her ADP150'ye kendi giris ve cikis 1 uF'i (veri sayfasi sarti)
+    ldo_kaplar(*ADP_KAP[ref], x=x, giris=src, cikis=out)
     s.text(what, x - 8, 226, 1.2)
 
 s.text("U9 (+1V8_CLK) ADCLK846'nin VS rayi. Veri sayfasi basligi:\n"

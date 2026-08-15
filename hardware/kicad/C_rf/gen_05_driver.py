@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """05_driver: 32 kilitlenen role surucusu. Kaynak: ../NETLIST_C.md §5."""
 import json, os
-from schlib import Sheet
+from schlib import Sheet, g
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
@@ -104,6 +104,7 @@ assert len(ROLELER) == 28, len(ROLELER)
 # ROLE -> Q ESLEMESI DE DEGISMIYOR: role r (kanal sirasinda
 # 0..27) yine Q(2r) ve Q(2r+1) ile suruluyor. Gateware'in bit
 # haritasina dokunulmuyor.
+VC_KAP = []          # (surucu, VCP kondansatoru, VINT kondansatoru)
 for ch in range(1, 5):
     for j in range(4):
         i = (ch - 1) * 4 + j
@@ -150,11 +151,61 @@ for ch in range(1, 5):
             s.pin_power(R, "2", sx, sy, 90, "GND")
         s.pin_power(HB, "13", x, y, 0, "GND", d=5.08)
         s.pin_power(HB, "17", x, y, 0, "GND", d=10.16)
-        s.nc(*s.P(HB, "11", x, y))                                     # VCP
-        s.nc(*s.P(HB, "14", x, y))                                     # VINT
+        # VCP VE VINT BOSTA BIRAKILAMAZ — CIP CALISMAZ.
+        # Ikisi de "s.nc()" ile isaretlenmisti, yani "kullanilmiyor"
+        # diye. TI DRV8833 veri sayfasi (SLVSAR1) ikisini de ZORUNLU
+        # tutuyor:
+        #
+        #   VCP  = yuksek yan FET'lerin kapi surucusunu besleyen sarj
+        #          pompasinin cikisi. VM ile VCP ARASINA 0.01 uF / 16 V
+        #          dusuk ESR seramik. Kondansator yoksa sarj pompasi
+        #          yuksek yan kapiyi surecek gerilimi uretemez ve
+        #          H koprusunun ust yarisi HIC ILETMEZ.
+        #   VINT = cipin dahili regulator CIKISI (besleme girisi
+        #          DEGIL). Topraga 2.2 uF / 6.3 V seramik.
+        #
+        # Onaltisinda da yoktu; kart uretilseydi 28 filtre rolesinin
+        # hicbiri kilitlenmezdi. ped_denetim de goremezdi: NC isaretli
+        # pin agsiz ped saymiyor (dogru olarak).
+        #
+        # KONDANSATORLER SAYFANIN ALT BOSLUGUNA, CIPIN YANINA DEGIL.
+        # Once cipin dibine koymustum: pin_label her etiket icin pinden
+        # kisa bir TEL cekiyor ve yogun blokta o telin ucu komsu telin
+        # uzerine dustu — VINT agi +5V'a KISA DEVRE oldu (netlist'te
+        # U70 pin 14, 94 dugumlu +5V agindaydi). Semada yer, kartta
+        # yerlesim demek degil; yerlesimi gercek_yerlesim.py agdan
+        # kuruyor. Bos alanda cizmek hem dogru hem okunakli.
+        s.pin_label(HB, "11", x, y, 0, f"{ref}_VCP", "passive", d=15.24)
+        s.pin_label(HB, "14", x, y, 0, f"{ref}_VINT", "passive", d=20.32)
+        VC_KAP.append((ref, cnt("C"), cnt("C")))
         s.sym(C, cnt("C"), "100nF", x + 42, y, rot=90, fp=FC)
         s.pin_label(C, "1", x + 42, y, 90, "+5V", "input")
         s.pin_power(C, "2", x + 42, y, 90, "GND")
+
+# ---------------------------------------------------- VCP / VINT kondansatorleri
+s.text("SARJ POMPASI VE IC REGULATOR KONDANSATORLERI — SURUCU BASINA IKI", 16, 380, 1.5)
+for i, (ref, c_vcp, c_vint) in enumerate(VC_KAP):
+    cx = 30 + (i % 4) * 110
+    cy = 390 + (i // 4) * 42
+    # VCP: VM (+5V) ile VCP arasinda, 10 nF / 16 V
+    s.sym(C, c_vcp, "10nF", cx, cy, rot=90, fp=FC)
+    s.pin_label(C, "1", cx, cy, 90, f"{ref}_VCP", "passive")
+    s.pin_label(C, "2", cx, cy, 90, "+5V", "input")
+    # VINT: topraga 2.2 uF / 6.3 V
+    s.sym(C, c_vint, "2.2uF", cx + 26, cy, rot=90, fp=FC)
+    s.pin_label(C, "1", cx + 26, cy, 90, f"{ref}_VINT", "passive")
+    s.pin_power(C, "2", cx + 26, cy, 90, "GND")
+    # VINT SEMBOLDE "Power input" YAZIYOR AMA CIPIN CIKISI.
+    # KiCad kutuphanesindeki DRV8833PWP sembolu VINT'i guc GIRISI
+    # isaretlemis; gercekte dahili regulatorun cikisi. Yanlis tur
+    # yuzunden ERC "Input Power pin not driven by any Output Power
+    # pins" diyor. Kutuphaneyi catallamak yerine standart bayrak:
+    # bu ag beslidir. Bayragi bos alana koyuyoruz ki tel ucu komsu
+    # bir telin uzerine dusup ag birlestirmesin.
+    fx, fy = g(cx + 26), g(cy + 20)
+    s.glabel(f"{ref}_VINT", fx, fy, "input")
+    s.wire(fx, fy, fx, fy + 6.35)
+    s.pwr_flag(fx, fy + 6.35)
 
 s.sym(R, "R690", "10k", 460, 440, rot=90, fp=FR)
 s.pin_label(R, "1", 460, 440, 90, "+3V3", "input")

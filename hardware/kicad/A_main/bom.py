@@ -31,7 +31,7 @@ LCSC = {
     "TPS7A2033":          ("C2894174",  0.55, "extended"),
     "ADP150":             ("C144257",   1.00, "extended"),
     "ABLNO-V-80.000MHZ":  ("C5378891", 22.00, "extended"),
-    "25MHz":              ("C9006",     0.05, "base"),
+    "25MHz CL12pF":       ("C9006",     0.05, "base"),   # YXC X322525MOB4SI, CL=12pF
     "SMBJ20A":            ("C364296",   0.03, "extended"),
     "DMP3098L":           ("C155039",   0.12, "extended"),
     "2A":                 ("C371166",   0.05, "extended"),

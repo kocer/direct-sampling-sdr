@@ -478,6 +478,25 @@ class Yazici:
             import math
             adlar = ped_adlari(fp)
             for pad, pad_ad in zip(fp.Pads(), adlar):
+                # BAKIRI OLMAYAN PEDI DSN'E YAZMA.
+                #
+                # KiCad'in "-1EP" ayak izlerinde acik pedin uzerinde
+                # dort ayri MACUN acikligi var (pencere bolmesi):
+                # lehim macununu boler, %100 kaplamayi onler. Bunlarin
+                # bakir katmani YOK — pcbnew'de LayerSet().CuStack()
+                # bos donuyor.
+                #
+                # Once bunlar da yaziliyordu ve ust katmana
+                # dusuyorlardi: yonlendirici acik pedin TAM ICINDE
+                # dort tane bagsiz bakir ped goruyordu. D kartinda
+                # olculdu, DSN'de U51'in image'i 21 pinli cikiyordu
+                # (17 gercek + NC, NC@1, NC@2, NC@3) ve yonlendirici
+                # her turda 220 ihlal bildiriyordu — sayi hic
+                # dusmuyordu cunku cozulebilir bir sey degildi.
+                # Ustelik o hayalet pedler acik pedin altindan gecisi
+                # de kapatiyordu.
+                if not list(pad.GetLayerSet().CuStack()):
+                    continue
                 ps = self.ps_ad(pad, katmanlar, fp)
                 # ped konumu ayak izi ORIJININE gore, donme geri alinmis
                 dx = (pad.GetPosition().x - fpx) / UM

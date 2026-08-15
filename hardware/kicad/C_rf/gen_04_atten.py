@@ -7,7 +7,21 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
 
 A = "dogrudan-sdr:PE4312"
-FA = "Package_DFN_QFN:QFN-20-1EP_4x4mm_P0.5mm_EP2.6x2.6mm_ThermalVias"
+# ACIK PED 2.6 -> 2.1 mm. Veri sayfasi (DOC-81482, Sekil 26) cipin
+# alt tarafindaki acik pedi 2.15 +-0.05 mm kare veriyor, onerilen
+# lehim alani 2.20 mm. Secili KiCad ayak izinde 2.6 mm vardi: her
+# kenarda 0.2 mm fazla bakir. Ped sayisi tuttugu icin hicbir denetim
+# goremiyor — ped_denetim de, DRC de sessiz.
+#
+# Iki somut bedeli var: (1) acik ped kenari ile en yakin sinyal
+# pedinin ic kenari arasindaki bosluk 0.4 mm yerine 0.2 mm'ye
+# duşuyor, yani maske koprusu uretim sinirinda; (2) 2.6 mm'lik
+# ped icin kesilen macun sablonu cipin gercek pedinden %46 fazla
+# lehim koyuyor, cip macunun uzerinde yuzup kayabiliyor.
+#
+# TQFN-20-1EP...EP2.1x2.1: 2.1 mm, yani nominalin 0.05 mm altinda
+# ve onerilen alanin guvenli tarafinda.
+FA = "Package_DFN_QFN:TQFN-20-1EP_4x4mm_P0.5mm_EP2.1x2.1mm_ThermalVias"
 R, C = "Device:R", "Device:C"
 FR = "Resistor_SMD:R_0603_1608Metric"
 FC = "Capacitor_SMD:C_0402_1005Metric"
@@ -35,7 +49,23 @@ s.text("DORT KANAL, DORT ZAYIFLATICI. Sartnamede iki taneydi; faz uyumu\\n"
 def atten(ref, x, y, n):
     s.sym(A, ref, "PE4312C-Z", x, y, fp=FA)
     # seri arayuz: Data ve Clock ORTAK, LE cipe ozel
-    s.pin_label(A, "3", x, y, 0, "ATT_DATA", "input", d=7.62)
+    # PIN 3'E SERI 10k — VERI SAYFASI SARTI, SUSLEME DEGIL.
+    # DOC-81482 s.5, "Resistors on pins 1 and 3":
+    #   "A 10-kohm resistor on the inputs to pin 1 and 3 eliminates
+    #    the package resonance between the RF input pin and the two
+    #    digital inputs. The specified attenuation error versus
+    #    frequency performance depends upon this condition."
+    # Yani bu direnc olmadan veri sayfasindaki zayiflatma dogrulugu
+    # GECERLI DEGIL. Pin 1'de (C16) zaten 10k var — asagidaki acilis
+    # cekme direnci ayni isi goruyor ve pin 1'in tek disariya baglantisi
+    # o. Pin 3 dogrudan A kartinin hattina bagliydi.
+    # Zamanlama: 10k x ~5 pF = 50 ns; veri sayfasi tCLK azami 10 MHz
+    # (100 ns) ve tSDSUP 10 ns istiyor. Ureticinin kendi degerlendirme
+    # karti da (Sekil 24) Data ve Clock'a 10k koyuyor.
+    s.sym(R, cnt("R"), "10k", x - 25, y, rot=90, fp=FR)
+    s.pin_label(R, "1", x - 25, y, 90, "ATT_DATA", "input")
+    s.pin_label(R, "2", x - 25, y, 90, f"ATT{n}_DAT", "passive")
+    s.pin_label(A, "3", x, y, 0, f"ATT{n}_DAT", "input", d=7.62)
     s.pin_label(A, "4", x, y, 0, "ATT_CLK", "input", d=12.7)
     s.pin_label(A, "5", x, y, 0, f"ATT{n}_LE", "input", d=17.78)
     # P/S = HIGH -> SERI mod (veri sayfasi s.5)

@@ -7,7 +7,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
 
 A = "dogrudan-sdr:PE4312"
-FA = "Package_DFN_QFN:QFN-20-1EP_4x4mm_P0.5mm_EP2.6x2.6mm_ThermalVias"
+# ACIK PED 2.6 -> 2.1 mm — bkz. C_rf/gen_04_atten.py, ayni gerekce:
+# veri sayfasi (DOC-81482 Sekil 26) acik pedi 2.15 +-0.05 mm kare
+# veriyor, onerilen lehim alani 2.20 mm. 2.6 mm her kenarda 0.2 mm
+# fazla bakir birakiyordu.
+FA = "Package_DFN_QFN:TQFN-20-1EP_4x4mm_P0.5mm_EP2.1x2.1mm_ThermalVias"
 G = "dogrudan-sdr:PGA-103"
 FG = "Package_TO_SOT_SMD:SOT-89-3"
 Q = "Transistor_FET:Q_NMOS_GDS"
@@ -59,7 +63,14 @@ s.text("SEVIYE AYARI — PE4312", 16, 120, 1.8)
 s.sym(A, "U10", "PE4312C-Z", 80, 165, fp=FA)
 s.pin_label(A, "2", 80, 165, 0, "TX_IN", "passive", d=7.62)
 s.pin_label(A, "14", 80, 165, 0, "ATT_OUT", "passive", d=12.7)
-s.pin_label(A, "3", 80, 165, 0, "ATT_DATA", "input", d=17.78)
+# PIN 3'E SERI 10k — veri sayfasi s.5 "Resistors on pins 1 and 3".
+# Bu direnc olmadan veri sayfasindaki zayiflatma dogrulugu gecerli
+# degil (RF giris pini ile iki dijital giris arasindaki paket
+# rezonansini kiriyor). Pin 1'de acilis cekme direnci zaten var.
+s.sym(R, "R99", "10k", 45, 165, rot=90, fp=FR)
+s.pin_label(R, "1", 45, 165, 90, "ATT_DATA", "input")
+s.pin_label(R, "2", 45, 165, 90, "ATT_DAT_Q", "passive")
+s.pin_label(A, "3", 80, 165, 0, "ATT_DAT_Q", "input", d=17.78)
 s.pin_label(A, "4", 80, 165, 0, "ATT_CLK", "input", d=22.86)
 s.pin_label(A, "5", 80, 165, 0, "PA_ATT_LE", "input", d=27.94)
 s.pin_label(A, "13", 80, 165, 0, "+3V3", "input", d=33.02)     # P/S seri

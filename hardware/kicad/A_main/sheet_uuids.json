@@ -1,11 +1,11 @@
 {
- "01_power": "86cf9757-be18-4350-a7e5-c534f9de8b44",
- "02_clock": "b0dcd298-ef33-49c4-a61d-dc9b883afb69",
- "03_adc": "211f6a4a-2f65-48a8-868a-e31bff18f0db",
- "04_dac": "5366818b-eb74-4f4b-b5f3-21ad6fd9bed4",
- "05_sdram": "843f6a43-3b16-4e24-9492-10cfa60c6247",
- "06_ethernet": "0136e942-0d0a-4857-ad58-59c3c85b14fa",
- "07_fpga_power": "3a904baa-b118-433b-93f6-7ac36e089990",
- "08_control": "bfaa4cc9-179e-4f9f-b6b1-d170c112e4e8",
- "__root__": "111636d4-b375-44f0-b632-c8f45b6f1258"
+ "01_power": "c6b0b21c-01be-4c09-8fa4-50d8e0dc9394",
+ "02_clock": "283f8a47-c4a0-4b55-88a5-26d2ae6a5ac2",
+ "03_adc": "fb363cbe-5f2a-46de-861f-80593aa3e3e6",
+ "04_dac": "1be149fc-d2b4-4b19-83ae-ab4894b73b20",
+ "05_sdram": "a620b121-6d13-4b68-a52d-8ff83e6174d2",
+ "06_ethernet": "4914d13e-c75d-42b4-a0f8-913c90b533fa",
+ "07_fpga_power": "b4e8c794-9d4f-40a2-b77d-217cca703883",
+ "08_control": "dc424084-c8d5-4fa7-b7a6-b583073dfa82",
+ "__root__": "37d8939f-85f9-4716-a6bc-65443abf05b0"
 }

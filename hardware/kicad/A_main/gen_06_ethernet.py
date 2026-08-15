@@ -156,7 +156,17 @@ def phy(ref, x, y, n, jref, jx, jy, sx, sy):
 
     # ---------------- kristal, PHY basina AYRI
     cx, cy = sx, sy + 100
-    s.sym(XTAL, cnt("Y"), "25MHz", cx, cy, fp=FX)
+    # DEGERE YUK KAPASITESI YAZILIYOR: "25MHz" TEK BASINA EKSIK.
+    # Yandaki iki 18 pF bu kristale gore secildi. CL = 18*18/(18+18)
+    # + Cstray = 9 + ~3 = 12 pF, yani BOM'daki C9006'nin (YXC
+    # X322525MOB4SI) 12 pF yuk kapasitesiyle tutuyor.
+    # Yuk kapasitesi yazilmazsa satin alan ayni govdede 20 pF'lik
+    # bir kristal alabilir; o zaman salinim ~24 ppm yukarida kosar
+    # ve 802.3'un +-50 ppm butcesi kristal toleransiyla birlikte
+    # tasar. Ethernet "bazen link kuruyor" diye arizalanir.
+    # Ilk prototipte 25 MHz frekans meta ile olculup 18 pF gerekirse
+    # 15/16 pF'e cekilecek (URETIM notu).
+    s.sym(XTAL, cnt("Y"), "25MHz CL12pF", cx, cy, fp=FX)
     s.pin_label(XTAL, "1", cx, cy, 0, f"PHY{n}_XI", "passive")
     s.pin_label(XTAL, "3", cx, cy, 0, f"PHY{n}_XO", "passive")
     # Govde pedleri topraga: hem ekranlama hem mekanik tutunma.
