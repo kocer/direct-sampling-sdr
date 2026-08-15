@@ -272,7 +272,7 @@ Board A makes all logic rails. Board C and board D take their logic supply
 from board A through the inter-board headers.
 
 ```
-XT60 9-18 V
+XT60 9-17 V
   |  reverse polarity: DMP3098L P-MOSFET, 12 V zener gate clamp
   |  2 A fuse, SMBJ20A TVS
   +-> VIN_PROT ---> U1  TPS62130 buck  -> +3V3   (111 pads)
@@ -408,7 +408,9 @@ inductor Q is included. Run the tools to reproduce the numbers.
 ### 9.1 Receive preselector, board C
 
 Topology: three-resonator ladder band-pass, 3-pole Chebyshev, 0.1 dB ripple.
-Inductor Q = 40 (surface-mount). Values are E24.
+Inductor Q = 40 (surface-mount). Component values are E12, because E12 is
+stocked everywhere. The simulation uses the same E12 values as the
+schematic.
 
 Tool: `kicad/filtre_tasarim.py`.
 
@@ -428,6 +430,7 @@ relay position gives the through path.
 
 Topology: 5-pole Chebyshev low-pass, 0.1 dB ripple, C-L-C-L-C. Each series
 inductor carries a parallel trap capacitor. Inductor Q = 200 (toroid).
+Component values are E24. Each trap uses two E24 capacitors in parallel.
 
 Tool: `kicad/lpf_sim.py`.
 
@@ -528,6 +531,25 @@ document comes from hardware.
 | RTL8211F exposed pad size | Datasheet Rev 1.1 page 64: D2/E2 = 3.45 / 3.70 / 3.95 mm. The 3.6 mm land is correct. |
 | AD8318 exposed pad size | Datasheet Rev. B Figure 51: 1.95 / 2.10 / 2.25 mm. The 2.1 mm footprint is the nominal value. |
 | PE4312 series resistor position | The resistors were 113 mm to 160 mm from the pin they protect. A placement pass now holds them within 7 mm. |
+| Input range said 9 V to 18 V | The TPS62130 is qualified to 17 V. The schematics now say 9 V to 17 V. |
+| The separator crashed on board D | `ayir.py` deleted the edge-mount group but left the member pointers. The second run then crashed in `AddItem`. It now detaches the members first. |
+| The chain hid that crash | `yap.sh` ran the decoupling pass behind a shell fallback that swallowed every error. The pass could fail and the chain still reported success. The chain now stops if the pass prints no summary. |
+
+Two placement passes fought over the same capacitor on board D. The
+decoupling pass put a 100 nF beside each INA240 supply pin. The separator
+then pushed all four out, because the amplifiers sit inside a routing
+corridor that must stay empty. The decoupling pass now knows the corridors
+and searches outside them. The nearest free position for U31 is 12 mm from
+the pin. This is not ideal, but the INA240 has 400 kHz of bandwidth, so
+about 12 nH of trace inductance does not matter to it.
+
+The PE4312 resistor is not decoration. The pSemi document DOC-81482 page 5
+states that a 10 kΩ resistor on pins 1 and 3 removes the package resonance
+between the RF input and the digital inputs, and that the specified
+attenuation accuracy depends on it. A resistor 160 mm away does not do this.
+It also broke the serial timing: 10 kΩ into about 16 pF of trace capacitance
+gives a 160 ns time constant, and the 5 MHz serial clock needs the data to
+settle in 90 ns.
 
 ### 11.2 Open — needs hardware
 
