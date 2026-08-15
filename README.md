@@ -35,7 +35,7 @@ The power amplifier increases the transmit power to a maximum of 100 W.
 |---|---|---|---|
 | A | Main board: ADC, DAC, FPGA, ethernet | 235 x 225 mm | 6 |
 | C | RF board: filters, transmit/receive relays | 350 x 235 mm | 2 |
-| D | Power amplifier: driver, finals, low-pass filters | 240 x 185 mm | 2 |
+| D | Power amplifier: driver, finals, low-pass filters | 275 x 185 mm | 2 |
 
 Board B does not exist. The first design had a separate clock board.
 The clock circuit is now on board A, because the distance from the clock
@@ -123,6 +123,9 @@ A receiver with one channel cannot do these functions.
 | `hardware/kicad/C_rf` | Board C |
 | `hardware/kicad/D_pa` | Board D |
 | `hardware/kicad/lib` | Symbols and footprints |
+| `gateware/rtl` | Verilog source for the ECP5 |
+| `gateware/sim` | Test benches |
+| `gateware/sentez` | Synthesis and place-and-route scripts |
 | `docs` | Design documentation |
 
 The schematics are not drawn by hand. Python scripts make them. Each
@@ -132,6 +135,17 @@ it again. The document `docs/TOOLS.md` gives the procedure.
 ## Status
 
 The three schematics are complete. The electrical rule check finds no
-errors. The placement is complete. The routing is in progress.
+errors on the three boards. The placement is complete. The routing is
+in progress. No board is ready for manufacture.
 
-The FPGA gateware does not exist. This is the largest remaining task.
+The gateware operates in simulation. 21 test benches pass. The design
+fits in the ECP5-25F and it meets the timing of all five clocks. The
+receive chain, the transmit chain, the packet interface and the
+control interface are complete. The SDRAM interface and the digital
+predistortion do not exist.
+
+Verification tools examine the boards and the schematics. They find
+faults that the electrical rule check cannot find. An example: a
+symbol pin number that does not agree with a footprint pad number
+makes a net that goes nowhere, but the rule check sees a correct
+wire. The commit messages give the details of each fault.
