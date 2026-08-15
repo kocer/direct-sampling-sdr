@@ -77,6 +77,29 @@ def sentez(fc_mhz):
     return v
 
 
+# TUZAGIN KUCUK AYAGI SADECE BU DEGERLERDEN SECILEBILIR.
+#
+# Cift kondansator fikri dogruydu ama secim TEDARIKTEN KOPUKTU:
+# e24_cift matematiksel olarak en yakin ikiliyi buluyordu ve bir
+# tanesi 3.6 pF cikti. tedarik_denetim.py ile arandiginda 3.6 pF'nin
+# 250 V sinifinda hicbir pakette stogu olmadigi gorüldü — yani
+# tasarim, siparis edilemeyecek bir parcaya dayaniyordu.
+#
+# Gerilim sarti tesadufi degil: 100 W ve 50 ohm'da tasiyicinin tepe
+# gerilimi 100 V, tuzak bobininin uzerinde ~93 V. 50 V'luk bir C0G
+# katalogda ayni degeri gosterir ve delinir; hata ancak verici
+# acildiginda anlasilir.
+#
+# Liste JLCPCB'de 0603 / 250 V+ / C0G-NP0 ve stogu olan E24
+# degerlerinden cikarildi (tedarik_denetim.py). Yenilemek icin o
+# araci kosup ayni suzgeci uygula. Eksikler: 3.6, 7.5, 62, 91.
+KUCUK_STOK = [1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7,
+              3.0, 3.3, 3.9, 4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 8.2, 9.1,
+              10.0, 12.0, 15.0, 18.0, 20.0, 22.0, 24.0, 27.0, 30.0,
+              33.0, 36.0, 39.0, 43.0, 47.0, 51.0, 56.0, 68.0, 75.0,
+              82.0, 100.0]
+
+
 def _e24_dizi(lo=1.0, hi=1e4):
     out, us = [], 0
     while 10.0 ** us <= hi:
@@ -110,13 +133,17 @@ def e24_cift(x):
     if _DIZI is None:
         _DIZI = _e24_dizi()
     en_iyi = None
-    for a in _DIZI:
-        if a > x:
+    for buyuk in _DIZI:
+        if buyuk > x:
             break
-        b = min(_DIZI, key=lambda z: abs(a + z - x))
-        h = abs(a + b - x)
-        if en_iyi is None or h < en_iyi[0]:
-            en_iyi = (h, a, b)
+        # KUCUK AYAK STOKTAN SECILIYOR, E24'ten degil. Ikisi ayni
+        # sey degil: E24'te olan her deger 250 V sinifinda uretilmiyor.
+        for kucuk in KUCUK_STOK:
+            if kucuk > buyuk:
+                break
+            h = abs(buyuk + kucuk - x)
+            if en_iyi is None or h < en_iyi[0]:
+                en_iyi = (h, buyuk, kucuk)
     return (en_iyi[1], en_iyi[2])
 
 

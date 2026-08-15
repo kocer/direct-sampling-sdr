@@ -85,6 +85,54 @@ C0G_SINIR = 10e-9
 # disindaysa "bilinmiyor" sayiliyor ve uyari veriliyor.
 Q_FREKANS_PAYI = 4.0
 
+# D KARTINDA GERILIM SINIFI DENETLENIYOR. 100 W, 50 ohm: tasiyicinin
+# tepe gerilimi 100 V, harmonik filtresinin seri bobini uzerinde
+# ~93 V. Uyumsuz antende (SWR 2:1) bu buyuyor. 50 V'luk bir C0G
+# elektriksel olarak dogru degeri tasir ama delinir; katalogda
+# "1.6pF C0G" diye gorunur ve fark ancak vericiyi acinca anlasilir.
+# ESIK KARTIN TAMAMINA DEGIL, SADECE RF YOLUNA. Ilk surumde D
+# kartindaki HER kondansatore 250 V dayattim ve arac kontrol
+# devresinin 1nF/22nF/2.2uF ayirma kondansatorlerini de "yetersiz"
+# diye isaretledi. Onlar RF gerilimi gormuyor; 50 V dogru secim.
+# Hangi parcanin RF yolunda oldugu tahmin edilmiyor, SEMADAN
+# okunuyor: asagidaki sayfalarda gecen referanslar RF sayiliyor.
+GERILIM_ESIK = {"D": (250.0, ["05_lpf", "02_final"])}
+
+
+def rf_referanslari(kart, sayfalar):
+    """Verilen sema sayfalarinda gecen parca referanslari."""
+    kok = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                       {"A": "A_main", "C": "C_rf", "D": "D_pa"}[kart])
+    out = set()
+    for s in sayfalar:
+        yol = os.path.join(kok, s + ".kicad_sch")
+        try:
+            metin = open(yol, encoding="utf-8").read()
+        except OSError:
+            continue
+        out |= set(re.findall(r'"((?:C|L|R)\d+)"', metin))
+    return out
+
+# DELIKLI (THT) AYAK IZLERI. Bunlarin paket adi "0603" gibi bir sayi
+# degil; eskiden arac bunlari "deger ya da paket okunamadi" diye
+# atiyordu, yani D kartinin harmonik filtresindeki 21 kondansator
+# degeri HIC denetlenmemisti. Paket birebir eslesmesi yerine tur
+# eslesmesi yapiliyor ve elle takilacaklari ayrica isaretliyoruz.
+THT = {
+    "C_Disc": ("through hole ceramic capacitor", "elle"),
+    "CP_Radial": ("through hole electrolytic capacitor", "elle"),
+    "L_Toroid": ("toroid", "sarilacak"),
+}
+
+
+def gerilim_cikar(aciklama):
+    """describe icinden gerilim sinifi: "500V" -> 500.0."""
+    en = 0.0
+    for m in re.finditer(r"(?<![\d.])(\d+(?:\.\d+)?)\s*(k)?V\b", aciklama):
+        v = float(m.group(1)) * (1000.0 if m.group(2) else 1.0)
+        en = max(en, v)
+    return en or None
+
 
 def calisma_frekansi(kart, val):
     """Bu degerdeki bobin hangi frekansta calisiyor (Hz)?
@@ -114,6 +162,45 @@ def calisma_frekansi(kart, val):
             if abs(nh * 1e-9 - hedef) <= hedef * 0.02:
                 return kapsam.get(ad)
     return None
+
+
+def elle_listesi_yaz(kart, elle):
+    """Elle takilan parcalari SARTLARIYLA birlikte dosyaya yaz.
+
+    NEDEN AYRI DOSYA. BOM bu parcalar icin sadece degeri ve genel bir
+    delikli ayak izini soyluyor: "160pF, disk seramik". Siparis eden
+    kisi icin bu YETERSIZ ve yanlis parcayi almak kolay. 100 W'ta
+    harmonik filtresinin sont kondansatorunden 14 MHz'te yaklasik
+    1.3 A RF akimi geciyor (Xc = 71 ohm, uzerinde ~93 V). Ucuz disk
+    seramik bu akimda isinir, kapasitesi kayar ve filtre bozulur —
+    ustelik bozulma sadece verici tam gucte calisirken ortaya cikar.
+    Bu pozisyonlara gumus mika ya da RF porselen gerekiyor.
+    """
+    kok = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                       {"A": "A_main", "C": "C_rf", "D": "D_pa"}[kart])
+    yol = os.path.join(kok, "ELLE_TAKILAN.md")
+    s = ["# Elle takilan parcalar — kart %s" % kart, "",
+         "Bu parcalar JLCPCB dizgisine GIRMIYOR (delikli). Ayri",
+         "siparis edilip elle lehimleniyor.", "",
+         "## Sart: gumus mika ya da RF porselen", "",
+         "Disk seramik ALMAYIN. 100 W'ta harmonik filtresinin sont",
+         "kondansatorunden 14 MHz'te ~1.3 A RF akimi geciyor ve",
+         "uzerinde ~93 V var. Disk seramik bu akimda isinir,",
+         "kapasitesi kayar, filtre bozulur. Bozulma sadece verici tam",
+         "gucte calisirken cikar — tezgahta olcerken gorunmez.", "",
+         "En az 500 V, C0G/mika. Uygun aileler: Cornell Dubilier CD15/CD19",
+         "(gumus mika), ATC 100B (porselen), Vishay MKP degil.", "",
+         "| deger | adet | tur |", "|---|---|---|"]
+    for x in sorted(set(elle)):
+        alan = x.split()
+        s.append("| %s | %s | %s |" % (alan[0], alan[2].lstrip("x"),
+                                       "elektrolitik" if "CP_Radial" in x
+                                       else "gumus mika / RF porselen"))
+    s.append("")
+    s.append("Bu dosyayi tedarik_denetim.py uretiyor; elle degistirme.")
+    open(yol, "w", encoding="utf-8").write("\n".join(s))
+    print("   elle takilan listesi yazildi: %s/ELLE_TAKILAN.md"
+          % os.path.basename(kok))
 
 
 def onbellek_yukle():
@@ -168,8 +255,14 @@ def deger_coz(s):
 
 
 def paket_coz(fp):
+    """Doner: (paket, tht_anahtar). SMD'de paket "0603" gibi."""
     m = re.search(r"_(\d{4})_", fp)
-    return m.group(1) if m else None
+    if m:
+        return (m.group(1), None)
+    for anahtar in THT:
+        if anahtar in fp:
+            return (None, anahtar)
+    return (None, None)
 
 
 def q_cikar(aciklama):
@@ -188,8 +281,12 @@ def dielektrik(aciklama):
 
 
 def aday_uygun(kayit, hedef_v, tur, paket):
-    """Kayit birebir tutuyor mu — paket ve deger."""
-    if (kayit.get("componentSpecificationEn") or "").strip() != paket:
+    """Kayit birebir tutuyor mu — paket ve deger.
+
+    paket None ise (delikli parca) paket denetimi yapilmiyor; o
+    parcalar zaten elle takiliyor ve ayak izi capa gore seciliyor.
+    """
+    if paket and (kayit.get("componentSpecificationEn") or "").strip() != paket:
         return False
     ad = (kayit.get("erpComponentName") or "") + " " + \
          (kayit.get("describe") or "")
@@ -206,8 +303,14 @@ def aday_uygun(kayit, hedef_v, tur, paket):
     return False
 
 
-def sec(kayitlar, hedef_v, tur, paket, adet, kart):
-    """En iyi aday. Doner: (kayit, notlar) ya da (None, sebep)."""
+def sec(kayitlar, hedef_v, tur, paket, adet, kart, v_esik=None):
+    """En iyi aday. Doner: (kayit, notlar) ya da (None, sebep).
+
+    v_esik SUZGEC, rapor degil. Ilk surumde gerilim sinifini secimden
+    SONRA denetliyordum: arac stokta 250 V'luk parca varken 50 V'luk
+    olani seciyor, sonra da kendi sectigi parcaya "yetersiz" diyordu.
+    Sinir bir kisittir; kisitlar secimin icine girer.
+    """
     uygun = [k for k in kayitlar if aday_uygun(k, hedef_v, tur, paket)]
     if not uygun:
         return None, "paket %s + deger eslesen kayit yok" % paket
@@ -232,6 +335,16 @@ def sec(kayitlar, hedef_v, tur, paket, adet, kart):
                           "filtre kondansatoru olarak kullanilamaz" % paket)
         stoklu = c0g
 
+    if v_esik:
+        yeterli = [k for k in stoklu
+                   if (gerilim_cikar(k.get("describe") or "") or 0) >= v_esik]
+        if not yeterli:
+            en = max((gerilim_cikar(k.get("describe") or "") or 0)
+                     for k in stoklu)
+            return None, ("gerilim sinifi yetersiz: en yuksek %.0fV, "
+                          "%.0fV gerekiyor" % (en, v_esik))
+        stoklu = yeterli
+
     def puan(k):
         q = q_cikar(k.get("describe") or "")
         return (
@@ -247,7 +360,9 @@ def kart_isle(kart, yaz=False):
                        KARTLAR[kart])
     satirlar = list(csv.DictReader(open(yol, encoding="utf-8")))
     ob = onbellek_yukle()
-    bulgu, bulunan = [], {}
+    ge = GERILIM_ESIK.get(kart)
+    rf_ref = rf_referanslari(kart, ge[1]) if ge else set()
+    bulgu, bulunan, elle = [], {}, []
     q_uyari = []
 
     print("=" * 70)
@@ -259,16 +374,53 @@ def kart_isle(kart, yaz=False):
         fp = r["Footprint"]
         adet = len([x for x in r["Designator"].split(",") if x.strip()])
         cz = deger_coz(val)
-        paket = paket_coz(fp)
-        if not cz or not paket:
+        paket, tht = paket_coz(fp)
+        if not cz or (not paket and not tht):
             bulgu.append("%-9s %-28s deger ya da paket okunamadi" % (val, fp))
             continue
         hedef_v, tur = cz
         tip = {"H": "inductor", "F": "capacitor", "R": "resistor"}[tur]
-        kayitlar = sorgu("%s %s %s" % (val, paket, tip), ob)
-        kayit, sebep = sec(kayitlar, hedef_v, tur, paket, adet, kart)
+        if tht:
+            # DELIKLI PARCA JLCPCB DIZGISINE GIRMIYOR. Bunlari
+            # "bulunamadi" diye raporlamak yaniltici olur: zaten elle
+            # takiliyorlar ve dogru tedarik yeri bir RF dagiticisi
+            # (mika, ATC porselen). Arac stok arayip bulamayinca
+            # BULGU degil NOT yaziyor.
+            anahtar = "%s %s" % (val, THT[tht][0])
+        else:
+            anahtar = "%s %s %s" % (val, paket, tip)
+        refler = [x.strip() for x in r["Designator"].split(",") if x.strip()]
+        v_esik = ge[0] if (ge and (rf_ref & set(refler))) else None
+        kayitlar = sorgu(anahtar, ob)
+        kayit, sebep = sec(kayitlar, hedef_v, tur, paket, adet, kart, v_esik)
+
+        # PAKET BULUNAMADIYSA BASKA PAKETLERE BAK. "stokta yok" diye
+        # birakmak isi yarim birakmak olur: ayni deger baska boyda
+        # rahat bulunabiliyor ve ayak izini degistirmek uretecin bir
+        # satiri. Alternatif bulunursa bulgu, ONERIYLE birlikte
+        # yaziliyor.
+        oneri = ""
+        if kayit is None and paket:
+            for alt in ("0805", "0603", "1210", "1206"):
+                if alt == paket:
+                    continue
+                ak = sorgu("%s %s %s" % (val, alt, tip), ob)
+                k2, _ = sec(ak, hedef_v, tur, alt, adet, kart, v_esik)
+                if k2 is not None:
+                    g = gerilim_cikar(k2.get("describe") or "")
+                    oneri = ("  -> %s pakette VAR: %s stok %d%s"
+                             % (alt, k2.get("componentCode"),
+                                k2.get("stockCount") or 0,
+                                " %.0fV" % g if g else ""))
+                    break
         if kayit is None:
-            bulgu.append("%-9s %-8s x%-4d %s" % (val, paket, adet, sebep))
+            satir = "%-9s %-9s x%-4d %s%s" % (val, paket or tht, adet,
+                                              sebep, oneri)
+            if tht:
+                elle.append("%-9s %-9s x%-4d  %s"
+                            % (val, tht, adet, THT[tht][1]))
+            else:
+                bulgu.append(satir)
             continue
         kod = kayit.get("componentCode")
         bulunan[val] = kod
@@ -298,10 +450,23 @@ def kart_isle(kart, yaz=False):
         stok = kayit.get("stockCount") or 0
         if stok < STOK_RAHAT:
             ek += "  ** STOK INCE **"
+        if v_esik and tur == "F":
+            g = gerilim_cikar(ac)
+            ek += "  %.0fV" % g if g else "  ** GERILIM SINIFI BILINMIYOR **"
+        if tht:
+            ek += "  [%s]" % THT[tht][1]
         print("   %-9s %-6s x%-4d %-9s stok %-8d %-5s %s"
-              % (val, paket, adet, kod, kayit.get("stockCount") or 0,
+              % (val, paket or tht, adet, kod, kayit.get("stockCount") or 0,
                  kayit.get("componentLibraryType") or "?", ek))
 
+    if elle:
+        elle_listesi_yaz(kart, elle)
+        print("   --- ELLE TAKILAN (JLCPCB dizgisine girmiyor) ---")
+        print("   Bunlar delikli parca. Dogru tedarik yeri bir RF")
+        print("   dagiticisi: harmonik filtresinde gumus mika ya da")
+        print("   ATC porselen kullaniliyor, disk seramik degil.")
+        for x in sorted(set(elle)):
+            print("   " + x)
     if bulgu:
         print("   --- BULUNAMAYAN ---")
         for x in bulgu:

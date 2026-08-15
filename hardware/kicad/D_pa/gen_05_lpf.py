@@ -35,7 +35,7 @@ FLT = {"T50": "dogrudan-sdr:L_Toroid_T50_Vertical",
        "T94": "dogrudan-sdr:L_Toroid_T94_Vertical"}
 FCP = "Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm"
 # Tuzagin AYAR kondansatoru: kucuk deger, kucuk govde, C0G 500 V.
-FCTRIM = "Capacitor_SMD:C_1206_3216Metric"
+FCTRIM = "Capacitor_SMD:C_0603_1608Metric"
 R = "Device:R"
 FR = "Resistor_SMD:R_0603_1608Metric"
 
@@ -198,7 +198,22 @@ def bolum(bant, fc, tuzak1, tuzak2, x, y, idx, son=False):
             # filtrelerinde zaten olagan — akimi da bolusuyorlar.
             ft = (tuzak1 if a_dugum == node[0] else tuzak2) * 1e6
             Ct = 1.0 / ((2 * _m.pi * ft) ** 2 * (v * 1e-9)) * 1e12
-            # AYAR KONDANSATORU 1206, DISK DEGIL — YER YOK.
+            # AYAR KONDANSATORU 0603, DISK DEGIL — YER YOK.
+            #
+            # Once 1206 secmistim; tedarik_denetim.py ile arandiginda
+            # cikan sonuc kotuydu: 1.1/1.6/3.6 pF'nin 1206'da hic
+            # stogu yok, bulunanlarin hepsi de 50 V. 100 W'ta bu
+            # kondansatorun uzerinde ~93 V var, yani 50 V'luk parca
+            # delinir ve katalogda hicbir farki gorunmez.
+            #
+            # 0603'te ayni degerler 250 V C0G olarak stokta. Kucuk
+            # paket burada sorun degil: bu kondansator ciftin KUCUK
+            # ayagi, akimin kucuk bir payini tasiyor (3.6 pF'nin
+            # 14 MHz'teki reaktansi ~3 kohm, 93 V'ta 30 mA).
+            #
+            # Deger secimi de tedarige baglandi: lpf_sim.e24_cift artik
+            # kucuk ayagi 250 V'ta gercekten stokta olan listeden
+            # seciyor (KUCUK_STOK).
             # Ilk denemede iki tuzak kondansatoru da 7.5 mm'lik disk
             # ayak izini aldi ve D kartinda ayirici dort cakismayi
             # cozemedi (0 -> 4): role sirasi ile toroid seridi
