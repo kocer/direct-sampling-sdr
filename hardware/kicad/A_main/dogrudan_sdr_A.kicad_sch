@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "d878bdc2-3e21-42e0-b5dd-94b95aa4aa66")
+	(uuid "c384a5a9-23e2-42ea-8dd4-ecaabe489bdd")
 	(paper "A3")
 	(title_block
 		(title "dogrudan_sdr_A — dogrudan orneklemeli HF/VHF/UHF transceiver")
@@ -12,282 +12,6 @@
 		(comment 2 "Baglantilar kicad/NETLIST.md sartnamesinden")
 	)
 	(lib_symbols)
-	(sheet
-		(at 150 110)
-		(size 90 26)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0)
-		)
-		(uuid "000d1344-8914-4ac9-8904-ea61dea68d76")
-		(property "Sheetname" "Ethernet x2"
-			(at 150 109.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "06_ethernet.kicad_sch"
-			(at 150 136.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "dogrudan_sdr_A"
-				(path "/d878bdc2-3e21-42e0-b5dd-94b95aa4aa66"
-					(page "7")
-				)
-			)
-		)
-	)
-	(sheet
-		(at 30 70)
-		(size 90 26)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0)
-		)
-		(uuid "1a1d152c-1672-4447-9e57-da2f58e9111f")
-		(property "Sheetname" "ADC x2"
-			(at 30 69.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "03_adc.kicad_sch"
-			(at 30 96.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "dogrudan_sdr_A"
-				(path "/d878bdc2-3e21-42e0-b5dd-94b95aa4aa66"
-					(page "4")
-				)
-			)
-		)
-	)
-	(sheet
-		(at 150 70)
-		(size 90 26)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0)
-		)
-		(uuid "2913f121-129c-45a4-a168-bd6925fb33a7")
-		(property "Sheetname" "DAC x2"
-			(at 150 69.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "04_dac.kicad_sch"
-			(at 150 96.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "dogrudan_sdr_A"
-				(path "/d878bdc2-3e21-42e0-b5dd-94b95aa4aa66"
-					(page "5")
-				)
-			)
-		)
-	)
-	(sheet
-		(at 30 30)
-		(size 90 26)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0)
-		)
-		(uuid "4774df27-318a-46e2-b908-ac6f4a3cbb1a")
-		(property "Sheetname" "Guc agaci"
-			(at 30 29.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "01_power.kicad_sch"
-			(at 30 56.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "dogrudan_sdr_A"
-				(path "/d878bdc2-3e21-42e0-b5dd-94b95aa4aa66"
-					(page "2")
-				)
-			)
-		)
-	)
-	(sheet
-		(at 30 150)
-		(size 90 26)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0)
-		)
-		(uuid "715bf73d-d0b4-4761-ac73-fe1ad1df2f35")
-		(property "Sheetname" "FPGA guc + konfig"
-			(at 30 149.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "07_fpga_power.kicad_sch"
-			(at 30 176.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "dogrudan_sdr_A"
-				(path "/d878bdc2-3e21-42e0-b5dd-94b95aa4aa66"
-					(page "8")
-				)
-			)
-		)
-	)
-	(sheet
-		(at 150 150)
-		(size 90 26)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0)
-		)
-		(uuid "9277f2d9-90ee-428d-a066-f4b81317e22e")
-		(property "Sheetname" "Kontrol"
-			(at 150 149.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "08_control.kicad_sch"
-			(at 150 176.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "dogrudan_sdr_A"
-				(path "/d878bdc2-3e21-42e0-b5dd-94b95aa4aa66"
-					(page "9")
-				)
-			)
-		)
-	)
 	(sheet
 		(at 150 30)
 		(size 90 26)
@@ -303,7 +27,7 @@
 		(fill
 			(color 0 0 0 0)
 		)
-		(uuid "d291926c-0e31-4d5f-902a-40bd9ae2ede5")
+		(uuid "0da3ee3f-1961-4ddd-a350-5d427c682ff0")
 		(property "Sheetname" "Saat dagitimi"
 			(at 150 29.3 0)
 			(show_name no)
@@ -328,8 +52,284 @@
 		)
 		(instances
 			(project "dogrudan_sdr_A"
-				(path "/d878bdc2-3e21-42e0-b5dd-94b95aa4aa66"
+				(path "/c384a5a9-23e2-42ea-8dd4-ecaabe489bdd"
 					(page "3")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 30 70)
+		(size 90 26)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "2112aba8-65fd-4dd0-9ac9-2e955e25c383")
+		(property "Sheetname" "ADC x2"
+			(at 30 69.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "03_adc.kicad_sch"
+			(at 30 96.9 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "dogrudan_sdr_A"
+				(path "/c384a5a9-23e2-42ea-8dd4-ecaabe489bdd"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 30 30)
+		(size 90 26)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "2879b73f-4d57-4801-9995-86dc9c1f85ff")
+		(property "Sheetname" "Guc agaci"
+			(at 30 29.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "01_power.kicad_sch"
+			(at 30 56.9 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "dogrudan_sdr_A"
+				(path "/c384a5a9-23e2-42ea-8dd4-ecaabe489bdd"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 150 110)
+		(size 90 26)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "608d089e-0580-40df-83eb-73173bf6a5b7")
+		(property "Sheetname" "Ethernet x2"
+			(at 150 109.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "06_ethernet.kicad_sch"
+			(at 150 136.9 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "dogrudan_sdr_A"
+				(path "/c384a5a9-23e2-42ea-8dd4-ecaabe489bdd"
+					(page "7")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 150 70)
+		(size 90 26)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "946596b0-77f4-45d6-804d-b8113f5a5b11")
+		(property "Sheetname" "DAC x2"
+			(at 150 69.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "04_dac.kicad_sch"
+			(at 150 96.9 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "dogrudan_sdr_A"
+				(path "/c384a5a9-23e2-42ea-8dd4-ecaabe489bdd"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 30 150)
+		(size 90 26)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "a35de224-6ced-4d8a-ba29-a98ca9c62906")
+		(property "Sheetname" "FPGA guc + konfig"
+			(at 30 149.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "07_fpga_power.kicad_sch"
+			(at 30 176.9 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "dogrudan_sdr_A"
+				(path "/c384a5a9-23e2-42ea-8dd4-ecaabe489bdd"
+					(page "8")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 150 150)
+		(size 90 26)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "b01acc5d-cee1-4c45-8172-361cfe61295f")
+		(property "Sheetname" "Kontrol"
+			(at 150 149.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "08_control.kicad_sch"
+			(at 150 176.9 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "dogrudan_sdr_A"
+				(path "/c384a5a9-23e2-42ea-8dd4-ecaabe489bdd"
+					(page "9")
 				)
 			)
 		)
@@ -349,7 +349,7 @@
 		(fill
 			(color 0 0 0 0)
 		)
-		(uuid "db7b4499-42d9-4e88-baeb-4a5dd7a29399")
+		(uuid "b2078347-0a2e-4cfa-8d62-3e2694beb19a")
 		(property "Sheetname" "SDRAM"
 			(at 30 109.3 0)
 			(show_name no)
@@ -374,7 +374,7 @@
 		)
 		(instances
 			(project "dogrudan_sdr_A"
-				(path "/d878bdc2-3e21-42e0-b5dd-94b95aa4aa66"
+				(path "/c384a5a9-23e2-42ea-8dd4-ecaabe489bdd"
 					(page "6")
 				)
 			)

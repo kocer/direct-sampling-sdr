@@ -21,6 +21,7 @@ LDO = "Regulator_Linear:TPS7A20xxxDBV"
 ADP = "dogrudan-sdr:ADP150"
 FSOT = "Package_TO_SOT_SMD:SOT-23-5"
 FTSOT = "Package_TO_SOT_SMD:TSOT-23-5"
+FFB = "Inductor_SMD:L_0805_2012Metric"   # ferrit boncuk
 
 s = Sheet("01_power", "Guc agaci", UU["01_power"],
           "9-18V giris, ters polarite, TPS62130 x2, TPS7A20, ADP150 x4")
@@ -212,7 +213,13 @@ def ldo_kaplar(r_in, r_out, x, giris, cikis, y=205):
         s.pin_power(C, "2", x + dx, y + 14, 90, "GND")
 
 
-s.sym(LDO, "U3", "TPS7A2033", 40, 205, fp=FSOT)
+# TPS7A2033 DEGIL TPS7A2018. Sondaki iki hane cikis gerilimi:
+# "33" = 3.3 V, "18" = 1.8 V. Parca 3.3 V'luk yazilmisti ama cikisi
+# +1V8 rayina, yani FPGA'nin banka 6/3 VCCIO'suna gidiyor (20 ped).
+# Siparis edilse o bankalar 3.3 V gorurdu. Bagalanti dogruydu, yanlis
+# olan tek sey parca numarasiydi — ve bunu ne ERC ne DRC ne de bir
+# netlist denetimi gorur.
+s.sym(LDO, "U3", "TPS7A2018", 40, 205, fp=FSOT)
 s.pin_label(LDO, "1", 40, 205, 0, "+3V3", "input")
 s.pin_label(LDO, "3", 40, 205, 0, "+3V3", "input")
 s.pin_label(LDO, "5", 40, 205, 0, "+1V8", "output")
@@ -228,14 +235,50 @@ s.text("+1V8\\nFPGA VCCIO\\nbanka 6/3", 30, 219, 1.2)
 ADP_KAP = {"U8": ("C12", "C13"), "U4": ("C14", "C15"),
            "U5": ("C16", "C17"), "U6": ("C18", "C19"),
            "U7": ("C20", "C21"), "U9": ("C22", "C23")}
-rails = [("U8", "+2V5", "FPGA VCCAUX\\nZORUNLU", 100),
-         ("U4", "+1V8_A", "ADC AVDD", 155),
-         ("U5", "+1V8_D", "ADC DRVDD", 210),
-         ("U6", "+3V3_CLK", "VCXO — TEK\\nbesleme, FERRIT", 265),
-         ("U7", "+3V3_A", "DAC AVDD", 320),
-         ("U9", "+1V8_CLK", "ADCLK846 VS\\nZORUNLU 1.8V", 375)]
-for ref, out, what, x in rails:
-    s.sym(ADP, ref, "ADP150", x, 205, fp=FTSOT)
+# HER RAYIN KENDI VARYANTI — ADP150 SABIT CIKISLI BIR LDO.
+#
+# Alti LDO'nun degeri de "ADP150" yaziyordu ve BOM'da tek satirda,
+# tek LCSC koduyla (C144257) toplaniyorlardi. O kod bu dosyanin kendi
+# yorumuna gore ADP150AUJZ-2.5. Yani siparis edilse +1V8_A, +1V8_D ve
+# +1V8_CLK raylari 2.5 V cikardi.
+#
+# AD9251'in AVDD mutlak azami 2.0 V (veri sayfasi Tablo 3). Iki ADC de
+# ilk enerjilendirmede olurdu ve hicbir denetim bunu gostermezdi:
+# sema dogru, netlist dogru, DRC temiz — yalnizca parca numarasi tek.
+#
+# Deger artik gerilimi tasiyor; bom.py her varyanti ayri satira
+# koyuyor.
+# ACIK MADDE — U6 VE U7 CALISMAZ: 3.3'TEN 3.3 URETILEMEZ.
+#
+# ONCE COZUM DENENDI VE GERI ALINDI. LDO'lari cikarip yerine ferrit
+# boncuk + kondansator koydum; sema uretimi kirildi ve kart bozuldu
+# (ERC 1 ihlal, sema denetimi 58 bulgu). Deger kaybetmemek icin
+# yalnizca o blok geri alindi, varyant duzeltmeleri kaldi.
+#
+# Ikisi de girisini +3V3'ten aliyor ve cikisi +3V3_CLK ile +3V3_A,
+# yani yine 3.3 V. Bir LDO'nun dusme gerilimi var (ADP150 icin 150 mA'de
+# ~105 mV); ayni gerilimden ayni gerilim uretilemez. Regulatorler
+# duzenlemeye hic girmez, cikis girisi takip eder ve LDO'nun
+# varlik sebebi olan PSRR hic olusmaz.
+#
+# Yerine FERRIT BONCUK + KONDANSATOR. Yuk kucuk: +3V3_CLK dort ped
+# (VCXO), +3V3_A sekiz ped (DAC AVDD), toplam ~100 mA. Gurultunun
+# geldigi yer U1'in anahtarlama frekansi (TPS62130, 2.5 MHz) ve orada
+# ferrit + 10 uF, bir LDO'nun ayni frekanstaki PSRR'iyla ayni
+# mertebede bastirma veriyor. Ustelik iki parca ve iki ray eksiliyor.
+#
+# Alternatifler tartildi: VIN_PROT'tan LDO ile beslemek TSOT-23-5
+# govdede parca basina 0.44 W demek (12 V - 3.3 V) x 50 mA, cok
+# sicak. Ayri bir 5 V buck eklemek calisirdi ama bir bobin, bir
+# geri besleme bolucusu ve dort kondansator daha getiriyordu.
+rails = [("U8", "+2V5", "2.5", "FPGA VCCAUX\\nZORUNLU", 100),
+         ("U6", "+3V3_CLK", "3.3", "VCXO — TEK\\nbesleme, FERRIT", 265),
+         ("U7", "+3V3_A", "3.3", "DAC AVDD", 320),
+         ("U4", "+1V8_A", "1.8", "ADC AVDD", 155),
+         ("U5", "+1V8_D", "1.8", "ADC DRVDD", 210),
+         ("U9", "+1V8_CLK", "1.8", "ADCLK846 VS\\nZORUNLU 1.8V", 375)]
+for ref, out, volt, what, x in rails:
+    s.sym(ADP, ref, f"ADP150-{volt}", x, 205, fp=FTSOT)
     # U9 (+1V8_CLK) +2V5'ten besleniyor: 3.3'ten dusurmek 1.5 V x akim
     # kadar gereksiz isi uretirdi, TSOT-5 govdede bu cok.
     src = "+2V5" if ref == "U9" else "+3V3"

@@ -28,8 +28,17 @@ LCSC = {
     "SN65LVDS2DBVR":      ("C38204",    0.36, "extended"),
     "W25Q128JVSIQ":       ("C97521",    1.80, "base"),
     "TPS62130":           ("C337502",   0.67, "extended"),
-    "TPS7A2033":          ("C2894174",  0.55, "extended"),
-    "ADP150":             ("C144257",   1.00, "extended"),
+    # TPS7A2018 = 1.8 V surumu. Eski eslemedeki kod 3.3 V'luk
+    # parcaya aitti; siparis oncesi dogrulanacak.
+    "TPS7A2018":          ("DOGRULA",  0.55, "extended"),
+    # ADP150 SABIT CIKISLI: HER GERILIM AYRI PARCA NUMARASI.
+    # Alti LDO tek koda (C144257 = ADP150AUJZ-2.5) baglanmisti ve
+    # siparis edilse uc ray yanlis gerilimde gelirdi; 1.8 V bekleyen
+    # ADC'ler 2.5 V gorurdu ve mutlak azamileri 2.0 V.
+    # -2.5 kodu dogrulanmis; oteki ikisi SIPARIS ONCESI BAKILACAK.
+    "ADP150-2.5":         ("C144257",   1.00, "extended"),
+    "ADP150-1.8":         ("DOGRULA",   1.00, "extended"),
+    "ADP150-3.3":         ("DOGRULA",   1.00, "extended"),
     "ABLNO-V-80.000MHZ":  ("C5378891", 22.00, "extended"),
     "25MHz CL12pF":       ("C9006",     0.05, "base"),   # YXC X322525MOB4SI, CL=12pF
     "SMBJ20A":            ("C364296",   0.03, "extended"),
