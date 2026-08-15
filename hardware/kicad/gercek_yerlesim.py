@@ -635,6 +635,20 @@ def yerlesim_C(fps, pn, kondu):
     n = 0
     for k, ky in enumerate(C_KANAL_Y, start=1):
         n += koy(fps, f"J{k}", 0.5, ky, KENAR_ACI["sol"], kondu, kenar=True)
+        # KORUMA VE SERI DIRENCLER KENDI SERIDINDE.
+        # Genel dolguya birakmistim: RX{k}_B1_IN agi 212 mm cikti,
+        # yani antenle ilk bandin arasindaki 0 ohm direnc kartin ote
+        # ucundaydi. Dort kanalda ayni oldugu icin simetri bozulmadi
+        # ama 212 mm'lik bir RF hatti tek basina kayip ve anten.
+        # Zincir sirasi: SMA -> koruma -> seri direnc -> bant 1.
+        # Referans adimi kanal basina 9: ch1 R106/R107, ch2 R115/R116,
+        # ch3 R124/R125, ch4 R133/R134. Once 2 yazmistim ve yalnizca
+        # birinci kanal duzeldi.
+        for j, r in enumerate((f"E{99 + k}", f"D{100 + (k - 1) * 5}",
+                               f"R{106 + (k - 1) * 9}",
+                               f"R{107 + (k - 1) * 9}")):
+            if r in fps:
+                n += koy(fps, r, 10 + j * 7, ky, 90, kondu)
         for bant in range(1, 8):
             bx = C_BANT_X0 + (bant - 1) * C_BANT_ADIM
             n += koy(fps, f"K{k}{bant}", bx, ky, 0, kondu)
@@ -760,8 +774,11 @@ def yerlesim_D(fps, pn, kondu):
     # yoksa cihazlar farkli anda aciliyor ve birbirinin akimini
     # yukleniyor. Simetri de korunuyor: iki surucu de kendi kolundan
     # ayni uzaklikta.
-    n += koy(fps, "Q20", (gx[0] + gx[1]) / 2, D_FINAL_Y + 16, 0, kondu)
-    n += koy(fps, "Q21", (gx[2] + gx[3]) / 2, D_FINAL_Y + 16, 0, kondu)
+    # Suruculer finallerin 16 mm altindaydi; T12 ve R213 ile
+    # cakisiyorlardi. 44 mm asagi: final -> kapi direnci -> surucu ->
+    # surucu trafosu sirasi acilir.
+    n += koy(fps, "Q20", (gx[0] + gx[1]) / 2, D_FINAL_Y + 44, 0, kondu)
+    n += koy(fps, "Q21", (gx[2] + gx[3]) / 2, D_FINAL_Y + 44, 0, kondu)
     # Konuldular; simdi ONLARIN gercek konumuna gore ince ayar.
     for s, (a, c) in (("Q20", ("Q10", "Q11")), ("Q21", ("Q12", "Q13"))):
         hedef = (mrk(a)[0] + mrk(c)[0]) / 2
@@ -803,43 +820,244 @@ def yerlesim_D(fps, pn, kondu):
             n += koy(fps, r, bx - 8 + j * 8, 106, 90, kondu)
     # ---------- kuplor ve detektorler: LPF cikisi
     for r, (x, y) in (("T20", (222, 128)), ("T21", (222, 150)),
-                      ("U30", (206, 128)), ("U31", (206, 150)),
+                      ("U30", (200, 128)), ("U31", (200, 150)),
+                      ("C407", (210, 122)), ("C612", (210, 134)),
+                      ("C411", (210, 156)),
                       ("K20", (222, 106))):
         n += koy(fps, r, x, y, 0, kondu)
+    # ---------- KOL SONUMLEME DIRENCLERI KOLUN MERKEZINDE.
+    # R213 ve R215 genel dolguya dusmustu: biri kolunun merkezinden
+    # +5 mm, oteki -10 mm kaymisti ve itme-cekme kollari 62.2 / 57.2
+    # mm cikiyordu. Kollarin esitligi cift harmonik bastirmasinin
+    # kendisi; bu iki direnc de o esitligin parcasi.
+    # SIMETRIK CIFTLER: KOORDINAT DOGRUDAN, koy() KULLANMADAN.
+    # koy() parcayi gövde merkezine oturtuyor ve iki kolu AYNI yone
+    # kaydiriyor; ayna simetrisi boyle kurulmuyor. Bu ciftlerde
+    # konumu dogrudan yaziyoruz: eksen cikis trafosu, iki taraf onun
+    # aynasi. Kollarin esitligi cift harmonik bastirmasinin kendisi.
+    def ayna(sol_ref, sag_ref, x_sol, y, aci=90):
+        if sol_ref not in fps or sag_ref not in fps or eks is None:
+            return 0
+        for r, x in ((sol_ref, x_sol), (sag_ref, 2 * eks - x_sol)):
+            fps[r].SetOrientationDegrees(aci)
+            fps[r].SetPosition(pcbnew.VECTOR2I(int(x * MM), int(y * MM)))
+            kondu.add(r)
+        return 2
+
+    eks = None   # asagida, trafo hizalandiktan SONRA hesaplanacak
+    # SURUCU TRAFOSU DA IKI SURUCUNUN TAM ORTASINDA.
+    # T12 x=126.7'deydi, Q20 (127.4) ile Q21 (177.4) arasinin ortasi
+    # 152.4. Kollar 21.5 / 53.2 mm cikiyordu — surucu katinin kendi
+    # itme-cekmesi de simetrik olmali, final kadar.
+    def birincil_ortala(tr, a, c):
+        """Trafoyu BIRINCIL PINLERINE gore ortala, govdesine gore degil.
+
+        Ayak izinde birincil (1 ve 2) orijinden 5 mm SOLDA. Govdeyi
+        iki kolun ortasina koyunca pinler 5 mm sola kaliyor ve bir kol
+        otekinden 10 mm uzak oluyor: T11'de 20.4'e karsi 29.6 mm.
+        Hizalanacak olan pin, govde degil.
+        """
+        if tr not in fps or a not in fps or c not in fps:
+            return 0
+        # TRAFOYU 90 DERECE CEVIR. Ayak izinde birincilin iki pini
+        # DIKEY diziliyor: biri otekinden 5 mm yukarida. Cihazlarin
+        # hepsi ayni y'de oldugu icin bu fark dogrudan kollara
+        # geciyordu (70.2'ye karsi 74.5 mm). Cevirince iki pin yatay
+        # olup eksenin iki yaninda esit uzakliga dusuyor.
+        fps[tr].SetOrientationDegrees(90)
+        pinler = [q for q in fps[tr].Pads() if q.GetNumber() in ("1", "2")]
+        if not pinler:
+            return 0
+        px = sum(q.GetPosition().x for q in pinler) / len(pinler)
+        # HEDEF, CIHAZIN ORIJINI DEGIL AYNI AGA BAGLI PEDI.
+        # TO-247'nin orijini drain pedinden 5 mm otede; orijinlerin
+        # ortasi 152, pedlerin ortasi 147. Trafoyu 152'ye hizalayinca
+        # butun grup 5.45 mm saga kaydi ve kollar esitlenmedi.
+        def ped_x(ref):
+            aglar = {q.GetNetname() for q in fps[tr].Pads()}
+            uy = [q.GetPosition().x for q in fps[ref].Pads()
+                  if q.GetNetname() in aglar]
+            return uy[0] if uy else fps[ref].GetPosition().x
+        hedef = (ped_x(a) + ped_x(c)) / 2
+        q = fps[tr].GetPosition()
+        fps[tr].SetPosition(pcbnew.VECTOR2I(int(q.x + (hedef - px)), q.y))
+        kondu.add(tr)
+        return 1
+
+    # T12 SURUCULERIN ALTINDA. D_FINAL_Y+18'de kalmisti ve Q12'nin
+    # govdesine giriyordu; surucu kati asagi indikten sonra trafo da
+    # onunla birlikte inmeli.
+    if "T12" in fps:
+        q = fps["T12"].GetPosition()
+        fps["T12"].SetPosition(pcbnew.VECTOR2I(q.x, int((D_FINAL_Y + 58) * MM)))
+    n += birincil_ortala("T12", "Q20", "Q21")
+    n += birincil_ortala("T11", "Q10", "Q13")
+    # AYNA EKSENI TRAFO HIZALANDIKTAN SONRA. Once T11'in eski
+    # konumundan aliyordum, sonra trafo kayinca eksen bayatliyor ve
+    # aynalanan dirençler yanlis yere dusuyordu.
+    if "T11" in fps:
+        pn = [q for q in fps["T11"].Pads() if q.GetNumber() in ("1", "2")]
+        if pn:
+            eks = sum(q.GetPosition().x for q in pn) / len(pn) / MM
+    kolA = ((fps["Q10"].GetPosition().x + fps["Q11"].GetPosition().x)
+            / 2 / MM) if "Q10" in fps else None
+    if kolA is not None:
+        n += ayna("R213", "R215", kolA, D_FINAL_Y + 32)
+        # SURUCU KAPI DIRENCLERI SURUCULERIN EKSENINDE.
+        # T11'in ekseninde aynaliyordum; surucu kati kendi ekseni
+        # etrafinda simetrik olmali (Q20/Q21 ortasi), final katinin
+        # degil. 20.9'a karsi 22.0 mm farki buradan geliyordu.
+        sur_eks = eks
+        if "Q20" in fps and "Q21" in fps:
+            sur_eks = (fps["Q20"].GetPosition().x
+                       + fps["Q21"].GetPosition().x) / 2 / MM
+        eks_yedek, eks = eks, sur_eks
+        n += ayna("R106", "R108", sur_eks - 26, D_FINAL_Y + 52)
+        n += ayna("R107", "R109", sur_eks - 20, D_FINAL_Y + 52)
+        eks = eks_yedek
+
+    # ---------- KAPI DIRENCLERI HER CIHAZIN KENDI KAPISINDA.
+    # Genel dolguya birakmistim; R202..R209 kartin dortbir yanina
+    # dagildi ve kapi aglari 57.8 / 66.0 / 81.1 / 94.4 mm cikti.
+    # Yerlesim surucuyu dort kapiya esit uzaklikta koymustu ama
+    # arada duran direnc rastgele yerde olunca o esitlik bir sey
+    # ifade etmiyor. Her cihazin iki direnci kendi kapisinin
+    # hemen altinda: seri direnc ve kapi-toprak direnci.
+    for i, r in enumerate(("Q10", "Q11", "Q12", "Q13")):
+        q = fps[r].GetPosition() if r in fps else None
+        if q is None:
+            continue
+        gx = q.x / MM
+        n += koy(fps, f"R{202 + i * 2}", gx - 3, D_FINAL_Y + 9, 90, kondu)
+        n += koy(fps, f"R{203 + i * 2}", gx + 3, D_FINAL_Y + 9, 90, kondu)
+
     # ---------- bias servolari kapilarin yaninda
-    for r, (x, y) in (("U20", (126, 56)), ("U21", (166, 56)),
-                      ("U41", (126, 68)), ("U42", (166, 68))):
+    # INA240'lar kapi direnclerinin uzerine dusuyordu; olcum kati
+    # RF hattinin altinda kendi seridinde.
+    # Olcum kati ALT-SOL koseye. x=60'ta girisin RF bogucusunun
+    # (L10) pedine oturuyorlardi; o serit zaten giris zincirinin.
+    # Buradaki bosluk LPF surucu sirasinin altinda.
+    for i in range(3):
+        n += koy(fps, f"U{32 + i}", 30 + i * 22, 164, 0, kondu)
+    # kaydirmali yazmac ve yardimci FET'ler kendi siralarinda
+    n += koy(fps, "U56", 150, 164, 0, kondu)
+    for i, r in enumerate(("Q31", "Q32")):
+        n += koy(fps, r, 178 + i * 12, 164, 0, kondu)
+    for r, (x, y) in (("U20", (100, 56)), ("U21", (100, 68)),
+                      ("U41", (100, 80)), ("U42", (100, 92)),
+                      # olcum katindaki iki entegre birbirinin ustune
+                      # dusuyordu; sicaklik sensoru sogutucu tarafina
+                      ("U57", (100, 164)), ("U55", (125, 164))):
         n += koy(fps, r, x, y, 0, kondu)
     # ---------- guc: SAG UST KOSE, RF hattindan en uzak
     n += koy(fps, "J30", D_EN - 0.5, 12, KENAR_ACI["sag"], kondu, kenar=True)
-    for r, (x, y) in (("U50", (206, 30)), ("U51", (206, 46)),
-                      ("Q30", (206, 62))):
+    for r, (x, y) in (("U50", (200, 26)), ("U51", (200, 46)),
+                      ("Q30", (200, 62)), ("C601", (222, 26)),
+                      ("C602", (222, 44))):
         n += koy(fps, r, x, y, 0, kondu)
     # anten cikisi kuplorden hemen sonra, sag kenar
     # J40 KENAR MONTAJ DEGIL: klemens, govdesi de vidasi da kartin
     # uzerinde durur. kenar=True verince pedini kenara dayadi ve
     # normal parcalar icin tuttugumuz 2 mm kusagi deldi.
     n += koy(fps, "J40", D_EN - 12, 168, 0, kondu)
+    # KAYNAK ORNEKLEME DIRENCLERI CIHAZLARIN ALTINDA.
+    # RS1..RS4 genel dolguda kaliyordu ve LPF toroidlerinin pedine
+    # oturdu. Her cihazin kaynak akimini olcen direnc kendi cihazinin
+    # altinda olmali; olcum de yol da kisa kalir.
+    for i in range(4):
+        if f"RS{i + 1}" in fps and f"Q1{i}" in fps:
+            gx0 = fps[f"Q1{i}"].GetPosition().x / MM
+            n += koy(fps, f"RS{i + 1}", gx0, D_FINAL_Y + 16, 90, kondu)
+
     # ---------- kontrol konnektorleri alt kenar
-    for i, r in enumerate(("J31", "J32", "J20")):
-        n += koy(fps, r, 50 + i * 60, D_BOY - 0.5, KENAR_ACI["alt"], kondu, kenar=True)
+    # J33 zincir gecisi: J31/J32'nin yaninda, ayni kenarda.
+    # Kablo A -> C -> D1 -> D2 diye giderken hepsi ayni yuzden ciksin.
+    # J20 (DPD ornegi) SAG KENARA, kuplorlerin yanina.
+    # Alt kenarda kontrol konnektorleriyle ayni seride duruyordu ve
+    # yonlendirici uzun role kontrol izlerini (RLY_RCLK 66 mm)
+    # pedlerinin uzerinden geciriyordu — dort kisa devre, alti maske
+    # koprusu, her turda ayni yerde. Ustelik DPD ornegi zaten
+    # kuplorden geliyor; sag kenar hem dogru hem tenha.
+    n += koy(fps, "J20", D_EN - 0.5, 168, KENAR_ACI["sag"], kondu,
+             kenar=True)
+    for i, r in enumerate(("J31", "J32", "J33")):
+        n += koy(fps, r, 40 + i * 48, D_BOY - 0.5, KENAR_ACI["alt"], kondu, kenar=True)
     return n
 
+
+# Konumu KESINLIKLE degismeyecek parcalar: ayna ciftleri, esit
+# uzunluk gruplari, sogutucuya bakan cihazlar.
+SIMETRIK = {
+    "D": ("Q10", "Q11", "Q12", "Q13", "Q20", "Q21", "T10", "T11", "T12",
+          "R202", "R203", "R204", "R205", "R206", "R207", "R208", "R209",
+          "R213", "R215", "R106", "R107", "R108", "R109",
+          # Kaynak olcum dirençleri her cihazin ALTINDA olmali —
+          # koridorun icinde ama oraya ait. Sabit degillerse koridor
+          # bosaltici onlari kartin disina itiyor (uc pedin ust
+          # kenari -3.41 mm cikti).
+          "RS1", "RS2", "RS3", "RS4"),
+    "A": tuple(f"T{i}" for i in range(1, 5)) + ("U15", "Y10", "U20", "U21"),
+    "C": tuple(f"K{k}{b}" for k in range(1, 5) for b in range(1, 8))
+         + tuple(f"KT{k}" for k in range(1, 5)),
+}
 
 KART = {"A": ("A_main", "dogrudan_sdr_A", A_EN, A_BOY, yerlesim_A),
         "C": ("C_rf", "dogrudan_sdr_C", C_EN, C_BOY, yerlesim_C),
         "D": ("D_pa", "dogrudan_sdr_D", D_EN, D_BOY, yerlesim_D)}
 
 
+def kenar_sil_dosyadan(pcb):
+    """Edge.Cuts cizgilerini DOSYADAN cikar.
+
+    pcbnew'un Remove()'u bu nesnede de surece cokuyor. Kart dosyasi
+    s-ifade; (gr_line ... (layer "Edge.Cuts") ...) bloklarini
+    parantez sayarak cikarmak guvenli.
+    """
+    metin = open(pcb, encoding="utf-8").read()
+    out, i, n = [], 0, 0
+    while True:
+        k = metin.find('(layer "Edge.Cuts")', i)
+        if k < 0:
+            out.append(metin[i:])
+            break
+        b0 = max(metin.rfind("(gr_line", 0, k), metin.rfind("(gr_rect", 0, k),
+                 metin.rfind("(gr_arc", 0, k))
+        if b0 < 0:
+            out.append(metin[i:k + 1])
+            i = k + 1
+            continue
+        derinlik, j = 0, b0
+        while j < len(metin):
+            if metin[j] == "(":
+                derinlik += 1
+            elif metin[j] == ")":
+                derinlik -= 1
+                if derinlik == 0:
+                    j += 1
+                    break
+            j += 1
+        out.append(metin[i:b0])
+        i = j
+        n += 1
+    if n:
+        open(pcb, "w", encoding="utf-8").write("".join(out))
+    return n
+
+
 def uygula(kart):
     dizin, proj, en, boy, fn = KART[kart]
     pcb = os.path.join(HERE, dizin, proj + ".kicad_pcb")
+    kenar_sil_dosyadan(pcb)
     b = pcbnew.LoadBoard(pcb)
     # Delikleri AYRICA listele: dordu de "REF**" oldugu icin fps
     # sozluginde tek anahtara cokuyorlar, uc tanesi kayboluyordu.
     delikler = [fp for fp in b.Footprints() if fp.GetReference() == "REF**"]
     KART_OLCU[0], KART_OLCU[1] = en, boy
-    fps = {fp.GetReference(): fp for fp in b.Footprints()}
+    # SIRALI: kart ici sira UUID'lere bagli ve her kurulumda
+    # farkli; sirasiz dolasmak yerlesimi tekrarlanmaz yapiyor.
+    fps = {fp.GetReference(): fp
+           for fp in sorted(b.Footprints(),
+                            key=lambda x: x.GetReference())}
     pn = padnetler(dizin, proj)
     kondu = set()
     kritik = fn(fps, pn, kondu)
@@ -847,9 +1065,11 @@ def uygula(kart):
     kritik += ayristirma_topa(fps, pn, kondu)
     bos = kalanlar(fps, pn, kondu, en, boy)
     cak = ayikla(fps, kondu, en, boy)
-    for d in list(b.GetDrawings()):
-        if d.GetLayer() == pcbnew.Edge_Cuts:
-            b.Remove(d)
+    # KENAR CIZGILERI DOSYADAN SILINDI (yukarida, LoadBoard'dan once).
+    # b.Remove() burada da surece cokuyordu — ve yap.sh'in hata
+    # toleransi bunu gizliyordu: yerlesim hic uygulanmiyor, kart
+    # pcb_kur'un kuvvet-guduml u yerlesimiyle kaliyordu. Sessizce
+    # yanlis kart uretmenin iyi bir ornegi.
     # MONTAJ DELIKLERI KART BOYUYLA BIRLIKTE TASINMALI. pcb_kur onlari
     # kendi varsaydigi olcuye (190x200) gore koyuyor; burada kenari
     # 235x225'e cizip delikleri birakinca biri PHY'nin uzerinde kaldi.
@@ -872,6 +1092,52 @@ def uygula(kart):
         s.SetLayer(pcbnew.Edge_Cuts)
         s.SetWidth(int(0.1 * MM))
         b.Add(s)
+    # ELLE KONUMLANDIRILANLARIN LISTESINI YAZ.
+    # ayir.py sadece parca TIPINE bakiyordu (UJTYLQK sabit) ve
+    # dirençleri oynatabiliyordu. Simetrik yerlestirdigim her direnci
+    # sonradan kaydiriyordu: kapi ve kol dirençleri yerinden oynayinca
+    # itme-cekme kollari yine esitsiz cikiyordu. Tip degil, KARAR
+    # onemli — elle koyduysam sabittir.
+    # IKI SINIF: SIMETRIK ve SADECE YERLESTIRILMIS.
+    # Basta elle konulan her parcayi sabitlemistim. Fazla kati:
+    # ayirici bir yigin kondansatoru artik itemedigi icin cakisma
+    # 9'dan 11'e cikti ve her turda elle koordinat kovaladim.
+    # Korunmasi gereken sey konum degil, SIMETRI. Ayna ciftleri ve
+    # esit-uzunluk gruplari dokunulmaz; gerisi ayirici tarafindan
+    # oynatilabilir.
+    # SIMETRIK AGA DOKUNAN HER PARCA SABIT.
+    # A'nin koridoru (x 0-60, y 112-212) tam alis zincirlerinin
+    # bolgesi. Zincirin kendi seri dirençleri ve kondansatorleri
+    # sabit degildi, koridor bosaltici onlari KENDI koridorlarindan
+    # disari atti ve dort zincir 26.2 / 25.3 / 25.3 / 42.0 mm oldu.
+    # Ref listesi tutmak yerine agdan turetiyoruz: elle_cek'in
+    # korudugu bir aga dokunan parca, o simetrinin parcasidir.
+    sabitler = set(SIMETRIK.get(kart, ()))
+    try:
+        import elle_cek
+        kritik_ag = set(elle_cek.TABLOLAR.get(kart, {}))
+    except Exception:
+        kritik_ag = set()
+    for ref, padlar in pn.items():
+        if kritik_ag & set(padlar.values()):
+            sabitler.add(ref)
+    with open(os.path.join(HERE, dizin, "sabit.txt"), "w") as fh:
+        fh.write("\n".join(sorted(sabitler)))
+    # DOKUMU KART OLCUSUNE OTURT.
+    # pcb_kur dokumu kendi varsaydigi olcuye gore ciziyor; burada
+    # kenari degistirince doküm oldugu yerde kaliyor. Olculdu:
+    # C'de kart 350x235, doküm 339'da bitiyor; D'de kart 240x185,
+    # doküm 214x172. Sag ve alt kenardaki parcalarin altinda toprak
+    # YOK — C'de 226, D'de 104 toprak pedi bagsiz kaldi.
+    for z in b.Zones():
+        poly = z.Outline()
+        poly.RemoveAllContours()
+        poly.NewOutline()
+        for px, py in ((PED_ICERI, PED_ICERI), (en - PED_ICERI, PED_ICERI),
+                       (en - PED_ICERI, boy - PED_ICERI),
+                       (PED_ICERI, boy - PED_ICERI)):
+            poly.Append(int(px * MM), int(py * MM))
+
     b.Save(pcb)
     print(f"{kart}: {kritik} kritik parca elle, {len(bos)} bagsiz, "
           f"{cak} cakisma, {en}x{boy} mm")

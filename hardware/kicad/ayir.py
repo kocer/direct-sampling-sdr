@@ -24,14 +24,37 @@ MM = 1e6
 SABIT = tuple("UJTYLQK")
 
 
+def elle_konulanlar(yol):
+    """gercek_yerlesim.py'nin elle yerlestirdigi parcalar.
+
+    Tip bazli sabit listesi yetmiyordu: dirençler oynatilabilir
+    sayiliyordu ve simetrik yerlestirilen kapi/kol dirençleri
+    sonradan kayiyordu. Karar tipten daha guclu — elle konulduysa
+    sabit.
+    """
+    import os
+    d = os.path.join(os.path.dirname(os.path.abspath(yol)), "sabit.txt")
+    try:
+        return {s.strip() for s in open(d) if s.strip()}
+    except OSError:
+        return set()
+
+
 def kutu(f):
     lay = pcbnew.B_CrtYd if f.GetLayer() == pcbnew.B_Cu else pcbnew.F_CrtYd
     return f.GetCourtyard(lay).BBox()
 
 
 def cakismalar(fps):
+    # SIRALI, YOKSA SONUC TEKRARLANMIYOR.
+    # b.Footprints() karttaki ic siraya gore geliyor ve o sira
+    # UUID'lere bagli — her kurulumda farkli. Ayirici hangi cifti
+    # once ittigi degisince farkli sonuca variyordu: iki kurulum
+    # arasinda 38 parcanin konumu farkliydi, ve o yuzden bir
+    # kurulumdan alinan SES otekine uymuyor, kart kisa devre
+    # doluyordu.
     out = []
-    for a, c in itertools.combinations(list(fps), 2):
+    for a, c in itertools.combinations(sorted(fps), 2):
         if fps[a].GetLayer() != fps[c].GetLayer():
             continue
         ka, kc = kutu(fps[a]), kutu(fps[c])
@@ -40,7 +63,8 @@ def cakismalar(fps):
     return out
 
 
-def ayir(b, tur=60):
+def ayir(b, tur=60, elle=()):
+    elle = set(elle)
     for _ in range(tur):
         fps = {f.GetReference(): f for f in b.Footprints()}
         cift = cakismalar(fps)
@@ -62,7 +86,7 @@ def ayir(b, tur=60):
                   - max(ka.GetTop(), kc.GetTop())) / MM
             adim = min(it, iy) / 2 + 0.15
             for ref, s in ((a, -1), (c, 1)):
-                if ref[0] in SABIT:
+                if ref[0] in SABIT or ref in elle:
                     continue
                 q = fps[ref].GetPosition()
                 fps[ref].SetPosition(pcbnew.VECTOR2I(
@@ -154,6 +178,60 @@ def iceri_al(b, pay=2.0):
     return n
 
 
+# Bos tutulacak koridorlar: (kart, x0, y0, x1, y1).
+# Simetrik aglarin izleri buradan gecmek zorunda. Genel dolgu buraya
+# parca birakirsa elle cekilen duz hat pedin ustunden geciyor ve
+# kisa devre oluyor — D'de 12 kisa devre, C'de 22 ag cizilemedi.
+# Koridor bos olmali ki iz aynasi ile ayni uzunlukta kalabilsin;
+# dolasmak zorunda kalan iz zaten simetriyi bozar.
+KORIDOR = {
+    "dogrudan_sdr_D": [(105, 12, 195, 50)],       # final -> surucu
+    "dogrudan_sdr_C": [(0, 18, 350, 32), (0, 73, 350, 87),
+                       (0, 128, 350, 142), (0, 183, 350, 197)],
+    "dogrudan_sdr_A": [(0, 112, 60, 212)],        # RX zincirleri
+}
+
+
+def koridor_bosalt(b, yol, elle):
+    """Koridorlardaki serbest parcalari disari cikar."""
+    import os
+    ad = os.path.basename(yol).replace(".kicad_pcb", "")
+    kutular = KORIDOR.get(ad, [])
+    if not kutular:
+        return 0
+    n = 0
+    for fp in sorted(b.Footprints(), key=lambda f: f.GetReference()):
+        r = fp.GetReference()
+        if r[0] in SABIT or r in elle:
+            continue
+        q = fp.GetPosition()
+        x, y = q.x / MM, q.y / MM
+        for x0, y0, x1, y1 in kutular:
+            if x0 <= x <= x1 and y0 <= y <= y1:
+                # en yakin kenardan disari it
+                d = {"ust": y - y0, "alt": y1 - y, "sol": x - x0,
+                     "sag": x1 - x}
+                yon = min(d, key=d.get)
+                ny, nx = y, x
+                # KORIDORUN HEMEN DIBINE DEGIL, UZAGINA.
+                # 3 mm disari itince parcalar finallerin (y=8) ve
+                # suruculerin (y=52) tam ustune dustu ve kapi izleri
+                # yine cizilemedi. Koridorun disi da kalabalik;
+                # cikarilan parca kenara dogru surulmeli.
+                if yon == "ust":
+                    ny = max(2.0, y0 - 14)
+                elif yon == "alt":
+                    ny = y1 + 14
+                elif yon == "sol":
+                    nx = max(2.0, x0 - 14)
+                else:
+                    nx = x1 + 14
+                fp.SetPosition(pcbnew.VECTOR2I(int(nx * MM), int(ny * MM)))
+                n += 1
+                break
+    return n
+
+
 def kenar_grubu(b):
     """Kenara degen konnektorleri "kenar_montaj" grubuna al.
 
@@ -191,9 +269,12 @@ if __name__ == "__main__":
     yol = sys.argv[1]
     b = pcbnew.LoadBoard(yol)
     once = len(cakismalar({f.GetReference(): f for f in b.Footprints()}))
+    elle = elle_konulanlar(yol)
+    kor = koridor_bosalt(b, yol, elle)
     ic = iceri_al(b)
-    kalan = ayir(b)
+    kalan = ayir(b, elle=elle)
     grup = kenar_grubu(b)
     b.Save(yol)
     print(f"{yol.split('/')[-1]}: {once} cakisma -> {kalan}, "
-          f"{ic} parca iceri alindi, {grup} kenar konnektoru gruplandi")
+          f"{ic} iceri, {kor} koridordan cikarildi, "
+          f"{grup} kenar konnektoru gruplandi")

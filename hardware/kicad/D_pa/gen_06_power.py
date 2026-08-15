@@ -222,7 +222,10 @@ s.pin_label(SR, "10", 60, 345, 0, "+3V3", "input", d=22.86)
 s.pin_power(SR, "13", 60, 345, 0, "GND", d=27.94)
 s.pin_label(SR, "16", 60, 345, 0, "+3V3", "input", d=5.08)
 s.pin_power(SR, "8", 60, 345, 0, "GND", d=5.08)
-s.nc(*s.P(SR, "9", 60, 345))
+# QH\' ZINCIRIN DEVAMI. Once NC isaretliydi; bir sonraki PA
+# kartinin yazmaci buradan besleniyor. Kaydirmali yazmac zinciri
+# boyle uzuyor ve ek PA basina FPGA'dan tek pin bile istemiyor.
+s.pin_label(SR, "9", 60, 345, 0, "RLY_SER_NEXT", "output", d=33.02)
 for j, pn in enumerate(("15", "1", "2", "3", "4", "5", "6")):
     s.pin_label(SR, pn, 60, 345, 0, f"LQ{j}", "output", d=5.08)
 s.nc(*s.P(SR, "7", 60, 345))
@@ -311,6 +314,36 @@ for p_, net in [("1", "RLY_SER_OUT"), ("2", "RLY_SRCLK"), ("3", "RLY_RCLK"),
     s.pin_label(HDR6, p_, 450, 285, 0, net, "passive", d=10.16)
 s.pin_power(HDR6, "5", 450, 285, 0, "GND", d=10.16)
 s.pin_power(HDR6, "6", 450, 285, 0, "GND", d=15.24)
+
+# ------------------------------------------------- sonraki PA kartina
+s.text("SONRAKI PA KARTINA — ZINCIR GECISI", 300, 340, 1.8)
+s.sym(HDR, "J33", "sonraki PA", 300, 380, fp=FHDR)
+for p_, net in [("1", "+3V3"), ("3", "ATT_DATA"), ("5", "ATT_CLK"),
+                ("7", "ADC_SDIO"), ("9", "RLY_SER_NEXT"),
+                ("11", "RLY_SRCLK"), ("13", "RLY_RCLK"),
+                ("15", "PA_INHIBIT")]:
+    s.pin_label(HDR, p_, 300, 380, 0, net, "passive", d=7.62)
+# 17. pin de topraga: geri okuma icin ayri hat uydurmustum ama
+# ADC_SDIO zaten cift yonlu, MISO isi onda. Uydurulan hattin tek
+# ucu vardi ve ERC "tek pine bagli etiket" dedi.
+for p_ in ("2", "4", "6", "8", "10", "12", "14", "16", "17", "18",
+           "19", "20"):
+    s.pin_power(HDR, p_, 300, 380, 0, "GND", d=5.08)
+
+s.text("DORT PA'YA KADAR BUYUR, A KARTINDA EK PIN ISTEMEDEN.\\n\\n"
+       "Paylasilan: ATT_DATA, ATT_CLK, ADC_SDIO. Bunlar veri yolu,\\n"
+       "her kart ayni hatti dinliyor.\\n\\n"
+       "Karta ozel olan secme sinyalleri (ATT_LE, BIAS_CS, ADC_CS)\\n"
+       "FPGA'dan gelmiyor — her kart kendi 74HC595'inden uretiyor.\\n"
+       "Zincir A -> C -> D1 -> D2 -> D3 -> D4 diye uzuyor ve ek kart\\n"
+       "basina FPGA'da TEK PIN bile harcanmiyor.\\n\\n"
+       "PA_INHIBIT ZINCIRE GIRMIYOR, dogrudan hat olarak geciyor.\\n"
+       "Guvenlik hatti bir yazmacin arkasinda duramaz: yazmac\\n"
+       "bozulursa ya da saat durursa kesme calismaz. Ortak hat,\\n"
+       "herhangi bir ariza butun PA'lari kesiyor.\\n\\n"
+       "Sinyal-toprak donusumlu dizilim: 9 sinyal, 11 toprak.\\n"
+       "Kablo boyunca her sinyalin yaninda donus yolu var.",
+       300, 400, 1.3)
 
 s.sym(R, "R690", "0R", 520, 258, rot=90, fp=FR)
 s.pin_label(R, "1", 520, 258, 90, "GND_HDR", "passive")

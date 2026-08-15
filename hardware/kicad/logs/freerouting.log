@@ -425,3 +425,679 @@ INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba
 2026-08-14 12:35:33.184 [Thread-23] INFO  Starting route optimization on 1 thread...
 2026-08-14 12:35:55.019 [Thread-23] INFO  Route optimization was completed in 21.83 seconds.
 2026-08-14 12:35:55.035 [Thread-23] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 13:03:05.960 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 13:03:05.961 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 13:03:05.962 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 13:03:05.986 [main] INFO  Settings were loaded from freer2ou0ti2n6g-.0j8s-o1n4 
+13:03:05.987 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 13:03:05.988 [main] INFO  Settings were loaded from freerouting.json
+2026-20082-61-4 0183-:1034: 0163.:9093:80 6[.m9a9in] INF8O   [Ompaeinni]n IgN F'O/ t Omppe/ncilnaugd e'-/1t00m0p//-chlomaeu-dcei-n1a0r0-0c/l-ahuodmee/-7c82i6n84a8r3-clau-de9/aa728-4216e8a4-8b313-d9-afa012b-a94f16efa5-a7b/1s3cdr-aft0c1hbpaa9df/6Df.5das7n/'s.c.r.a
+tchpad/A.dsn'...
+2026-08-14 13:03:06.999 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/C.dsn'...
+2026-08-14 13:03:07.455 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 13:03:07.464 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 13:03:07.470 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 13:03:27.851 [Thread-23] INFO  Starting auto-routing...
+2026-08-14 13:03:27.937 [Thread-36] INFO  Starting auto-routing...
+2026-08-14 13:03:27.985 [Thread-23] INFO  Starting auto-routing...
+2026-08-14 13:04:15.946 [AWT-EventQueue-0] ERROR Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+java.lang.NullPointerException: Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+	at app.freerouting.boardgraphics.CoordinateTransform.board_to_screen(CoordinateTransform.java:82) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.InteractiveState.mouse_wheel_moved(InteractiveState.java:90) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.BoardHandling.mouse_wheel_moved(BoardHandling.java:721) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.gui.BoardPanel.lambda$default_init$0(BoardPanel.java:123) ~[fr1.9.0.jar:unspecified]
+	at java.awt.Component.processMouseWheelEvent(Component.java:6709) ~[?:?]
+	at java.awt.Component.processEvent(Component.java:6393) ~[?:?]
+	at java.awt.Container.processEvent(Container.java:2266) ~[?:?]
+	at java.awt.Component.dispatchEventImpl(Component.java:4996) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2324) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4948) ~[?:?]
+	at java.awt.LightweightDispatcher.processMouseEvent(Container.java:4604) ~[?:?]
+	at java.awt.LightweightDispatcher.dispatchEvent(Container.java:4516) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2310) ~[?:?]
+	at java.awt.Window.dispatchEventImpl(Window.java:2780) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.EventQueue.dispatchEventImpl(EventQueue.java:775) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:720) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:714) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:98) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:747) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:745) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.awt.EventQueue.dispatchEvent(EventQueue.java:744) ~[?:?]
+	at java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101) [?:?]
+	at java.awt.EventDispatchThread.run(EventDispatchThread.java:90) [?:?]
+2026-08-14 13:05:21.831 [Thread-23] INFO  Auto-routing was completed in 1 minute(s) 53.98 seconds.
+2026-08-14 13:05:21.933 [Thread-23] INFO  Starting route optimization on 1 thread...
+2026-08-14 13:05:43.916 [Thread-23] INFO  Route optimization was completed in 21.98 seconds.
+2026-08-14 13:05:43.927 [Thread-23] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 13:11:39.783 [AWT-EventQueue-0] ERROR null
+java.lang.NullPointerException: null
+2026-08-14 13:11:41.991 [AWT-EventQueue-0] ERROR null
+java.lang.NullPointerException: null
+2026-08-14 13:11:47.302 [Thread-36] INFO  Auto-routing was completed in 8 minute(s) 19.36 seconds.
+2026-08-14 13:11:47.403 [Thread-36] INFO  Starting route optimization on 1 thread...
+2026-08-14 13:11:47.414 [Thread-36] INFO  Route optimization was completed in 0.01 seconds.
+2026-08-14 13:11:47.442 [Thread-36] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/A.ses'...
+2026-08-14 13:13:26.111 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 13:13:26.137 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 13:13:27.147 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/A.dsn'...
+2026-08-14 13:13:27.447 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 13:13:43.371 [Thread-34] INFO  Starting auto-routing...
+2026-08-14 13:14:08.239 [AWT-EventQueue-0] ERROR Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+java.lang.NullPointerException: Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+	at app.freerouting.boardgraphics.CoordinateTransform.board_to_screen(CoordinateTransform.java:82) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.InteractiveState.mouse_wheel_moved(InteractiveState.java:90) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.BoardHandling.mouse_wheel_moved(BoardHandling.java:721) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.gui.BoardPanel.lambda$default_init$0(BoardPanel.java:123) ~[fr1.9.0.jar:unspecified]
+	at java.awt.Component.processMouseWheelEvent(Component.java:6709) ~[?:?]
+	at java.awt.Component.processEvent(Component.java:6393) ~[?:?]
+	at java.awt.Container.processEvent(Container.java:2266) ~[?:?]
+	at java.awt.Component.dispatchEventImpl(Component.java:4996) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2324) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4948) ~[?:?]
+	at java.awt.LightweightDispatcher.processMouseEvent(Container.java:4604) ~[?:?]
+	at java.awt.LightweightDispatcher.dispatchEvent(Container.java:4516) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2310) ~[?:?]
+	at java.awt.Window.dispatchEventImpl(Window.java:2780) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.EventQueue.dispatchEventImpl(EventQueue.java:775) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:720) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:714) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:98) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:747) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:745) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.awt.EventQueue.dispatchEvent(EventQueue.java:744) ~[?:?]
+	at java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101) [?:?]
+	at java.awt.EventDispatchThread.run(EventDispatchThread.java:90) [?:?]
+2026-08-14 13:16:57.650 [AWT-EventQueue-0] ERROR null
+java.lang.NullPointerException: null
+2026-08-14 13:18:40.979 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 13:18:41.009 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 13:18:42.023 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 13:18:42.378 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 13:19:02.814 [Thread-23] INFO  Starting auto-routing...
+2026-08-14 13:19:04.141 [Thread-23] INFO  Auto-routing was completed in 1.32 seconds.
+2026-08-14 13:19:04.242 [Thread-23] INFO  Starting route optimization on 1 thread...
+2026-08-14 13:19:04.246 [Thread-23] INFO  Route optimization was completed in 0.00 seconds.
+2026-08-14 13:19:04.254 [Thread-23] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 13:30:13.067 [Thread-34] WARN  CalcFromSide: start corner was not found
+2026-08-14 13:30:13.073 [Thread-34] WARN  CalcFromSide: start corner was not found
+2026-08-14 13:30:51.885 [AWT-EventQueue-0] ERROR Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+java.lang.NullPointerException: Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+	at app.freerouting.boardgraphics.CoordinateTransform.board_to_screen(CoordinateTransform.java:82) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.InteractiveState.mouse_wheel_moved(InteractiveState.java:90) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.BoardHandling.mouse_wheel_moved(BoardHandling.java:721) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.gui.BoardPanel.lambda$default_init$0(BoardPanel.java:123) ~[fr1.9.0.jar:unspecified]
+	at java.awt.Component.processMouseWheelEvent(Component.java:6709) ~[?:?]
+	at java.awt.Component.processEvent(Component.java:6393) ~[?:?]
+	at java.awt.Container.processEvent(Container.java:2266) ~[?:?]
+	at java.awt.Component.dispatchEventImpl(Component.java:4996) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2324) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4948) ~[?:?]
+	at java.awt.LightweightDispatcher.processMouseEvent(Container.java:4604) ~[?:?]
+	at java.awt.LightweightDispatcher.dispatchEvent(Container.java:4516) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2310) ~[?:?]
+	at java.awt.Window.dispatchEventImpl(Window.java:2780) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.EventQueue.dispatchEventImpl(EventQueue.java:775) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:720) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:714) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:98) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:747) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:745) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.awt.EventQueue.dispatchEvent(EventQueue.java:744) ~[?:?]
+	at java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101) [?:?]
+	at java.awt.EventDispatchThread.run(EventDispatchThread.java:90) [?:?]
+2026-08-14 13:59:44.281 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 13:59:44.305 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 13:59:45.315 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 13:59:45.775 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 14:00:00.076 [Thread-23] INFO  Starting auto-routing...
+2026-08-14 14:00:01.249 [Thread-23] INFO  Auto-routing was completed in 1.17 seconds.
+2026-08-14 14:00:01.350 [Thread-23] INFO  Starting route optimization on 1 thread...
+2026-08-14 14:00:01.353 [Thread-23] INFO  Route optimization was completed in 0.00 seconds.
+2026-08-14 14:00:01.361 [Thread-23] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 14:02:28.819 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 14:02:28.843 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 14:02:29.853 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 14:02:30.344 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 14:02:50.427 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 14:02:51.487 [Thread-22] INFO  Auto-routing was completed in 1.06 seconds.
+2026-08-14 14:02:51.587 [Thread-22] INFO  Starting route optimization on 1 thread...
+2026-08-14 14:02:51.590 [Thread-22] INFO  Route optimization was completed in 0.00 seconds.
+2026-08-14 14:02:51.596 [Thread-22] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 14:04:30.968 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 14:04:30.992 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 14:04:32.002 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 14:04:32.490 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 14:04:52.575 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 14:04:53.670 [Thread-22] INFO  Auto-routing was completed in 1.09 seconds.
+2026-08-14 14:04:53.771 [Thread-22] INFO  Starting route optimization on 1 thread...
+2026-08-14 14:04:53.774 [Thread-22] INFO  Route optimization was completed in 0.00 seconds.
+2026-08-14 14:04:53.781 [Thread-22] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 14:06:39.390 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 14:06:39.415 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 14:06:40.424 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D_tek.dsn'...
+2026-08-14 14:06:40.954 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 14:07:00.969 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 14:07:02.001 [Thread-22] INFO  Auto-routing was completed in 1.03 seconds.
+2026-08-14 14:07:02.102 [Thread-22] INFO  Starting route optimization on 1 thread...
+2026-08-14 14:07:02.105 [Thread-22] INFO  Route optimization was completed in 0.00 seconds.
+2026-08-14 14:07:02.111 [Thread-22] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D_tek.ses'...
+2026-08-14 14:08:23.133 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 14:08:23.157 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 14:08:24.166 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 14:08:24.651 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 14:08:44.753 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 14:15:52.076 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 14:15:52.076 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+220026-2068--0184- 1144 :1145::1552:.5120.31 0[3m a[imna]i nI]N FION F OS e ttSeitntgings wse rwee rleo aldoeadd efd rom ffrroemer ofurteienrgo.ujtsionng
+.json
+2026-08-14 14:15:53.115 [main] INFO  Openi2n02g6 -'/t08-m1p4/ c1l4:a1u5d:e5-3.1101005/ -[hmoamien-]c INFinar-claOu d eO/pe7n8in2684g8 3'/tm-p/claude-1000/-home-cinar-c9laude/782a68a4832-41ea-b1-3d-f01ba9f6f5a7/sc9raatachpad/C.dsn'...
+2-41ea-b13d-f01ba9f6f5a7/scratchpad/A.dsn'...
+2026-08-14 14:15:53.600 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 14:15:53.600 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 14:16:13.994 [Thread-23] INFO  Starting auto-routing...
+2026-08-14 14:16:14.019 [Thread-35] INFO  Starting auto-routing...
+2026-08-14 14:22:42.735 [Thread-23] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 14:22:42.736 [Thread-23] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 14:22:57.108 [Thread-23] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 14:22:57.109 [Thread-23] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 14:23:25.999 [Thread-23] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 14:23:26.351 [Thread-23] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 14:24:13.657 [Thread-23] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 14:24:29.876 [Thread-23] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 14:24:29.877 [Thread-23] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 14:24:36.431 [Thread-23] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 14:24:36.431 [Thread-23] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 14:27:36.736 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 14:27:36.763 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 14:27:37.775 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 14:27:38.257 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 14:27:58.391 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 14:32:56.123 [Thread-35] WARN  CalcFromSide: start corner was not found
+2026-08-14 14:33:12.448 [Thread-35] WARN  CalcFromSide: start corner was not found
+2026-08-14 14:33:22.157 [Thread-35] WARN  CalcFromSide: start corner was not found
+2026-08-14 14:33:27.111 [Thread-35] WARN  CalcFromSide: start corner was not found
+2026-08-14 14:43:11.358 [Thread-22] INFO  Auto-routing was completed in 15 minute(s) 12.97 seconds.
+2026-08-14 14:43:11.460 [Thread-22] INFO  Starting route optimization on 1 thread...
+2026-08-14 14:43:29.643 [Thread-22] INFO  Route optimization was completed in 18.18 seconds.
+2026-08-14 14:43:29.658 [Thread-22] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 14:50:57.096 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 14:50:57.126 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 14:50:58.138 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 14:50:58.739 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 14:51:19.099 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 14:51:20.072 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:20.080 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:20.086 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:20.167 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:20.176 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:20.178 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:20.959 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:20.986 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.018 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.024 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.037 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.043 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.055 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.070 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.111 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.157 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.160 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.170 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.184 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.275 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.285 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.298 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.307 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.370 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.380 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.417 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.420 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:21.520 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:22.395 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.161 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.169 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.185 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.198 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.210 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.219 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.230 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.236 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.254 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.280 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.292 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.425 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.702 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.796 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.804 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.810 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:23.876 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:24.008 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:24.058 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:24.071 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:51:45.284 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 14:51:45.312 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 14:51:46.324 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 14:51:46.769 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 14:52:07.177 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 14:52:08.131 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:08.139 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:08.145 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:08.229 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:08.238 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:08.241 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.051 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.064 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.091 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.097 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.110 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.117 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.129 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.144 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.189 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.244 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.248 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.260 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.278 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.367 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.391 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.410 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.416 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.496 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.509 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.547 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.552 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:09.638 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:10.527 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.266 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.274 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.289 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.300 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.311 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.321 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.331 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.337 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.354 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.379 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.389 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.520 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.783 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.884 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.891 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.896 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:11.966 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:12.106 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:12.158 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:12.171 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:27.916 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:27.931 [Thread-22] WARN  FloatLine: Parameter is null
+2026-08-14 14:52:51.647 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 14:52:51.674 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 14:52:52.687 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 14:52:53.225 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 14:53:13.350 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 15:16:09.725 [Thread-22] INFO  Auto-routing was completed in 22 minute(s) 56.37 seconds.
+2026-08-14 15:16:09.827 [Thread-22] INFO  Starting route optimization on 1 thread...
+2026-08-14 15:16:27.354 [Thread-22] INFO  Route optimization was completed in 17.53 seconds.
+2026-08-14 15:16:27.367 [Thread-22] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 15:40:49.146 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 15:40:49.147 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 15:40:49.173 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 15:40:49.173 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 15:40:50.184 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/C.dsn'...
+2026-08-14 15:40:50.185 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/A.dsn'...
+2026-08-14 15:40:50.662 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 15:40:50.665 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 15:41:10.997 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 15:41:11.070 [Thread-35] INFO  Starting auto-routing...
+2026-08-14 15:50:41.678 [Thread-22] WARN  CalcFromSide: start corner was not found
+2026-08-14 15:52:39.022 [AWT-EventQueue-0] ERROR Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+java.lang.NullPointerException: Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+	at app.freerouting.boardgraphics.CoordinateTransform.board_to_screen(CoordinateTransform.java:82) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.InteractiveState.mouse_wheel_moved(InteractiveState.java:90) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.BoardHandling.mouse_wheel_moved(BoardHandling.java:721) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.gui.BoardPanel.lambda$default_init$0(BoardPanel.java:123) ~[fr1.9.0.jar:unspecified]
+	at java.awt.Component.processMouseWheelEvent(Component.java:6709) ~[?:?]
+	at java.awt.Component.processEvent(Component.java:6393) ~[?:?]
+	at java.awt.Container.processEvent(Container.java:2266) ~[?:?]
+	at java.awt.Component.dispatchEventImpl(Component.java:4996) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2324) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4948) ~[?:?]
+	at java.awt.LightweightDispatcher.processMouseEvent(Container.java:4604) ~[?:?]
+	at java.awt.LightweightDispatcher.dispatchEvent(Container.java:4516) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2310) ~[?:?]
+	at java.awt.Window.dispatchEventImpl(Window.java:2780) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.EventQueue.dispatchEventImpl(EventQueue.java:775) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:720) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:714) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:98) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:747) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:745) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.awt.EventQueue.dispatchEvent(EventQueue.java:744) ~[?:?]
+	at java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101) [?:?]
+	at java.awt.EventDispatchThread.run(EventDispatchThread.java:90) [?:?]
+2026-08-14 15:52:56.010 [AWT-EventQueue-0] ERROR Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+java.lang.NullPointerException: Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+	at app.freerouting.boardgraphics.CoordinateTransform.board_to_screen(CoordinateTransform.java:82) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.InteractiveState.mouse_wheel_moved(InteractiveState.java:90) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.BoardHandling.mouse_wheel_moved(BoardHandling.java:721) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.gui.BoardPanel.lambda$default_init$0(BoardPanel.java:123) ~[fr1.9.0.jar:unspecified]
+	at java.awt.Component.processMouseWheelEvent(Component.java:6709) ~[?:?]
+	at java.awt.Component.processEvent(Component.java:6393) ~[?:?]
+	at java.awt.Container.processEvent(Container.java:2266) ~[?:?]
+	at java.awt.Component.dispatchEventImpl(Component.java:4996) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2324) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4948) ~[?:?]
+	at java.awt.LightweightDispatcher.processMouseEvent(Container.java:4604) ~[?:?]
+	at java.awt.LightweightDispatcher.dispatchEvent(Container.java:4516) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2310) ~[?:?]
+	at java.awt.Window.dispatchEventImpl(Window.java:2780) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.EventQueue.dispatchEventImpl(EventQueue.java:775) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:720) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:714) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:98) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:747) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:745) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.awt.EventQueue.dispatchEvent(EventQueue.java:744) ~[?:?]
+	at java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101) [?:?]
+	at java.awt.EventDispatchThread.run(EventDispatchThread.java:90) [?:?]
+2026-08-14 16:16:33.562 [AWT-EventQueue-0] ERROR Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+java.lang.NullPointerException: Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+	at app.freerouting.boardgraphics.CoordinateTransform.board_to_screen(CoordinateTransform.java:82) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.InteractiveState.mouse_wheel_moved(InteractiveState.java:90) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.BoardHandling.mouse_wheel_moved(BoardHandling.java:721) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.gui.BoardPanel.lambda$default_init$0(BoardPanel.java:123) ~[fr1.9.0.jar:unspecified]
+	at java.awt.Component.processMouseWheelEvent(Component.java:6709) ~[?:?]
+	at java.awt.Component.processEvent(Component.java:6393) ~[?:?]
+	at java.awt.Container.processEvent(Container.java:2266) ~[?:?]
+	at java.awt.Component.dispatchEventImpl(Component.java:4996) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2324) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4948) ~[?:?]
+	at java.awt.LightweightDispatcher.processMouseEvent(Container.java:4604) ~[?:?]
+	at java.awt.LightweightDispatcher.dispatchEvent(Container.java:4516) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2310) ~[?:?]
+	at java.awt.Window.dispatchEventImpl(Window.java:2780) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.EventQueue.dispatchEventImpl(EventQueue.java:775) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:720) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:714) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:98) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:747) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:745) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.awt.EventQueue.dispatchEvent(EventQueue.java:744) ~[?:?]
+	at java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101) [?:?]
+	at java.awt.EventDispatchThread.run(EventDispatchThread.java:90) [?:?]
+2026-08-14 16:17:57.466 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 16:17:57.495 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 16:17:58.507 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 16:17:58.961 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 16:18:19.271 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 16:18:32.293 [AWT-EventQueue-0] ERROR Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+java.lang.NullPointerException: Cannot invoke "app.freerouting.geometry.planar.FloatPoint.rotate(double, app.freerouting.geometry.planar.FloatPoint)" because "p_point" is null
+	at app.freerouting.boardgraphics.CoordinateTransform.board_to_screen(CoordinateTransform.java:82) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.InteractiveState.mouse_wheel_moved(InteractiveState.java:90) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.interactive.BoardHandling.mouse_wheel_moved(BoardHandling.java:721) ~[fr1.9.0.jar:unspecified]
+	at app.freerouting.gui.BoardPanel.lambda$default_init$0(BoardPanel.java:123) ~[fr1.9.0.jar:unspecified]
+	at java.awt.Component.processMouseWheelEvent(Component.java:6709) ~[?:?]
+	at java.awt.Component.processEvent(Component.java:6393) ~[?:?]
+	at java.awt.Container.processEvent(Container.java:2266) ~[?:?]
+	at java.awt.Component.dispatchEventImpl(Component.java:4996) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2324) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4948) ~[?:?]
+	at java.awt.LightweightDispatcher.processMouseEvent(Container.java:4604) ~[?:?]
+	at java.awt.LightweightDispatcher.dispatchEvent(Container.java:4516) ~[?:?]
+	at java.awt.Container.dispatchEventImpl(Container.java:2310) ~[?:?]
+	at java.awt.Window.dispatchEventImpl(Window.java:2780) ~[?:?]
+	at java.awt.Component.dispatchEvent(Component.java:4828) ~[?:?]
+	at java.awt.EventQueue.dispatchEventImpl(EventQueue.java:775) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:720) ~[?:?]
+	at java.awt.EventQueue$4.run(EventQueue.java:714) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:98) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:747) ~[?:?]
+	at java.awt.EventQueue$5.run(EventQueue.java:745) ~[?:?]
+	at java.security.AccessController.doPrivileged(AccessController.java:400) ~[?:?]
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87) ~[?:?]
+	at java.awt.EventQueue.dispatchEvent(EventQueue.java:744) ~[?:?]
+	at java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124) [?:?]
+	at java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109) [?:?]
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101) [?:?]
+	at java.awt.EventDispatchThread.run(EventDispatchThread.java:90) [?:?]
+2026-08-14 16:22:43.182 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 16:22:43.210 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 16:22:44.222 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 16:22:44.751 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 16:23:04.988 [Thread-23] INFO  Starting auto-routing...
+2026-08-14 16:36:08.398 [Thread-23] INFO  Auto-routing was completed in 13 minute(s) 3.41 seconds.
+2026-08-14 16:36:08.499 [Thread-23] INFO  Starting route optimization on 1 thread...
+2026-08-14 16:36:27.842 [Thread-23] INFO  Route optimization was completed in 19.34 seconds.
+2026-08-14 16:36:27.854 [Thread-23] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 16:48:44.784 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 16:48:44.814 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 16:48:45.825 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 16:48:46.334 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 16:49:06.535 [Thread-23] INFO  Starting auto-routing...
+2026-08-14 17:04:06.206 [Thread-23] INFO  Auto-routing was completed in 14 minute(s) 59.67 seconds.
+2026-08-14 17:04:06.309 [Thread-23] INFO  Starting route optimization on 1 thread...
+2026-08-14 17:04:24.590 [Thread-23] INFO  Route optimization was completed in 18.28 seconds.
+2026-08-14 17:04:24.599 [Thread-23] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 17:08:00.005 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 17:08:00.035 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 17:08:01.046 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 17:08:01.792 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 17:08:05.515 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 17:14:32.141 [AWT-EventQueue-0] ERROR null
+java.lang.NullPointerException: null
+2026-08-14 17:18:40.752 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 17:18:40.778 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 17:18:41.789 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/C.dsn'...
+2026-08-14 17:18:42.270 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 17:18:48.448 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 17:19:00.397 [Thread-22] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 17:19:03.005 [Thread-22] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 17:19:24.071 [Thread-22] INFO  Auto-routing was completed in 11 minute(s) 18.55 seconds.
+2026-08-14 17:19:24.172 [Thread-22] INFO  Starting route optimization on 1 thread...
+2026-08-14 17:19:32.669 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 17:19:32.696 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 17:19:33.708 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/A.dsn'...
+2026-08-14 17:19:34.005 [main] WARN  Wiring.read_wire_scope: wire corner outside board at 'VIN_B2_P'
+2026-08-14 17:19:34.175 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 17:19:44.199 [Thread-22] INFO  Route optimization was completed in 20.03 seconds.
+2026-08-14 17:19:44.208 [Thread-22] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 17:20:49.231 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 17:20:49.258 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 17:20:50.270 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/A.dsn'...
+2026-08-14 17:20:50.741 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 17:21:10.125 [Thread-35] INFO  Starting auto-routing...
+2026-08-14 17:27:33.453 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 17:27:33.480 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 17:27:34.491 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 17:27:34.979 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 17:27:55.189 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 17:33:11.611 [Thread-22] INFO  Auto-routing was completed in 5 minute(s) 16.42 seconds.
+2026-08-14 17:33:11.712 [Thread-22] INFO  Starting route optimization on 1 thread...
+2026-08-14 17:33:20.058 [Thread-22] INFO  Route optimization was completed in 8.35 seconds.
+2026-08-14 17:33:20.065 [Thread-22] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 17:36:07.785 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 17:36:07.812 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 17:36:08.824 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 17:36:09.300 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 17:36:29.544 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 17:43:21.908 [Thread-22] INFO  Auto-routing was completed in 6 minute(s) 52.36 seconds.
+2026-08-14 17:43:22.009 [Thread-22] INFO  Starting route optimization on 1 thread...
+2026-08-14 17:43:30.343 [Thread-22] INFO  Route optimization was completed in 8.33 seconds.
+2026-08-14 17:43:30.350 [Thread-22] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 17:50:18.049 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 17:50:18.077 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 17:50:19.091 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 17:50:19.558 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 17:50:39.801 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 17:56:12.928 [Thread-22] INFO  Auto-routing was completed in 5 minute(s) 33.12 seconds.
+2026-08-14 17:56:13.029 [Thread-22] INFO  Starting route optimization on 1 thread...
+2026-08-14 17:56:21.681 [Thread-22] INFO  Route optimization was completed in 8.65 seconds.
+2026-08-14 17:56:21.689 [Thread-22] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 18:11:19.752 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 18:11:19.780 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 18:11:20.791 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 18:11:21.288 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 18:11:41.527 [Thread-23] INFO  Starting auto-routing...
+2026-08-14 18:12:28.201 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 18:12:28.228 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 18:12:29.240 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/A.dsn'...
+2026-08-14 18:12:29.773 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 18:12:50.204 [Thread-35] INFO  Starting auto-routing...
+2026-08-14 18:13:00.774 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 18:13:00.801 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 18:13:01.811 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/C.dsn'...
+2026-08-14 18:13:02.136 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 18:13:22.536 [Thread-23] INFO  Starting auto-routing...
+2026-08-14 18:15:06.513 [Thread-23] INFO  Auto-routing was completed in 3 minute(s) 24.99 seconds.
+2026-08-14 18:15:06.614 [Thread-23] INFO  Starting route optimization on 1 thread...
+2026-08-14 18:15:20.594 [Thread-23] INFO  Route optimization was completed in 13.98 seconds and it improved the design by ~0.02%.
+2026-08-14 18:15:20.602 [Thread-23] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 18:18:34.999 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 18:18:35.027 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 18:18:36.037 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 18:18:36.549 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 18:18:56.752 [Thread-23] INFO  Starting auto-routing...
+2026-08-14 18:31:59.399 [Thread-23] INFO  Auto-routing was completed in 13 minute(s) 2.65 seconds.
+2026-08-14 18:31:59.501 [Thread-23] INFO  Starting route optimization on 1 thread...
+2026-08-14 18:32:30.827 [Thread-23] INFO  Route optimization was completed in 31.32 seconds and it improved the design by ~0.00%.
+2026-08-14 18:32:30.849 [Thread-23] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 18:34:58.658 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 18:34:58.686 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 18:34:59.698 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 18:35:00.222 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 18:35:20.353 [Thread-23] INFO  Starting auto-routing...
+2026-08-14 18:46:46.586 [Thread-23] INFO  Auto-routing was completed in 11 minute(s) 26.23 seconds.
+2026-08-14 18:46:46.687 [Thread-23] INFO  Starting route optimization on 1 thread...
+2026-08-14 18:47:05.603 [Thread-23] INFO  Route optimization was completed in 18.91 seconds.
+2026-08-14 18:47:05.617 [Thread-23] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.ses'...
+2026-08-14 18:49:00.135 [Thread-23] WARN  border_intersections: intersection_count (2) is too big!
+2026-08-14 18:58:30.428 [Thread-23] WARN  IntPoint: p_y is out of range
+2026-08-14 18:58:30.429 [Thread-23] WARN  IntPoint: p_y is out of range
+2026-08-14 18:58:30.429 [Thread-23] WARN  IntPoint: p_x is out of range
+2026-08-14 18:58:30.429 [Thread-23] WARN  IntPoint: p_x is out of range
+2026-08-14 18:58:30.429 [Thread-23] WARN  IntPoint: p_x is out of range
+2026-08-14 18:58:30.429 [Thread-23] WARN  IntPoint: p_x is out of range
+2026-08-14 18:58:30.430 [Thread-23] WARN  ShapeSearchTree.overlaps_with_clearance: p_shape is not bounded
+2026-08-14 18:58:30.433 [Thread-23] WARN  IntPoint: p_y is out of range
+2026-08-14 18:58:30.433 [Thread-23] WARN  IntPoint: p_y is out of range
+2026-08-14 18:58:30.433 [Thread-23] WARN  IntPoint: p_x is out of range
+2026-08-14 18:58:30.433 [Thread-23] WARN  IntPoint: p_x is out of range
+2026-08-14 18:58:30.434 [Thread-23] WARN  IntPoint: p_x is out of range
+2026-08-14 18:58:30.434 [Thread-23] WARN  IntPoint: p_x is out of range
+2026-08-14 18:58:30.436 [Thread-23] WARN  IntPoint: p_y is out of range
+2026-08-14 18:58:30.436 [Thread-23] WARN  IntPoint: p_y is out of range
+2026-08-14 18:58:30.436 [Thread-23] WARN  IntPoint: p_x is out of range
+2026-08-14 18:58:30.436 [Thread-23] WARN  IntPoint: p_x is out of range
+2026-08-14 18:58:30.436 [Thread-23] WARN  IntPoint: p_x is out of range
+2026-08-14 18:58:30.436 [Thread-23] WARN  IntPoint: p_x is out of range
+2026-08-14 18:58:30.437 [Thread-23] WARN  IntPoint: p_x is out of range
+2026-08-14 18:58:30.437 [Thread-23] WARN  IntPoint: p_y is out of range
+2026-08-14 19:11:29.412 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:12:00.596 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:12:09.397 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:12:14.237 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:12:35.675 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:12:45.676 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:15:15.892 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:15:16.443 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:15:16.572 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:15:43.621 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:15:44.532 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:15:44.737 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:15:44.753 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:15:44.783 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:15:48.693 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:15:49.453 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:15:51.445 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:16:09.038 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:16:10.484 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:16:10.707 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:16:10.708 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:16:13.922 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:16:20.873 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:16:20.877 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:16:20.878 [Thread-23] WARN  CalcFromSide: start corner was not found
+2026-08-14 19:29:38.212 [Thread-23] INFO  Auto-routing was completed in 1 hour(s) 16 minute(s) 15.67 seconds.
+2026-08-14 19:29:38.313 [Thread-23] INFO  Starting route optimization on 1 thread...
+2026-08-14 19:31:26.490 [Thread-23] INFO  Route optimization was completed in 1 minute(s) 48.18 seconds.
+2026-08-14 19:31:26.509 [Thread-23] INFO  Saving '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/C.ses'...
+2026-08-14 22:00:21.412 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 22:00:21.437 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 22:00:22.446 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/A.dsn'...
+2026-08-14 22:00:22.903 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 22:00:25.012 [Thread-34] INFO  Starting auto-routing...
+2026-08-14 22:01:01.284 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 22:01:01.311 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 22:01:02.322 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/C.dsn'...
+2026-08-14 22:01:02.638 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 22:01:09.326 [main] INFO  Freerouting v1.9.0 (build-date: 2023-10-30)
+2026-08-14 22:01:09.352 [main] INFO  Settings were loaded from freerouting.json
+2026-08-14 22:01:10.362 [main] INFO  Opening '/tmp/claude-1000/-home-cinar-claude/78268483-9aa2-41ea-b13d-f01ba9f6f5a7/scratchpad/D.dsn'...
+2026-08-14 22:01:10.675 [ForkJoinPool.commonPool-worker-1] INFO  New version available: v2.3.0
+2026-08-14 22:01:23.110 [Thread-22] INFO  Starting auto-routing...
+2026-08-14 22:01:31.009 [Thread-23] INFO  Starting auto-routing...

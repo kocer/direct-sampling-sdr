@@ -82,14 +82,48 @@ def katman_haritasi(board):
 
 
 def temizle(board):
-    n = 0
-    for t in list(board.GetTracks()):
-        board.Remove(t)
-        n += 1
-    return n
+    """ESKI IZ SILINMIYOR — board.Remove() surece cokuyor.
+
+    Gerek de yok. Akis su: pcb_kur karti izsiz kuruyor, elle_cek
+    simetrik aglari ciziyor, yonlendirici gerisini yapiyor, bu arac
+    onu ekliyor. Silinecek bir sey yok, ve elle cizilenler zaten
+    KALMALI.
+    """
+    return 0
 
 
-def oku(pcb, ses):
+# Yonlendiriciden ICE ALINMAYACAK aglar: simetrisi elle kurulanlar.
+# freerouting'e `(type protect)` ile soylemeyi denedim, kabul etmedi.
+# Bunun yerine router her seyi cizsin, biz onun bu aglar icin
+# cizdigini almayalim; elle_cek.py sonra kendi izini koyuyor.
+ELLE = {"G10", "G11", "G12", "G13", "DRN_A", "DRN_B",
+        "D2_DA", "D2_DB", "D2_GA_S", "D2_GB_S"}
+# A karti: dort alis zinciri. C karti: dort kanalin girisi.
+for _k in ("A1", "B1", "A2", "B2"):
+    ELLE |= {f"RF_{_k}", f"SEC_{_k}_P", f"SEC_{_k}_N",
+             f"VIN_{_k}_P", f"VIN_{_k}_N"}
+for _k in range(1, 5):
+    ELLE |= {f"ANT{_k}", f"RX{_k}_ANT", f"RX{_k}_B1_IN", f"RX{_k}_OUT"}
+
+
+def elle_cizilenler(pcb):
+    """elle_cek.py'nin GERCEKTEN cizdigi aglar.
+
+    Sabit liste yanlisti: elle_cek bir agi cizemeyince (yol baska
+    pedin ustunden geciyor) ve biz yine de atlayinca, o ag hicbir
+    yerde cekilmiyordu. Atlanacak olan, cizilmis olan.
+    """
+    import os
+    d = os.path.join(os.path.dirname(os.path.abspath(pcb)), "elle.txt")
+    try:
+        return {s.strip() for s in open(d) if s.strip()}
+    except OSError:
+        return set()
+
+
+def oku(pcb, ses, elle=None):
+    if elle is None:
+        elle = elle_cizilenler(pcb)
     board = pcbnew.LoadBoard(pcb)
     kok = coz(open(ses, encoding="utf-8", errors="replace").read())
     # kok = [["session", ...]]
@@ -99,16 +133,28 @@ def oku(pcb, ses):
         raise SystemExit("SES icinde 'routes' yok — yonlendirme bitmemis")
     k = olcek(rotalar)
     kat = katman_haritasi(board)
-    aglar = board.GetNetInfo()
+    # AG KODLARINI BASTA TOPLA. board.GetNetInfo().GetNetItem() sonra
+    # sarmalanmamis nesne donduruyor (GetNetCode() yok) — pcbnew'un
+    # surec icinde bozulan proxy'lerinden biri daha. Pedlerden
+    # okumak hem guvenli hem yeterli.
+    kodlar = {}
+    for fp in board.Footprints():
+        for p in fp.Pads():
+            n = p.GetNetname()
+            if n and n not in kodlar:
+                kodlar[n] = p.GetNetCode()
 
     silinen = temizle(board)
     iz = via = atlanan = 0
     cikis = ilk(rotalar, "network_out")
+    atlanan_ag = 0
     for net in bul(cikis or [], "net"):
         ad = net[1]
-        ni = aglar.GetNetItem(ad)
-        kod = ni.GetNetCode() if ni else 0
-        if ni is None:
+        if ad in elle:
+            atlanan_ag += 1
+            continue
+        kod = kodlar.get(ad, 0)
+        if not kod:
             atlanan += 1
         for w in bul(net, "wire"):
             p = ilk(w, "path")
@@ -148,11 +194,18 @@ def oku(pcb, ses):
     # ONCE BAGLANTI HARITASI. BuildConnectivity() cagirmadan
     # ZONE_FILLER True donuyor ama dokumler BOS kaliyor: doldurucu
     # hangi pedin hangi aga ait oldugunu bilmiyor.
+    # DOKUM PEDLERE TAM BAGLANSIN, TERMAL ROLEYLE DEGIL.
+    # Varsayilan termal role dort ince kolla bagliyor; PA'nin 6.67 A
+    # donus akimi ve cihaz kulaklarindan gelen isi icin o kollar
+    # yetmiyor (19 starved_thermal). Termal role elle lehimlemeyi
+    # kolaylastirmak icin var; bu kartlar firinda dizilecek.
+    for z in board.Zones():
+        z.SetPadConnection(pcbnew.ZONE_CONNECTION_FULL)
     board.BuildConnectivity()
     doldurucu = pcbnew.ZONE_FILLER(board)
     doldurucu.Fill(board.Zones())
     board.Save(pcb)
-    return silinen, iz, via, atlanan
+    return silinen, iz, via, atlanan + atlanan_ag
 
 
 if __name__ == "__main__":
