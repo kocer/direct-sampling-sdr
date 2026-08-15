@@ -1,0 +1,41 @@
+Copyright (c) 2026 TA4DTA
+
+TELIF SAHIBI
+------------
+Bu depodaki tasarim, HDL ve belgeler TA4DTA cagri isaretli amator
+telsizcinin kisisel eseridir. Yasal ad, BTK tarafindan duzenlenen
+amator telsizcilik belgesinde bu cagri isaretine baglidir.
+
+Eser TEVITOL amator telsiz kulubu (YM2X) projesine bedelsiz olarak
+katkida bulunulmustur. Katki, telif hakkinin devri degildir.
+
+LISANSLAR
+---------
+Donanim: sema, yerlesim, BOM, gerber ve bunlari ureten betikler
+    CERN-OHL-S-2.0          (LICENSE-CERN-OHL-S-v2)
+
+HDL ve yazilim: gateware/rtl, gateware/sim, dogrulama araclari
+    GPL-3.0-only            (LICENSE-GPL-3.0)
+
+Belgeler: TASARIM.md, PA_TASARIM.md, ardc/, olcum ciktilari
+    CC-BY-SA-4.0            (LICENSE-CC-BY-SA-4.0)
+
+NEDEN TELIF SATIRI VAR
+----------------------
+Copyleft telif hakkina DAYANIR. CERN-OHL-S ve GPL, eseri kamuya
+birakmaz; telif sahibinin verdigi KOSULLU izindir. Kosul sudur:
+tureten yayinlar. O kosulu uygulatma yetkisi telif sahibinindir.
+Telif sahibi yazili degilse karsililik sartini uygulatacak kimse de
+yoktur. Yani bu satir depoyu kapatmaz, acik kalmasini garanti eder.
+
+UCUNCU TARAF
+------------
+kicad/lib/ATTRIBUTION.md icinde listelenen sembol ve ayak izleri
+kendi sahiplerine aittir; oradaki lisanslar gecerlidir.
+
+DEGISTIRME
+----------
+Telif satiri iki yerde tanimli ve baska hicbir yerde elle yazili
+degil: bu dosya ve kicad/telif.py. Sema dosyalari uretecten cikiyor,
+telif satirini uretilmis .kicad_sch icine elle yazma - ilk ./yap.sh
+kosusunda silinir.

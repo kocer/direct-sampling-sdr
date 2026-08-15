@@ -91,7 +91,42 @@ s = Sheet("03_filter", "Filtre bankasi", UU["03_filter"],
 # Parca sayisi da dustu: bolum basina 3 bobin + 7 kondansator yerine
 # 3 bobin + 3 kondansator.
 #
-# (ad, Lp nH, Cp pF, Ls nH, Cs pF, bobin tipi)
+# KATLANMA (ALIAS) BASTIRMASI — Ct ve Cx sutunlari
+#
+# Dogrudan ornekleyen alicida ADC'nin onunde tek koruma bu filtredir.
+# 80 MSPS'te Nyquist 40 MHz; ustundeki her frekans |f - 80| olarak
+# banda katlanir ve katlandiktan SONRA istenen sinyalden ayirt
+# edilemez — sayisal tarafta duzeltmenin yolu yoktur.
+#
+# zincir_sim.py ile uctan uca olculdu (zayiflatici, trafo, seri
+# direncler, ADC kapasitesi dahil) ve iki bant kaldi:
+#
+#     15_10m   50.3 MHz -> 29.7 MHz'in ustune    25 dB
+#     6m       30.0 MHz -> 50.0 MHz'in ustune    36 dB
+#
+# Birincisi ciddi: 50.3 MHz 6 m bandinin ICI. Kendi vericimiz 6 m'de
+# calisirken 10 m alicisinin tam ustune duser.
+#
+# IKISI AYNI ILACI ISTEMIYOR:
+#   15_10m'de girisim bandin USTUNDE  -> seri bobine PARALEL Ct
+#                                        (paralel rezonans = seri kol
+#                                        acik devre = iletim sifiri)
+#   6m'de girisim bandin ALTINDA      -> sont bobine SERI Cx
+#                                        (seri rezonans = sont kol kisa
+#                                        devre = iletim sifiri)
+#
+# Seri kol tuzagi sifiri HER ZAMAN gecirme bandinin ustune koyar, o
+# yuzden 6 m'de ise yaramaz. Degerler formulle degil aramayla bulundu
+# (katlanma_tasarim.py): sifir eklemek gecirme bandini da bozuyor,
+# butun degerler birlikte taranip iki olcut ayni anda saglandi.
+#
+# OLCULEN (ngspice, uctan uca):
+#     15_10m   katlanma 25.4 -> 54.7 dB    kayip 2.63 -> 2.39 dB
+#     6m       katlanma 36.0 -> 68.6 dB    kayip 5.45 -> 3.73 dB
+#
+# 6 m'de kayip da dustu; yeni degerler o bandi ayrica iyilestirdi.
+#
+# (ad, Lp nH, Cp pF, Ls nH, Cs pF, Ct pF, Cx pF, bobin tipi)
 BANTLAR = [
     # BOBINLER TAMAMEN SMD — TOROID YOK.
     #
@@ -108,12 +143,12 @@ BANTLAR = [
     # gurultu tabanini ATMOSFERIK gurultu belirliyor; 160 m'de 1 dB'lik
     # bir NF farkinin olculebilir bir etkisi yok. Verici tarafi (D
     # karti) bambaska: orada 100 W var ve toroid sart.
-    ("160m",   1000, 6800, 18000, 390, "smd"),
-    ("80_60m", 1000, 1200,  3300, 390, "smd"),
-    ("40_30m",  470,  680,  2200, 180, "smd"),
-    ("20_17m",  220,  470,  1500,  68, "smd"),
-    ("15_10m",  150,  270,   680,  56, "smd"),
-    ("6m",       33,  270,   820,  12, "smd"),
+    ("160m",   1000, 6800, 18000, 390,    0,    0, "smd"),
+    ("80_60m", 1000, 1200,  3300, 390,    0,    0, "smd"),
+    ("40_30m",  470,  680,  2200, 180,    0,    0, "smd"),
+    ("20_17m",  220,  470,  1500,  68,    0,    0, "smd"),
+    ("15_10m",   82,  560,   560,  56,   15,    0, "smd"),
+    ("6m",       22,  680,  1200, 8.2,    0, 1200, "smd"),
 ]
 
 nr = [0]
@@ -135,7 +170,7 @@ def bolum(ch, bant, x, y, idx):
     COM1 girise, COM2 cikisa; N1B/N2B filtreye, N1A/N2A bir sonraki
     bolume (zincir) gidiyor.
     """
-    ad, Lp, Cp, Ls, Cs, tip = bant
+    ad, Lp, Cp, Ls, Cs, Ct, Cx, tip = bant
     net_in = f"RX{ch}_B{idx}_IN"
     net_out = f"RX{ch}_B{idx}_OUT"
     nxt_in = f"RX{ch}_B{idx + 1}_IN"
@@ -156,13 +191,26 @@ def bolum(ch, bant, x, y, idx):
     fx = x + 55
     fl = FLT if tip == "toroid" else None   # her bobin kendi capina gore
 
-    def rezonator(px, dugum):
-        """Bir sont rezonator: Lp ve Cp paralel, topraga."""
+    def rezonator(px, dugum, etiket):
+        """Bir sont rezonator: Lp ve Cp paralel, topraga.
+
+        Cx varsa bobinin ALT ucu topraga degil Cx uzerinden gidiyor.
+        Lp + Cx seri rezonansi sont kolu o frekansta KISA DEVRE yapar
+        ve gecirme bandinin ALTINDA bir iletim sifiri acar — 6 m'de
+        30 MHz'ten katlanan sinyali bastiran sey bu.
+        """
+        alt = "GND" if not Cx else f"X{ch}{idx}{etiket}"
         s.sym(L, cnt("L"), deger(Lp / 1000 if Lp >= 1000 else Lp,
                                  "uH" if Lp >= 1000 else "nH"),
               px, y + 20, rot=90, fp=(fl or bobin_fp(Lp)))
         s.pin_label(L, "1", px, y + 20, 90, dugum, "passive")
-        s.pin_power(L, "2", px, y + 20, 90, "GND")
+        if Cx:
+            s.pin_label(L, "2", px, y + 20, 90, alt, "passive")
+            s.sym(C, cnt("C"), deger(Cx, "pF"), px, y + 34, rot=90, fp=FC)
+            s.pin_label(C, "1", px, y + 34, 90, alt, "passive")
+            s.pin_power(C, "2", px, y + 34, 90, "GND")
+        else:
+            s.pin_power(L, "2", px, y + 20, 90, "GND")
         s.sym(C, cnt("C"), deger(Cp, "pF"), px + 20, y + 20, rot=90, fp=FC)
         s.pin_label(C, "1", px + 20, y + 20, 90, dugum, "passive")
         s.pin_power(C, "2", px + 20, y + 20, 90, "GND")
@@ -170,8 +218,8 @@ def bolum(ch, bant, x, y, idx):
     a = f"F{ch}{idx}_A"
     b = f"F{ch}{idx}_B"
     orta = f"N{ch}{idx}_S"
-    rezonator(fx, a)
-    rezonator(fx + 90, b)
+    rezonator(fx, a, "A")
+    rezonator(fx + 90, b, "B")
     # seri kol: Ls ve Cs seri, iki dugum arasinda
     s.sym(L, cnt("L"), deger(Ls / 1000 if Ls >= 1000 else Ls,
                              "uH" if Ls >= 1000 else "nH"),
@@ -181,6 +229,19 @@ def bolum(ch, bant, x, y, idx):
     s.sym(C, cnt("C"), deger(Cs, "pF"), fx + 65, y, rot=0, fp=FC)
     s.pin_label(C, "1", fx + 65, y, 0, orta, "passive")
     s.pin_label(C, "2", fx + 65, y, 0, b, "passive")
+    if Ct:
+        # TUZAK: seri BOBININ iki ucuna, Cs'nin uzerine DEGIL.
+        # Bobinle paralel rezonansa girip seri kolu acik devre yapiyor
+        # ve gecirme bandinin USTUNDE iletim sifiri aciyor — 15/10 m'de
+        # 50.3 MHz'ten (6 m bandi) katlanan sinyali bastiran sey bu.
+        # BOBINLE AYNI x'E KOYMA. Device:C sembolu rot=0'da DIKEY
+        # ciziliyor (ayni tuzaga seri direnclerde de dusulmus, yukari
+        # bak): pinleri alt-ustte. Tuzagi bobinin tam ustune koyunca
+        # iki sapama ayni dikey dogruda ust uste bindi ve uretecin
+        # kendi denetimi dort kanalda da bagirdi. Yana kaydirildi.
+        s.sym(C, cnt("C"), deger(Ct, "pF"), fx + 28, y - 14, rot=0, fp=FC)
+        s.pin_label(C, "1", fx + 28, y - 14, 0, a, "passive")
+        s.pin_label(C, "2", fx + 28, y - 14, 0, orta, "passive")
 
 
 s.text("BANT FILTRESI BANKASI — 7 pozisyon x 4 kanal", 16, 14, 2.2)
