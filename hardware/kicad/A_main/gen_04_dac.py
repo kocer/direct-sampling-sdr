@@ -192,10 +192,19 @@ for i, (ia, ib, ch) in enumerate([("IOUT1A1", "IOUT1B1", "1"),
                                   ("IOUT2A2", "IOUT2B2", "4")]):
     output(f"T{10 + i}", f"J{30 + i}", 210, 305 + i * 28, ia, ib, ch)
 
-s.text("Rekonstruksiyon filtresi (36 MHz LPF) ve surucu C KARTINDA.\\n"
-       "Burada sadece 50R cift sonlandirma + trafo kuplaj var — datasheet\\n"
-       "onerdigi cikis agi. Filtre bant secimine bagli, o yuzden ayri kartta;\\n"
-       "TX bandi degistirilirse burasi degismiyor.", 200, 425, 1.35)
+s.text("BURADA REKONSTRUKSIYON FILTRESI YOK. Sadece 50R cift\\n"
+       "sonlandirma + trafo kuplaj var — datasheet'in onerdigi cikis agi.\\n\\n"
+       "Burada once \'filtre (36 MHz LPF) C KARTINDA\' yaziyordu. C kartinda\\n"
+       "OYLE BIR FILTRE YOK: TX oraya SMA ile giriyor ve dogrudan T/R\\n"
+       "rolesine ve antene gidiyor. Yani DAC imajlarinin onundeki tek\\n"
+       "suzgec, PA modunda D kartinin harmonik filtresi.\\n\\n"
+       "SONUCU OLCULDU (tx_zincir_sim.py): imajlar sinc ile agirlikli ve\\n"
+       "tasiyici Nyquist\'e yakinsa alttaki imaj ONDAN GUCLU cikiyor.\\n"
+       "15/10 m\'de dort kanalli modda imaj tasiyicidan 10 dB guclu.\\n\\n"
+       "VERICI ZARFI bu yuzden sinirli: 160-30 m dort kanalli, 20-10 m\\n"
+       "iki kanalli, 6 m\'de verici yok (alis calisiyor). Ayrinti ve\\n"
+       "gerekce: tx_zincir_sim.py icindeki DESTEKLENEN tablosu.",
+       200, 425, 1.35)
 
 # ================================================================== FPGA
 s.text("FPGA BANKA 2 — DAC-1 cift port", 16, 285, 2.0)

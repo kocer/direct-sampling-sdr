@@ -11,7 +11,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # ayrisabiliyor ve tam da bu oldu: arac yuvarlanmamis, sema
 # yuvarlanmis degerle calisiyordu, arada 19 dB fark vardi.
 sys.path.insert(0, os.path.dirname(HERE))
-from lpf_sim import e24_cift          # noqa: E402
+from lpf_sim import e24_cift, BANTLAR          # noqa: E402
 UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
 
 # LPF bankasi G2RL-2 kullaniyor, G6K DEGIL. G6K sinyal rolesi
@@ -84,15 +84,11 @@ def e24(x):
 # zaten hicbir durumda mesru degil.
 #
 # (ad, kesim MHz, 1. tuzak MHz, 2. tuzak MHz)
-BANTLAR = [
-    ("160m",    2.3,   3.6,   5.4),
-    ("80m",     4.3,   7.0,  10.5),
-    ("60m",     6.2,  10.70, 16.05),
-    ("40_30m", 14.1,  14.0,  21.0),
-    ("20_17m", 22.4,  28.0,  42.0),
-    ("15_10m", 39.7,  42.0,  63.0),
-    ("6m",     58.8, 100.0, 150.0),
-]
+# BANTLAR TABLOSU lpf_sim.py'DEN GELIYOR, BURADA KOPYASI YOK.
+# Once burada ayri bir kopya duruyordu ve bu depoda tam o ayrisma
+# yasandi: lpf_sim D kartinin ESKI filtresini olcuyordu, tasarim
+# degismisti, arac guncellenmemisti. Dogrulama araci dogrulamasi
+# gereken tasarimla ayni sey olmak zorunda.
 
 
 def sentez(fc_mhz):
@@ -138,7 +134,8 @@ s.text("A sinifi bile harmonik uretir. 100 W'ta ikinci harmonik -30 dBc\\n"
        "  role         GUC rolesi, sinyal rolesi degil", 16, 22, 1.4)
 
 
-def bolum(bant, fc, tuzak1, tuzak2, x, y, idx, son=False):
+def bolum(bant, fc, tuzak1, tuzak2, x, y, idx, son=False,
+          centik=None):
     ad = bant
     vals = sentez(fc)
     net_in = f"LPF_B{idx}_IN"
@@ -236,9 +233,56 @@ def bolum(bant, fc, tuzak1, tuzak2, x, y, idx, son=False):
                         "passive")
 
 
-for i, (ad, fc, t1, t2) in enumerate(BANTLAR):
+# ------------------------------------------------------------ centik
+def centik_ciz(idx, fx, y, fn_mhz, ln_nh):
+    """Cikisa sont seri-LC: ucuncu iletim sifiri.
+
+    NEDEN. Bes kutuplu filtrenin iki seri bobini, yani iki tuzagi,
+    yani IKI sifiri var. 15/10 m pozisyonunun bastirmak zorunda
+    oldugu UC frekans var:
+
+        42.0 MHz   21 MHz'in 2. harmonigi
+        63.0 MHz   3. harmonik
+        50.3 MHz   DAC imaji  (tx_zincir_sim.py)
+
+    Ucuncusu tuzak frekanslarini oynatarak kapanmiyor: en iyi
+    ayarda bile en zayif halkanin payi 1.9 dB kaliyordu. Bu depoda
+    tek bir E24 yuvarlamasinin bir tuzaktan 19 dB goturdugu olctuk;
+    1.9 dB pay degildir.
+
+    Sont seri-LC ucuncu sifiri getiriyor ve pay 23 dB'ye cikiyor.
+    Yan etkisi de iyi yonde: rezonansin USTUNDE kol kapasitif olup
+    durdurma bandinin tamamini bastiriyor, harmonikler de duzeliyor,
+    ve gecirme bandi kaybi 1.35'ten 0.99 dB'ye iniyor.
+
+    AKIM. Kol gecirme bandinda kapasitif (~160 ohm at 25 MHz).
+    Cikista 100 W / 50 ohm = 70.7 Vrms varken bobinden ~0.44 A
+    geciyor; toroid sart, SMD bobin bu akimda isinir.
+    """
+    import math as _m
+    ct = 1.0 / ((2 * _m.pi * fn_mhz * 1e6) ** 2 * (ln_nh * 1e-9)) * 1e12
+    buyuk, kucuk = sorted(e24_cift(ct), reverse=True)
+    AL = 4.0                                   # T50-6
+    Nt = _m.ceil(_m.sqrt(ln_nh / AL))
+    dugum = f"LF{idx}_B"
+    ara = f"NCEN{idx}"
+    s.sym(L, cnt("L"), f"T50-6 {Nt}s", fx, y + 40, rot=90, fp=FLT["T50"])
+    s.pin_label(L, "1", fx, y + 40, 90, dugum, "passive")
+    s.pin_label(L, "2", fx, y + 40, 90, ara, "passive")
+    s.sym(C, cnt("C"), f"{buyuk:g}pF", fx + 18, y + 40, rot=90, fp=FCP)
+    s.pin_label(C, "1", fx + 18, y + 40, 90, ara, "passive")
+    s.pin_power(C, "2", fx + 18, y + 40, 90, "GND")
+    s.sym(C, cnt("C"), f"{kucuk:g}pF", fx + 36, y + 40, rot=90, fp=FCTRIM)
+    s.pin_label(C, "1", fx + 36, y + 40, 90, ara, "passive")
+    s.pin_power(C, "2", fx + 36, y + 40, 90, "GND")
+
+
+for i, (ad, fc, t1, t2, _lo, _hi, cn_f, cn_l) in enumerate(BANTLAR):
     bolum(ad, fc, t1, t2, 55 + (i % 2) * 340, 120 + (i // 2) * 70, i + 1,
-          son=(i == len(BANTLAR) - 1))
+          son=(i == len(BANTLAR) - 1), centik=(cn_f, cn_l) if cn_f else None)
+    if cn_f:
+        centik_ciz(i + 1, 55 + (i % 2) * 340 + 60,
+                   120 + (i // 2) * 70, cn_f, cn_l)
 
 # Yedinci pozisyon artik 60 m filtresi; bypass kaldirildi.
 

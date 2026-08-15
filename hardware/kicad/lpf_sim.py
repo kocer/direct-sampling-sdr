@@ -43,14 +43,23 @@ Q_BOBIN = 200.0
 #
 # Degerler gen_05_lpf.BANTLAR ile BIREBIR ayni olmali; oradaki
 # kesim ve tuzak frekanslari degisirse burasi da degisecek.
+# CENTIK (son iki alan): cikisa sont seri-LC, ucuncu iletim sifiri.
+# Sadece ihtiyaci olan pozisyonda var. 15/10 m'de UC ayri frekans
+# bastirilmak zorunda — 42 MHz (2. harmonik), 63 MHz (3. harmonik) ve
+# 50.3 MHz (DAC imaji, tx_zincir_sim.py) — ama bes kutuplu filtrenin
+# iki tuzagi var. Tuzak frekanslarini nasil oynatirsak oynatalim en
+# zayif halkanin payi 1.9 dB'de kaliyordu; bu depoda E24 yuvarlamasinin
+# bir tuzagi 19 dB goturdugunu gorduk, 1.9 dB pay sayilmaz.
+#
+# (ad, fc MHz, tuzak1 MHz, tuzak2 MHz, bant alt, bant ust, centik MHz, centik nH)
 BANTLAR = [
-    ("160m",    2.3,   3.6,   5.4,   1.8,   2.0),
-    ("80m",     4.3,   7.0,  10.5,   3.5,   3.8),
-    ("60m",     6.2,  10.70, 16.05,  5.3515, 5.3665),
-    ("40_30m", 14.1,  14.0,  21.0,   7.0,  10.15),
-    ("20_17m", 22.4,  28.0,  42.0,  14.0,  18.168),
-    ("15_10m", 39.7,  42.0,  63.0,  21.0,  29.7),
-    ("6m",     58.8, 100.0, 150.0,  50.0,  54.0),
+    ("160m",    2.3,   3.6,   5.4,   1.8,   2.0,      None, None),
+    ("80m",     4.3,   7.0,  10.5,   3.5,   3.8,      None, None),
+    ("60m",     6.2,  10.70, 16.05,  5.3515, 5.3665,  None, None),
+    ("40_30m", 14.1,  14.0,  21.0,   7.0,  10.15,     None, None),
+    ("20_17m", 22.4,  28.0,  42.0,  14.0,  18.168,    None, None),
+    ("15_10m", 39.7,  42.0,  63.0,  21.0,  29.7,      50.5,  330),
+    ("6m",     58.8, 100.0, 150.0,  50.0,  54.0,      None, None),
 ]
 
 E24 = [1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.0, 3.3,
@@ -157,7 +166,23 @@ def tuzak_pf(l_nh, f_mhz):
     return sum(e24_cift(tam))
 
 
-def netlist(ad, vals, fc, tuzaklar):
+def netlist(ad, vals, fc, tuzaklar, centik=None):
+    """centik: (frekans MHz, bobin nH) — cikisa sont seri-LC.
+
+    NEDEN UCUNCU BIR SIFIR. Bes kutuplu filtrenin iki seri bobini
+    var, yani iki tuzak, yani IKI iletim sifiri. Ama 15/10 m
+    pozisyonunun bastirmasi gereken UC ayri frekans var: 42 MHz
+    (21 MHz'in 2. harmonigi), 63 MHz (3. harmonik) ve 50.3 MHz
+    (DAC imaji, tx_zincir_sim.py). Iki tuzakla uc hedef tutulmuyor;
+    tuzak frekanslarini ne yapsak en zayif halkanin payi 1.9 dB'de
+    kaliyordu ve bu depoda E24 yuvarlamasinin bir tuzagi 19 dB
+    goturdugunu gorduk — 1.9 dB pay pay degil.
+
+    Cikisa sont bir seri-LC ucuncu sifiri getiriyor ve pay 23 dB'ye
+    cikiyor. Yan etkisi de iyi yonde: rezonansin ustunde kol
+    kapasitif oluyor ve durdurma bandinin tamamini bastiriyor,
+    harmonikler de duzeliyor.
+    """
     s = ["* %s" % ad, "V1 in 0 AC 1", "Rs in n0 50"]
     dugum = "n0"
     n = 0
@@ -178,6 +203,14 @@ def netlist(ad, vals, fc, tuzaklar):
             s.append("Ct%d %s %s %.4fp" % (n, dugum, yeni, ct))
             bobin += 1
             dugum = yeni
+    if centik:
+        fn, ln = centik
+        cn = sum(e24_cift(1.0 / ((2 * math.pi * fn * 1e6) ** 2
+                                 * (ln * 1e-9)) * 1e12))
+        rq = 2 * math.pi * fn * 1e6 * ln * 1e-9 / Q_BOBIN
+        s.append("Ln %s mn %.4fn" % (dugum, ln))
+        s.append("Rn mn cn %.5f" % max(rq, 1e-4))
+        s.append("Cn cn 0 %.4fp" % cn)
     s.append("Rl %s 0 50" % dugum)
     s.append(".ac dec 500 100k 500meg")
     s.append(".print ac vdb(%s)" % dugum)
@@ -208,9 +241,10 @@ if __name__ == "__main__":
     print("%-9s %6s %8s %9s %9s %9s  %s" %
           ("bant", "fc MHz", "kayip", "2.harm", "3.harm", "sinir", "durum"))
     kotu = 0
-    for ad, fc, t1, t2, f_lo, f_hi in BANTLAR:
+    for ad, fc, t1, t2, f_lo, f_hi, cn_f, cn_l in BANTLAR:
         vals = sentez(fc)
-        v = kos(netlist(ad, vals, fc, (t1, t2)), ad)
+        centik = (cn_f, cn_l) if cn_f else None
+        v = kos(netlist(ad, vals, fc, (t1, t2), centik), ad)
         if not v:
             print("%-9s ngspice cikti vermedi" % ad)
             kotu += 1

@@ -1,7 +1,7 @@
 Comment,Designator,Footprint,LCSC
 0.01R 2W,"RS1,RS2,RS3,RS4",Resistor_SMD:R_2512_6332Metric,C2907226
 0R,"R500,R501,R690",Resistor_SMD:R_0603_1608Metric,C21189
-1.1pF,C557,Capacitor_SMD:C_0603_1608Metric,BASE
+1.1pF,C560,Capacitor_SMD:C_0603_1608Metric,BASE
 1.6pF,C534,Capacitor_SMD:C_0603_1608Metric,BASE
 1000pF,C522,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 100R,"R304,R308,R312,R316",Resistor_SMD:R_0603_1608Metric,C25076
@@ -15,13 +15,14 @@ Comment,Designator,Footprint,LCSC
 10uF,"C204,C650",Capacitor_SMD:C_1206_3216Metric,C15850
 10uH bogucu,L11,Inductor_SMD:L_0805_2012Metric,C1019
 10uH bogucu,L20,dogrudan-sdr:L_Toroid_T50_Vertical,C1019
-110pF,C558,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+110pF,C561,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 120pF,C520,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-13pF,C556,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+13pF,C559,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 140k,R602,Resistor_SMD:R_0603_1608Metric,C25742
 1500pF,C513,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 150pF,C529,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-15pF,C512,Capacitor_SMD:C_0603_1608Metric,BASE
+15pF,"C512,C556",Capacitor_SMD:C_0603_1608Metric,BASE
+15pF,C555,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 1600pF,"C500,C508",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 160pF,"C536,C544,C549",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 180pF,C506,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
@@ -49,10 +50,10 @@ Comment,Designator,Footprint,LCSC
 2700pF,C504,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 270pF,"C527,C535,C540",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 2N7002,"Q31,Q32,QL1,QL2,QL3,QL4,QL5,QL6,QL7",Package_TO_SOT_SMD:SOT-23,C8545
-3.3pF,C560,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+3.3pF,C563,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 3.9pF,C525,Capacitor_SMD:C_0603_1608Metric,BASE
 360pF,C502,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-3pF,"C521,C561",Capacitor_SMD:C_0603_1608Metric,BASE
+3pF,"C521,C564",Capacitor_SMD:C_0603_1608Metric,BASE
 4.7pF,"C507,C516",Capacitor_SMD:C_0603_1608Metric,BASE
 430pF,C531,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 470uF,"C601,C602",Capacitor_THT:CP_Radial_D16.0mm_P7.50mm,BASE
@@ -69,7 +70,7 @@ Comment,Designator,Footprint,LCSC
 56pF,C503,Capacitor_SMD:C_0603_1608Metric,BASE
 6.2pF,C548,Capacitor_SMD:C_0603_1608Metric,BASE
 6.8pF,"C539,C543",Capacitor_SMD:C_0603_1608Metric,BASE
-62pF,"C538,C554,C562",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+62pF,"C538,C557,C565",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 74HC595D,U56,Package_SO:SOIC-16_3.9x9.9mm_P1.27mm,C5947
 75pF,C533,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 820R,"R205,R207",Resistor_SMD:R_2512_6332Metric,C23253
@@ -101,7 +102,8 @@ MCP9700AT,U55,Package_TO_SOT_SMD:SOT-23,C97258
 PE4312C-Z,U10,Package_DFN_QFN:TQFN-20-1EP_4x4mm_P0.5mm_EP2.1x2.1mm,C500480
 PGA-103+,U11,Package_TO_SOT_SMD:SOT-89-3,C3008207
 SMBJ54A,D31,Diode_SMD:D_SMB,C151266
-T50-6 7s,"L555,L559",dogrudan-sdr:L_Toroid_T50_Vertical,EL
+T50-6 10s,L554,dogrudan-sdr:L_Toroid_T50_Vertical,?
+T50-6 7s,"L558,L562",dogrudan-sdr:L_Toroid_T50_Vertical,EL
 T50-6 9s,"L546,L550",dogrudan-sdr:L_Toroid_T50_Vertical,EL
 T68-2 10s,"L537,L541",dogrudan-sdr:L_Toroid_T68_Vertical,EL
 T68-2 12s,"L528,L532",dogrudan-sdr:L_Toroid_T68_Vertical,EL

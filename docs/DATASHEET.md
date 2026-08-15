@@ -97,8 +97,36 @@ verified" have no measurement and no simulation. They are design goals.
 | Preselector insertion loss | 0.52 dB to 1.72 dB | simulated (ngspice), `filtre_tasarim.py` |
 | Preselector band-edge loss | 0.97 dB to 2.37 dB | simulated (ngspice), `filtre_tasarim.py` |
 | Step attenuator range | 0 dB to 31.5 dB, 0.5 dB step | datasheet, PE4312 |
+| Chain loss, antenna to ADC pin | 2.2 dB to 8.2 dB | simulated (ngspice), `zincir_sim.py` |
+| In-band flatness | 0.01 dB to 1.72 dB | simulated (ngspice), `zincir_sim.py` |
+| Alias rejection | 53 dB to 124 dB | simulated (ngspice), `zincir_sim.py` |
+| Antenna power for ADC full scale | +3.0 dBm to +12.8 dBm | calculated from chain loss |
 | Noise figure | — | TARGET — not verified |
 | Dynamic range | — | TARGET — not verified |
+
+**Alias rejection.** The ADC samples at 80 MSPS. Nyquist is 40 MHz. Any
+signal above 40 MHz folds onto the band as `|f − 80|`. After the fold,
+the receiver cannot tell it from the wanted signal. Digital processing
+cannot remove it.
+
+The preselector is the only protection. Two bands needed a transmission
+zero to meet the 40 dB requirement:
+
+- On 15 m to 10 m, a signal at 50.3 MHz folds onto 29.7 MHz. That
+  frequency is inside the 6 m band. A capacitor across the series
+  inductor gives a zero above the band. Rejection went from 24 dB to
+  55 dB.
+- On 6 m, a signal at 30.0 MHz folds onto 50.0 MHz. A series-arm trap
+  cannot help, because it always puts the zero above the passband. A
+  capacitor in series with the shunt inductor gives a zero below the
+  band. Rejection went from 36 dB to 68 dB.
+
+Inductor Q is not one number. The suppliers give Q at different
+frequencies, and some give none. The chain is therefore simulated at
+Q = 25, 40 and 60. All six bands meet the requirement at all three
+values. Only 160 m is sensitive: the loss goes from 6.0 dB to 11.8 dB.
+At 160 m the atmospheric noise sets the noise floor, so the effect is
+not measurable.
 
 ### 4.2 Clock
 
@@ -120,8 +148,10 @@ limit. Above 100 MHz the clock jitter becomes the limit.
 | Parameter | Value | Source |
 |---|---|---|
 | DAC resolution | 14 bit | datasheet, AD9767 |
-| DAC update rate | 80 MSPS | design |
-| Reconstruction filter cutoff | 36 MHz | design |
+| DAC write clock | 80 MHz | design |
+| DAC update rate, 4-channel mode | 40 MSPS per channel | measured, `dac_cogullu.v` |
+| DAC update rate, 2-channel mode | 80 MSPS per channel | design |
+| Reconstruction filter | none — see 4.3.1 | simulated, `tx_zincir_sim.py` |
 | PA class | A, all stages | design |
 | PA output power | 100 W | TARGET — not verified |
 | PA supply current at 100 W | 6.7 A at 50 V | calculated |
@@ -133,6 +163,48 @@ limit. Above 100 MHz the clock jitter becomes the limit.
 | Output filter insertion loss | 0.45 dB to 1.44 dB | simulated (ngspice), `lpf_sim.py` |
 | Intermodulation distortion | — | TARGET — not verified |
 | Efficiency | — | TARGET — not verified |
+
+#### 4.3.1 Transmit envelope
+
+The unit has no reconstruction filter. The DAC output goes to a
+transformer and then to board D. The harmonic filter on board D is the
+only filter in the transmit path.
+
+A sampling DAC does not make one frequency. It makes the wanted
+frequency and also images at `|k·fs ± fd|`. The zero-order hold gives
+each image a different level. The relation is
+`|H(f)| = |sin(πf/fs) / (πf/fs)|`.
+
+This function falls slowly. If the carrier is near Nyquist, the
+hold attenuates the carrier. An image at a lower frequency can then be
+stronger than the carrier.
+
+Simulation gives these limits. Use the unit only inside this envelope.
+
+| Band | 4-channel mode (40 MSPS) | 2-channel mode (80 MSPS) |
+|---|---|---|
+| 160 m | yes | yes |
+| 80 m | yes | yes |
+| 60 m | yes | yes |
+| 40 m, 30 m | yes | yes |
+| 20 m, 17 m | **no** | yes |
+| 15 m, 12 m, 10 m | **no** | yes |
+| 6 m | **no** | **no** |
+
+The reasons are these:
+
+- In 4-channel mode on 20 m, the carrier is 18.2 MHz and the first
+  image is 21.8 MHz. The ratio is 1.2. A filter cannot separate them.
+- In 4-channel mode on 10 m, the carrier is above Nyquist. The carrier
+  is itself an image. The fundamental at 10.3 MHz is 10 dB stronger.
+- On 6 m, the same problem occurs in both modes. At 80 MSPS the band
+  is still above Nyquist. The fundamental at 26 MHz to 30 MHz is 7 dB
+  stronger than the carrier.
+
+Receive works on all bands, 6 m included. Section 4.1 gives the
+alias rejection. The limit applies only to transmit.
+
+To transmit on 6 m, use an external transverter.
 
 ### 4.4 Gateware
 
