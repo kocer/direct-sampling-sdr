@@ -32,7 +32,22 @@
 
 module paketleyici #(
     parameter ORNEK_BIT   = 24,
-    parameter PAKET_ORNEK = 128     // paket basina kanal-ornek grubu
+    // PAKET BOYU MTU'YA VE CERCEVEYE GORE SECILIYOR.
+    //
+    // 128 yaziyordu: paket = 16 baslik + 128*24 = 3088 bayt.
+    // Iki ayri sorun vardi:
+    //   1 Standart MTU 1500; 3088 bayt zaten sigmiyordu.
+    //   2 ust.v RGMII'ye 1024 baytlik cerceve soyluyordu. Cerceve
+    //     1024'te kesiliyor, akis devam ediyordu — ikinci cerceve
+    //     paketin ORTASINDAN basliyor, SIHIR sayisi rastgele ofsette
+    //     goruluyor ve alici hicbir paketi cozemiyor.
+    //
+    // UDP yuku en fazla 1500 - 20 (IP) - 8 (UDP) = 1472 bayt.
+    //   16 + N*24 <= 1472  ->  N <= 60.6  ->  N = 60
+    //   paket = 16 + 1440 = 1456 bayt
+    // ust.v'deki yuk_uzunluk BU sayiyla ayni olmali; ikisi ayri
+    // yerde durdugu icin ust.v oradan turetiyor.
+    parameter PAKET_ORNEK = 60      // paket basina kanal-ornek grubu
 ) (
     input  wire        clk,
     input  wire        rst,

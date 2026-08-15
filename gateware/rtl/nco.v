@@ -31,6 +31,15 @@ module nco #(
     input  wire [FAZ_BIT-1:0]  faz_artis,   // frekans
     input  wire [FAZ_BIT-1:0]  faz_ofset,   // kanallar arasi faz
     input  wire                yukle_ofset,
+    // SAAT IZNI — VERIS ZINCIRI TAM HIZDA KOSMUYOR.
+    //
+    // Alista NCO her cevrim ilerliyor (izin surekli 1). Veriste ise
+    // ornek hizi 40 MSPS, saat 80 MHz: NCO tam hizda kossaydi
+    // tasiyici 80 MHz'e gore uretilir, DAC ise her ikinci ornegi
+    // alirdi — yani cikis 2'ye BOLUNEREK ornekleniyor ve 20 MHz
+    // ustundeki her sey (CIC artirma aynalari dahil) banda katlanirdi.
+    // Izinle NCO ornek basina bir ilerliyor, katlama hic olusmuyor.
+    input  wire                izin,
     output reg  signed [CIK_BIT-1:0] sin_cik,
     output reg  signed [CIK_BIT-1:0] cos_cik
 );
@@ -40,13 +49,16 @@ module nco #(
     always @(posedge clk) begin
         if (rst)
             faz <= {FAZ_BIT{1'b0}};
+        // YUKLEME IZINDEN BAGIMSIZ. Faz ofseti host'un yazma anina
+        // bagli, ornek hizina degil; izne baglasaydik yukleme darbesi
+        // izin dusukken gelirse SESSIZCE kaybolurdu.
         else if (yukle_ofset)
             // KANALLAR ARASI FAZ BURADAN AYARLANIYOR.
             // Dort kanalin NCO'su ayni artisla kosuyor ama farkli
             // ofsetle baslayabiliyor; huzme yonlendirmede gereken
             // faz kaymasi bu.
             faz <= faz_ofset;
-        else
+        else if (izin)
             faz <= faz + faz_artis;
     end
 
@@ -79,9 +91,37 @@ module nco #(
     wire [ADR_BIT-3:0] ic_c = adr_c[ADR_BIT-3:0];
     wire [ADR_BIT-3:0] adr_c2 = ceyrek_c[0] ? ~ic_c : ic_c;
 
-    always @(posedge clk) begin
-        sin_cik <= ceyrek_s[1] ? -tablo[adr_s] : tablo[adr_s];
-        cos_cik <= ceyrek_c[1] ? -tablo[adr_c2] : tablo[adr_c2];
+    // ---------------------------------------------------------------
+    // TABLO OKUMASI YAZMACLI — YOKSA BLOK RAM'E DUSMUYOR.
+    //
+    // Once "sin_cik <= ceyrek ? -tablo[adr] : tablo[adr]" tek satirdi:
+    // tablo BIRLESIMSEL okunuyordu ve ECP5'in blok RAM'i asenkron
+    // okuma yapamaz. yosys butun tabloyu LUT agacina acti ve o agac
+    // clk_sys'in kritik yolu oldu — 74 MHz, 80 gerekiyor. Tasarimda
+    // on NCO ornegi var (dort kanal x sin/cos + DUC), yani ayni agac
+    // on kez.
+    //
+    // Okumayi yazmaclayinca DP16KD cikiyor: hem yol kisaliyor hem
+    // binlerce LUT geri geliyor. Karsiligi BIR CEVRIM gecikme.
+    //
+    // GECIKME ZARARSIZ, cunku SABIT VE ORTAK. NCO cikisi bir cevrim
+    // gec gelince tasiyicinin faz referansi bir ornek kayiyor —
+    // dort kanalda AYNI miktarda. Huzme yonlendirme kanallar ARASI
+    // faz farkina bakiyor, o fark degismiyor.
+    // ---------------------------------------------------------------
+    reg signed [CIK_BIT-1:0] rom_s, rom_c;
+    reg                      isaret_s, isaret_c;
+
+    always @(posedge clk) if (izin) begin
+        rom_s    <= tablo[adr_s];
+        rom_c    <= tablo[adr_c2];
+        isaret_s <= ceyrek_s[1];
+        isaret_c <= ceyrek_c[1];
+    end
+
+    always @(posedge clk) if (izin) begin
+        sin_cik <= isaret_s ? -rom_s : rom_s;
+        cos_cik <= isaret_c ? -rom_c : rom_c;
     end
 
 endmodule

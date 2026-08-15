@@ -45,6 +45,7 @@ module ddc_kanal #(
     wire               cic_i_gecerli, cic_q_gecerli;
 
     nco u_nco (
+        .izin(1'b1),
         .clk(clk), .rst(rst),
         .faz_artis(faz_artis), .faz_ofset(faz_ofset),
         .yukle_ofset(faz_yukle),

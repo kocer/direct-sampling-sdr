@@ -54,7 +54,7 @@ module tb_ddc;
     wire signed [23:0] ci, cq;
     wire civ, cqv;
 
-    nco u_nco (.clk(clk), .rst(rst), .faz_artis(nco_artis),
+    nco u_nco (.clk(clk), .rst(rst), .izin(1'b1), .faz_artis(nco_artis),
                .faz_ofset(32'd0), .yukle_ofset(1'b0),
                .sin_cik(ns), .cos_cik(nc));
 
@@ -87,6 +87,36 @@ module tb_ddc;
         end
     end
 
+    // ---------------------------------------------------------------
+    // TEST HUKUM VERMELI, SADECE OLCMEMELI.
+    //
+    // Bu tezgah once yalnizca sayilari basip "bitti" diyordu ve kosucu
+    // onu GECTI sayiyordu. Yani DDC'nin cevabi ne olursa olsun test
+    // geciyordu — bant disi bastirma tamamen kaybolsa bile.
+    // Ölçülen degerler artik BEKLENEN ARALIKLA karsilastiriliyor.
+    // Araliklar dar degil: amac tam sayiyi sabitlemek degil, cevabin
+    // sinifini korumak.
+    // ---------------------------------------------------------------
+    integer hata = 0;
+
+    task denetle(input [200*8-1:0] ad, input integer alt, input integer ust);
+        begin
+            if (buyuk_maks < alt || buyuk_maks > ust) begin
+                $display("     HATA: genlik %0d, beklenen %0d..%0d",
+                         buyuk_maks, alt, ust);
+                hata = hata + 1;
+            end
+            // Genligin kendi icinde oynamasi da sinirli olmali: tasiyici
+            // uzerinde cikis DC, yani |I+jQ| neredeyse sabit. Genis bir
+            // salinim CIC'te tasma ya da NCO'da faz hatasi demek.
+            if (buyuk_maks > 0 && (buyuk_maks - buyuk_min) * 100 > buyuk_maks * 5) begin
+                $display("     HATA: genlik oynamasi %%%0d, en fazla %%5 olmali",
+                         (buyuk_maks - buyuk_min) * 100 / buyuk_maks);
+                hata = hata + 1;
+            end
+        end
+    endtask
+
     task kos(input [FAZ_BIT-1:0] gf, input [FAZ_BIT-1:0] nf,
              input [200*8-1:0] ad);
         begin
@@ -118,11 +148,25 @@ module tb_ddc;
     initial begin
         $display("DDC zincir testi (R=%0d, cikis hizi %0.1f kSPS)",
                  R, F_SAAT/R/1000.0);
+        // Tam ustunde ve 1 kHz yanda: tam olcek 8192'nin %98'i.
+        // Bant kenarinda (300 kHz) CIC egimi ~ -3.5 dB bekleniyor;
+        // 2 MHz'te bant disi, tasiyicinin %1'inin altina inmeli
+        // (olculen: 12, yani -56 dB).
         kos(A_7M1,   A_7M1,  "tam uzerinde: cikis DC olmali, genlik sabit");
+        denetle("tam uzerinde", 7800, 8200);
         kos(A_7M101, A_7M1,  "1 kHz yanda: genlik ayni, faz donuyor");
+        denetle("1 kHz yanda", 7800, 8200);
         kos(A_7M4,   A_7M1,  "300 kHz yanda: bant kenari, CIC egimi gorunur");
+        denetle("300 kHz yanda", 4500, 6500);
         kos(A_9M1,   A_7M1,  "2 MHz yanda: BANT DISI, bastirilmali");
-        $display("DDC zincir testi bitti");
+        if (buyuk_maks > 82) begin
+            $display("     HATA: bant disi %0d, tasiyicinin %%1'i (82) altinda olmali",
+                     buyuk_maks);
+            hata = hata + 1;
+        end
+
+        if (hata == 0) $display("DDC zincir testi GECTI");
+        else           $display("DDC zincir testi KALDI: %0d hata", hata);
         $finish;
     end
 

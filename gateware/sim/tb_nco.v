@@ -30,7 +30,7 @@ module tb_nco;
     nco #(.FAZ_BIT(FAZ_BIT), .CIK_BIT(CIK_BIT)) dut (
         .clk(clk), .rst(rst),
         .faz_artis(artis), .faz_ofset({FAZ_BIT{1'b0}}),
-        .yukle_ofset(1'b0),
+        .yukle_ofset(1'b0), .izin(1'b1),
         .sin_cik(sin_c), .cos_cik(cos_c)
     );
 

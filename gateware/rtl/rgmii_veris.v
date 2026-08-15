@@ -44,13 +44,27 @@ module rgmii_veris #(
     output wire        veri_hazir,
     input  wire [15:0] yuk_uzunluk,  // veri bayt sayisi
 
-    // RGMII
-    output reg  [3:0]  rgmii_td,
-    output reg         rgmii_tctl,
-    output wire        rgmii_tclk
+    // RGMII, IKI YARIM KELIME.
+    //
+    // BU MODUL BIR NIBBLE/CEVRIM URETIYORDU — YANI SDR.
+    // 4 bit x 125 MHz = 500 Mbit/s, ve RGMII'de PHY IKI kenari da
+    // orneklediginden her nibble'i iki kez okurdu. Cerceve bozulur
+    // ama hatlarda sinyal "var" gorunur; osiloskopta saglam, karsi
+    // tarafta hicbir sey.
+    //
+    // Dogrusu: cevrim basina BIR BAYT. Alt nibble yukselen, ust
+    // nibble dusen kenarda. Kenarlara ayirma isini ODDR ilkelleri
+    // yapiyor ve onlar ust modulde; bu modul saf RTL kaliyor ki
+    // test tezgahi satici ilkeli olmadan kosabilsin.
+    //
+    // TXCTL'IN DUSEN KENARI TXEN DEGIL. RGMII v2.0'da yukselen
+    // kenarda TXEN, dusen kenarda TXEN xor TXERR gidiyor. Ikisine
+    // de TXEN koymak hata bildirimini imkansiz kilar.
+    output reg  [3:0]  rgmii_td_yuk,   // alt nibble  -> yukselen kenar
+    output reg  [3:0]  rgmii_td_dus,   // ust nibble  -> dusen kenar
+    output reg         rgmii_tctl_yuk, // TXEN
+    output reg         rgmii_tctl_dus  // TXEN xor TXERR
 );
-
-    assign rgmii_tclk = clk;
 
     localparam D_BOS    = 4'd0;
     localparam D_ONSOZ  = 4'd1;
@@ -63,10 +77,34 @@ module rgmii_veris #(
 
     reg [3:0]  durum;
     reg [5:0]  sayac;
-    reg [15:0] veri_sayaci;
+    // GERIYE SAYIYORUZ, ILERI DEGIL.
+    //
+    // Once "veri_sayaci == yuk_uzunluk - 1" diye karsilastiriliyordu:
+    // 16 bitlik bir buyukluk karsilastirmasi, ve yuk_uzunluk ust
+    // modulden gelen genis bir sabit ag. O ifade hem FIFO okuma
+    // izniini hem durum gecisini suruyordu, yani iki modul arasinda
+    // uzun bir birlesimsel yol olusuyordu — ethernet alani 108 MHz'e
+    // dustu.
+    //
+    // Geri sayinca karsilastirma SABITLE oluyor ("== 1"), yani bir
+    // kac kapiya iniyor ve yuk_uzunluk sadece yukleme aninda
+    // kullaniliyor.
+    reg [15:0] veri_kalan;
+
+    // "SON BAYT" BAYRAGI YAZMACTA.
+    //
+    // "veri_kalan == 1" ifadesi 16 bitlik bir karsilastirma ve
+    // FIFO'nun tuketim yolunu suruyordu: rgmii'nin yazmaci ->
+    // karsilastirma -> veri_cek -> FIFO'nun isaretci cogullayicisi.
+    // Iki modul boyunca 38 mantik kademesi, ve clk_eth kapanmasi
+    // TOHUMA BAGLI kaldi (117 / 125 / 129 MHz).
+    //
+    // Sayac ne zaman degistigini biliyoruz, o yuzden bayragi bir
+    // cevrim ONCEDEN kurabiliyoruz: 2'ye dusen sayac, sonraki
+    // cevrimde 1 olacak. Karsilastirma kritik yoldan tamamen cikiyor.
+    reg veri_son_bayt;
     reg [7:0]  cikis_bayt;
     reg        cikis_gecerli;
-    reg        nibble;        // 0 = alt, 1 = ust
 
     wire [15:0] ip_uzunluk  = 16'd28 + yuk_uzunluk;   // IP + UDP + veri
     wire [15:0] udp_uzunluk = 16'd8  + yuk_uzunluk;
@@ -101,6 +139,17 @@ module rgmii_veris #(
     // ---------------------------------------------------------------
     reg [31:0] crc;
 
+    // CRC BAYT BAYT.
+    //
+    // Bir ara nibble nibble bolunmustu, cunku bayt iki cevrimde
+    // gidiyordu. Bayt artik TEK cevrimde gittigine gore boyle bir
+    // bolme yok: bolseydik cevrim basina yarim bayt islenirdi ve
+    // CRC akisin gerisinde kalirdi.
+    // Olculdu, tahmin degil.
+    //
+    // Dongu sentezde aciliyor: sonuc sabit bir XOR agi, ardisik
+    // sekiz adim degil. Derinligi olcup karar veriyoruz, tahminle
+    // bolmuyoruz.
     function [31:0] crc_bayt;
         input [31:0] c;
         input [7:0]  d;
@@ -114,9 +163,56 @@ module rgmii_veris #(
         end
     endfunction
 
-    wire [31:0] fcs = ~crc;
+    // FCS, SON BAYT ISLENDIKTEN SONRAKI CRC'DEN.
+    // "~crc" yazinca son veri baytinin CRC'si henuz islenmemis
+    // oluyordu: FCS yuklenirken crc o baytin oncesindeki degeri
+    // tutuyor. Son baytin sonucunu birlesimsel hesaplayip ondan
+    // aliyoruz — o an yuklenen FCS butun cerceveyi kapsiyor.
+    // FCS BIR KEZ YAKALANIP DONDURULUYOR.
+    // Dogrudan ~crc kullanmak yetmedi: D_FCS'e gecerken crc_al bir
+    // bayt daha acik kaliyor ve CRC guncellenmeye devam ediyor, yani
+    // dort FCS bayti dort FARKLI degerden okunuyordu. Cercevede ilk
+    // bayt dogru cikip gerisi kayiyordu — f7 8c 84 f3 yerine
+    // f7 d0 4f 38 olmaliydi.
+    wire [31:0] crc_tamam = crc_bayt(crc, cikis_bayt);
+    reg  [31:0] fcs;
 
-    assign veri_hazir = (durum == D_VERI) && nibble;
+    // SON VERI BAYTI DA BAYTLA BIRLIKTE ILERLIYOR.
+    // veri_kalan durumla beraber sayiyor ama cikis_bayt bir bayt
+    // geride; "veri_kalan == 1" anina bakinca elde SONDAN BIR
+    // ONCEKI bayt oluyor ve FCS o degerden donduruluyordu.
+    wire son_veri_ham = (durum == D_VERI) && veri_son_bayt;
+    reg  son_veri;
+
+    // ILK FCS BAYTI YAZMACI BEKLEYEMEZ. cikis_bayt ile fcs ayni
+    // kenarda yazildigi icin ilk bayt eski (sifir) degeri aliyordu:
+    // 00 d0 4f 38 cikti, f7 d0 4f 38 olmaliydi. Son veri baytinin
+    // uzerindeyken tamamlanmis degeri dogrudan kullan.
+    wire [31:0] fcs_simdi = son_veri ? ~crc_tamam : fcs;
+
+    // ---------------------------------------------------------------
+    // FIFO'DAN BIR CEVRIM ONDEN OKUNUYOR.
+    //
+    // Bayt blok RAM'den cikip DOGRUDAN "sonraki" cogullayicisina
+    // giriyordu. DP16KD'nin kendi saat-cikis gecikmesi 5.83 ns; ustune
+    // mux'in 3.6 ns'i binince yol 9.4 ns oldu ve ethernet alani
+    // 106 MHz'de kaldi — 1000BASE-T 125 istiyor.
+    //
+    // Cozum bellegi hizlandirmak degil, ARDINA YAZMAC KOYMAK: FIFO bir
+    // cevrim once okunuyor, gelen bayt veri_r'ye giriyor, mux artik
+    // duz bir flip-flop cikisi goruyor. Blok RAM'in gecikmesi tek
+    // basina bir cevrime rahat siginiyor.
+    //
+    // Sayim degismiyor: D_UDP'nin son cevriminde bir bayt, sonra
+    // D_VERI boyunca N-1 bayt = toplam N.
+    wire veri_cek = (durum == D_UDP  && sayac == 6'd7) ||
+                    (durum == D_VERI && !veri_son_bayt);
+    assign veri_hazir = veri_cek;
+
+    reg [7:0] veri_r;
+    always @(posedge clk)
+        if (rst) veri_r <= 8'd0;
+        else     veri_r <= veri;
 
     // ---------------------------------------------------------------
     // SONRAKI BAYT TEK YERDE HESAPLANIYOR.
@@ -193,12 +289,12 @@ module rgmii_veris #(
             6'd7: sonraki = 8'h00;
             default: sonraki = 8'd0;
         endcase
-        D_VERI: sonraki = veri;
+        D_VERI: sonraki = veri_r;
         D_FCS: case (sayac)
-            6'd0: sonraki = fcs[7:0];
-            6'd1: sonraki = fcs[15:8];
-            6'd2: sonraki = fcs[23:16];
-            6'd3: sonraki = fcs[31:24];
+            6'd0: sonraki = fcs_simdi[7:0];
+            6'd1: sonraki = fcs_simdi[15:8];
+            6'd2: sonraki = fcs_simdi[23:16];
+            6'd3: sonraki = fcs_simdi[31:24];
             default: sonraki = 8'd0;
         endcase
         default: sonraki = 8'd0;
@@ -206,38 +302,61 @@ module rgmii_veris #(
     end
 
     // CRC onsozu ve FCS'nin kendisini KAPSAMAZ.
-    wire crc_al = (durum == D_ETH) || (durum == D_IP) ||
-                  (durum == D_UDP) || (durum == D_VERI);
+    wire crc_al_ham = (durum == D_ETH) || (durum == D_IP) ||
+                      (durum == D_UDP) || (durum == D_VERI);
+
+    // BAYRAK BAYTLA BIRLIKTE ILERLEMELI.
+    // durum, cikis_bayt'tan bir bayt ONDE: bayt yuklenirken durum
+    // zaten sonraki kademeye gecmis oluyor. Bayrak dogrudan durumdan
+    // alininca onsozun 0xD5'i CRC'ye giriyordu (izlendi: durum=D_ETH
+    // iken cikis_bayt hala 0xD5). Bayragi bayt ile ayni anda
+    // yakaliyoruz.
+    reg crc_al;
+
 
     always @(posedge clk) begin
         if (rst) begin
             durum         <= D_BOS;
             sayac         <= 6'd0;
-            veri_sayaci   <= 16'd0;
+            veri_kalan    <= 16'd0;
+            veri_son_bayt <= 1'b0;
             cikis_gecerli <= 1'b0;
-            nibble        <= 1'b0;
             crc           <= 32'hFFFFFFFF;
-            rgmii_tctl    <= 1'b0;
-            rgmii_td      <= 4'd0;
+            rgmii_tctl_yuk <= 1'b0;
+            rgmii_tctl_dus <= 1'b0;
+            rgmii_td_yuk   <= 4'd0;
+            rgmii_td_dus   <= 4'd0;
             cikis_bayt    <= 8'd0;
+            crc_al        <= 1'b0;
+            son_veri      <= 1'b0;
+            fcs           <= 32'd0;
         end else begin
             // NIBBLE SIRASI: ONCE ALT. RGMII'de yukselen kenarda alt,
             // dusen kenarda ust nibble gidiyor. Ters yazarsan cerceve
             // bozulur ama sinyal "var" gorunur.
             if (cikis_gecerli) begin
-                rgmii_td   <= nibble ? cikis_bayt[7:4] : cikis_bayt[3:0];
-                rgmii_tctl <= 1'b1;
+                rgmii_td_yuk   <= cikis_bayt[3:0];
+                rgmii_td_dus   <= cikis_bayt[7:4];
+                rgmii_tctl_yuk <= 1'b1;
+                rgmii_tctl_dus <= 1'b1;   // TXEN xor TXERR, hata yok
             end else begin
-                rgmii_td   <= 4'd0;
-                rgmii_tctl <= 1'b0;
+                rgmii_td_yuk   <= 4'd0;
+                rgmii_td_dus   <= 4'd0;
+                rgmii_tctl_yuk <= 1'b0;
+                rgmii_tctl_dus <= 1'b0;
             end
 
-            nibble <= ~nibble;
+            if (crc_al)
+                crc <= crc_tamam;
 
-            if (nibble) begin
+            begin
                 cikis_bayt <= sonraki;
-                if (crc_al)
-                    crc <= crc_bayt(crc, sonraki);
+                crc_al     <= crc_al_ham;
+                son_veri   <= son_veri_ham;
+                // elde son veri bayti varsa ve simdi bitiyorsa,
+                // tamamlanmis CRC'yi dondur
+                if (son_veri)
+                    fcs <= ~crc_tamam;
 
                 case (durum)
                 D_BOS: begin
@@ -263,13 +382,19 @@ module rgmii_veris #(
                 end
                 D_UDP: begin
                     if (sayac == 6'd7) begin
-                        durum <= D_VERI; veri_sayaci <= 16'd0;
+                        durum         <= D_VERI;
+                        veri_kalan    <= yuk_uzunluk;
+                        veri_son_bayt <= (yuk_uzunluk == 16'd1);
                     end else sayac <= sayac + 1'b1;
                 end
                 D_VERI: begin
-                    if (veri_sayaci == yuk_uzunluk - 1) begin
+                    if (veri_son_bayt) begin
                         durum <= D_FCS; sayac <= 6'd0;
-                    end else veri_sayaci <= veri_sayaci + 1'b1;
+                    end else begin
+                        veri_kalan    <= veri_kalan - 1'b1;
+                        // bir sonraki cevrimde 1 olacak mi
+                        veri_son_bayt <= (veri_kalan == 16'd2);
+                    end
                 end
                 D_FCS: begin
                     if (sayac == 6'd3) begin durum <= D_BOSLUK; sayac <= 6'd0; end

@@ -45,7 +45,14 @@ module cic_azalt #(
     // ---------------------------------------------------------------
     reg signed [IC_BIT-1:0] topla [0:KADEME-1];
 
-    integer k;
+    // HER ALWAYS BLOGUNUN KENDI DONGU DEGISKENI VAR.
+    // Tek bir "integer k"yi iki blokta kullanmak sentezde iki
+    // surucu demek: yosys "multiple conflicting drivers" veriyordu.
+    // Donguler acildigi icin sonuc simdilik dogru cikiyor, ama
+    // degisken sentezciye birakilmis bir kaza — ayni hatanin bir
+    // baska turu test tezgahinda gercekten yanlis sonuc uretmisti.
+    integer k;   // integratorler / birinci blok
+    integer m;   // fark kademeleri / ikinci blok
     always @(posedge clk) begin
         if (rst) begin
             for (k = 0; k < KADEME; k = k + 1)
@@ -89,17 +96,17 @@ module cic_azalt #(
 
     always @(posedge clk) begin
         if (rst) begin
-            for (k = 0; k < KADEME; k = k + 1) begin
-                fark_g[k] <= {IC_BIT{1'b0}};
-                fark_c[k] <= {IC_BIT{1'b0}};
+            for (m = 0; m < KADEME; m = m + 1) begin
+                fark_g[m] <= {IC_BIT{1'b0}};
+                fark_c[m] <= {IC_BIT{1'b0}};
             end
             cikis_gecerli <= 1'b0;
         end else if (azalt_darbe) begin
             fark_g[0] <= topla[KADEME-1];
             fark_c[0] <= topla[KADEME-1] - fark_g[0];
-            for (k = 1; k < KADEME; k = k + 1) begin
-                fark_g[k] <= fark_c[k-1];
-                fark_c[k] <= fark_c[k-1] - fark_g[k];
+            for (m = 1; m < KADEME; m = m + 1) begin
+                fark_g[m] <= fark_c[m-1];
+                fark_c[m] <= fark_c[m-1] - fark_g[m];
             end
             cikis_gecerli <= 1'b1;
         end else begin
@@ -145,7 +152,25 @@ module cic_azalt #(
         end
     endfunction
 
-    wire [5:0] kaydir = kaydirma(oran);
+    // KAYDIRMA MIKTARI YAZMACTA.
+    //
+    // kaydirma() on iki kademeli bir oncelik zinciri, ve dogrudan
+    // barrel shifter'i suruyordu. Zincir + kaydirici tek cevrime
+    // sigmiyordu: nextpnr clk_sys'i 53.5 MHz olctu, 80 gerekiyor.
+    // Kritik yol dort kanalin dordunde de buydu.
+    //
+    // Oysa 'oran' host bir kayit YAZMADIKCA degismiyor. Her cevrim
+    // yeniden cozmenin bedeli var, faydasi yok. Yazmaca alinca
+    // zincir kritik yoldan tamamen cikiyor, geriye sadece kaydirici
+    // kaliyor.
+    //
+    // Bir cevrimlik gecikme zararsiz: oran degistiginde bir ornek
+    // eski kazancla cikiyor, ve zaten oran degistiginde CIC'in
+    // kendi gecici cevabi onlarca ornek suruyor.
+    reg [5:0] kaydir;
+    always @(posedge clk)
+        if (rst) kaydir <= 6'd0;
+        else     kaydir <= kaydirma(oran);
 
     wire signed [IC_BIT-1:0] ham = fark_c[KADEME-1];
     wire signed [IC_BIT-1:0] kaydirilmis = ham >>> kaydir;

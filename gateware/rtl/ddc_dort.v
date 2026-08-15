@@ -74,7 +74,7 @@ module ddc_dort #(
             wire signed [15:0] ns, nc, mi, mq;
             wire mv, qv;
 
-            nco u_nco (.clk(clk), .rst(rst),
+            nco u_nco (.clk(clk), .rst(rst), .izin(1'b1),
                        .faz_artis(faz_artis), .faz_ofset(ofset_g),
                        .yukle_ofset(faz_yukle),
                        .sin_cik(ns), .cos_cik(nc));

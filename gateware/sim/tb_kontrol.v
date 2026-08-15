@@ -32,12 +32,17 @@ module tb_kontrol;
     reg [4:0] yaz_adr  = 0;
     reg       yaz_darbe = 0;
     reg       gonder = 0;
+    reg       darbe_kip = 0;
+    reg [7:0] darbe_ms = 8'd2;
+    reg       maske_bank = 0;
     wire      ser, srclk, rclk, mesgul;
 
-    kontrol_zinciri dut (
+    kontrol_zinciri #(.MS_CEVRIM(80)) dut (
         .clk(clk), .rst(rst),
         .yaz_veri(yaz_veri), .yaz_adr(yaz_adr), .yaz_darbe(yaz_darbe),
         .zincir_bayt(5'd3), .gonder(gonder),
+        .darbe_kip(darbe_kip), .darbe_ms(darbe_ms),
+        .maske_bank(maske_bank),
         .rly_ser(ser), .rly_srclk(srclk), .rly_rclk(rclk),
         .mesgul(mesgul)
     );
@@ -54,8 +59,28 @@ module tb_kontrol;
     task yaz(input [4:0] a, input [7:0] d);
         begin
             @(posedge clk); #1;
+            maske_bank = 0;
             yaz_adr = a; yaz_veri = d; yaz_darbe = 1;
             @(posedge clk); #1; yaz_darbe = 0;
+        end
+    endtask
+
+    task yaz_maske(input [4:0] a, input [7:0] d);
+        begin
+            @(posedge clk); #1;
+            maske_bank = 1;
+            yaz_adr = a; yaz_veri = d; yaz_darbe = 1;
+            @(posedge clk); #1; yaz_darbe = 0; maske_bank = 0;
+        end
+    endtask
+
+    task sur;
+        begin
+            @(posedge clk); #1; gonder = 1;
+            @(posedge clk); #1; gonder = 0;
+            k = 0;
+            while (mesgul && k < 200000) begin @(posedge clk); k = k + 1; end
+            for (k = 0; k < 20; k = k + 1) @(posedge clk);
         end
     endtask
 
@@ -68,13 +93,7 @@ module tb_kontrol;
         yaz(5'd1, 8'hB2);
         yaz(5'd2, 8'hC3);
 
-        @(posedge clk); #1; gonder = 1;
-        @(posedge clk); #1; gonder = 0;
-
-        // zincirin bosalmasini bekle
-        k = 0;
-        while (mesgul && k < 5000) begin @(posedge clk); k = k + 1; end
-        for (k = 0; k < 20; k = k + 1) @(posedge clk);
+        sur;
 
         $display("  q0=%02x  q1=%02x  q2=%02x", q0, q1, q2);
 
@@ -93,6 +112,46 @@ module tb_kontrol;
 
         if (hata == 0)
             $display("  bayt sirasi ve bit sirasi dogru");
+
+        // ---- DARBE KIPI ----
+        //
+        // Kilitlenen role bobini surekli enerji kaldirmaz. Darbe
+        // kipinde modul once TAM deseni suruyor, darbe_ms kadar
+        // bekliyor, sonra SADECE tutma maskesindeki bitleri birakip
+        // otekileri dusuruyor.
+        //
+        // Testin isi tam da bu: darbeden SONRA anlik bitlerin dustugunu
+        // gormek. Sadece "desen dogru gitti" demek yetmez — su anki
+        // hatanin ta kendisi buydu, desen gidiyordu ve hic dusmuyordu.
+        $display("  --- darbe kipi");
+        yaz(5'd0, 8'hFF);          // hepsi enerjili
+        yaz(5'd1, 8'hFF);
+        yaz(5'd2, 8'hFF);
+        yaz_maske(5'd0, 8'h81);    // sadece bit0 ve bit7 tutulacak
+        yaz_maske(5'd1, 8'h00);
+        yaz_maske(5'd2, 8'h00);
+        darbe_kip = 1;
+        sur;
+
+        $display("  darbe sonrasi q0=%02x q1=%02x q2=%02x", q0, q1, q2);
+        if (q0 !== 8'h81) begin
+            $display("  HATA: q0 maskeye dusmeliydi (81), %02x var", q0);
+            hata = hata + 1;
+        end
+        if (q1 !== 8'h00 || q2 !== 8'h00) begin
+            $display("  HATA: maskesiz baytlar sifirlanmali, q1=%02x q2=%02x", q1, q2);
+            hata = hata + 1;
+        end
+        if (hata == 0) $display("  darbe sonrasi sadece tutulan bitler kaldi");
+
+        // ---- darbe kipi KAPALI iken desen ayakta kalmali ----
+        darbe_kip = 0;
+        yaz(5'd0, 8'h5A); yaz(5'd1, 8'h5A); yaz(5'd2, 8'h5A);
+        sur;
+        if (q0 !== 8'h5A || q1 !== 8'h5A || q2 !== 8'h5A) begin
+            $display("  HATA: darbe kapaliyken desen dusmemeliydi: %02x %02x %02x", q0,q1,q2);
+            hata = hata + 1;
+        end else $display("  darbe kapali: desen ayakta kaldi");
 
         if (hata == 0) $display("Kontrol zinciri testi GECTI");
         else begin

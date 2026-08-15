@@ -1,128 +1,150 @@
-// AD9251 arayuzu — cift kanalli, 14 bit, LVDS DDR.
+// AD9251 arayuzu — cift kanalli, 14 bit, COGULLANMIS PARALEL CMOS.
 //
-// ADC ornekleri DDR veriyor: saatin hem yukselen hem dusen kenarinda
-// bir bit. Iki kanal (A ve B) ayri seri hatlardan geliyor ve her
-// kanal 14 biti 7 saat cevriminde yolluyor.
+// BU MODUL BIR KEZ YANLIS YAZILDI, KAYDI DURSUN.
+// Ilk hali seri LVDS varsayiyordu: DCO + FCO cerceve saati, kanal
+// basina tek seri hat, 14 biti yedi cevrimde toplayan bir kaydirma
+// yazmaci. O arayuz AD9253'un. AD9251'de OYLE BIR MOD YOK. Karta
+// bakinca da goruluyordu: ADC basina D0..D13 + OR + DCO cekilmis,
+// FCO diye bir ag hic yok. Gateware kartla konusmuyordu.
 //
-// SAAT ADC'DEN GELIYOR, BIZDEN DEGIL. DCO (data clock out) ornekle
-// birlikte yola cikiyor, yani kaynak-senkron. FPGA'nin kendi saatiyle
-// yakalamaya calisirsak yol gecikmesi kadar kayariz ve 80 MSPS'te o
-// kayma bir bitten buyuk. DCO ile yakalayip sonra FIFO ile sistem
-// saatine geciyoruz.
+// AD9251 CIKISI (veri sayfasi, SPI 0x14):
+//   bit 5 = 1  cogullama (interleaved) acik
+//   Iki kanal TEK 14 bitlik veri yolunu paylasiyor. DCO 80 MHz
+//   kaliyor; A ve B ornekleri DCO'nun ayri kenarlarinda cikiyor,
+//   yani yol 160 MT/s'de calisiyor ama saat 80 MHz.
 //
-// CERCEVE HIZALAMA: ADC'nin kendi test deseni var (ADC_TEST_PATTERN).
-// Baslangicta o deseni okuyup 14 bitin nerede basladigini buluyoruz.
-// Desen tutmadan veri gecerli sayilmiyor — yanlis hizalanmis bir
-// cerceve sessizce yanlis genlik uretir, ve bu hata olcum yapana
-// kadar gorunmez.
+// NEDEN COGULLAMA. Kanal basina ayri yol cekmek ADC basina 30 hizli
+// CMOS hatti demekti. Dogrudan orneklemeli bir alicida o kenarlar
+// analog on uca geri biniyor; kart mikrovolt duymaya calisirken
+// kendi sayisal gurultusunu dinler. Cogullamayla hat sayisi yariya
+// iniyor.
+//
+// SAAT ADC'DEN GELIYOR, BIZDEN DEGIL. DCO ornekle birlikte yola
+// cikiyor (kaynak-senkron). FPGA'nin kendi saatiyle yakalamaya
+// calisirsak yol gecikmesi kadar kayariz ve 80 MSPS'te o kayma bir
+// bitten buyuk. DCO ile yakalayip sonra FIFO ile sistem saatine
+// geciyoruz.
+//
+// KANAL SIRASI KENDINI BULUYOR. Hangi kenarin A hangisinin B
+// oldugunu veri sayfasindan okuyup sabitlemek yerine, ADC'nin test
+// desenini kullaniyoruz: iki kanala FARKLI desen yazip hangisinin
+// tuttuguna bakiyoruz. Yanlis sirayla calisan bir alici makul
+// gorunen ama kanallari yer degistirmis bir goruntu uretir, ve o
+// hata huzme yonlendirmede aynayla ortaya cikar — yani sahada.
 
 `default_nettype none
 
 module adc_giris #(
     parameter BIT = 14
 ) (
-    input  wire              dco_p,      // ADC veri saati
-    input  wire              dco_n,
-    input  wire              fco_p,      // cerceve saati
-    input  wire              fco_n,
-    input  wire              d_a_p,      // kanal A seri veri
-    input  wire              d_a_n,
-    input  wire              d_b_p,      // kanal B seri veri
-    input  wire              d_b_n,
+    input  wire              dco,        // ADC veri saati, 80 MHz
+    input  wire [BIT-1:0]    d,          // cogullanmis veri yolu
+    input  wire              asim,       // OR bayragi, veriyle ayni kenarda
+
+    // test deseni denetimi (SPI ile ADC'ye yazilan desenler)
+    input  wire [BIT-1:0]    desen_a,
+    input  wire [BIT-1:0]    desen_b,
+    input  wire              desen_dene, // 1 iken denetim kosuyor
 
     output wire              clk_adc,    // yakalanan saat, disari
     output reg  [BIT-1:0]    ornek_a,
     output reg  [BIT-1:0]    ornek_b,
+    output reg               asim_a,
+    output reg               asim_b,
     output reg               ornek_gecerli,
-    output reg               hizali      // cerceve kilitlendi mi
+    output reg               takas,      // bulunan kenar polaritesi
+    output reg               hizali      // desen tuttu
 );
-
-    // ---------------------------------------------------------------
-    // LVDS alicilar. ECP5'te diferansiyel giris ayri bir ilkel degil;
-    // p ucunu normal giris olarak tanimlayip IO_TYPE="LVDS" veriyoruz,
-    // n ucu otomatik esleniyor. Kisit dosyasinda (ecp5.lpf) belirtiliyor.
-    // ---------------------------------------------------------------
-    wire dco = dco_p;
-    wire fco = fco_p;
-    wire d_a = d_a_p;
-    wire d_b = d_b_p;
 
     assign clk_adc = dco;
 
     // ---------------------------------------------------------------
-    // DDR yakalama: her kenarda bir bit.
+    // DDR yakalama.
+    //
+    // Dusen kenarda yakalanan deger POSEDGE ALANINA TASINIYOR: negedge
+    // yazmaci yarim cevrim once yaziliyor, sonraki posedge'de okumak
+    // ona yarim cevrimlik yerlesme suresi biraktiriyor. Dogrudan
+    // negedge yazmacini birlesimsel kullanmak, iki kenar arasindaki
+    // egrilik kadar dar bir pencere birakirdi.
     // ---------------------------------------------------------------
-    reg d_a_yuk, d_a_dus, d_b_yuk, d_b_dus;
-    reg fco_yuk;
+    reg [BIT-1:0] d_yuk, d_dus;
+    reg           or_yuk, or_dus;
 
     always @(posedge dco) begin
-        d_a_yuk <= d_a;
-        d_b_yuk <= d_b;
-        fco_yuk <= fco;
+        d_yuk  <= d;
+        or_yuk <= asim;
     end
     always @(negedge dco) begin
-        d_a_dus <= d_a;
-        d_b_dus <= d_b;
+        d_dus  <= d;
+        or_dus <= asim;
+    end
+
+    // dusen kenar orneginin posedge alanindaki kopyasi
+    reg [BIT-1:0] d_dus_g;
+    reg           or_dus_g;
+    always @(posedge dco) begin
+        d_dus_g  <= d_dus;
+        or_dus_g <= or_dus;
+    end
+
+    // ZAMAN SIRASI: d_dus_g yarim cevrim ONCE ornekelendi, d_yuk
+    // simdi. Ikisi ayni ADC cevriminin iki kanali.
+    wire [BIT-1:0] once     = d_dus_g;
+    wire [BIT-1:0] sonra    = d_yuk;
+    wire           once_or  = or_dus_g;
+    wire           sonra_or = or_yuk;
+
+    always @(posedge dco) begin
+        ornek_a       <= takas ? sonra    : once;
+        ornek_b       <= takas ? once     : sonra;
+        asim_a        <= takas ? sonra_or : once_or;
+        asim_b        <= takas ? once_or  : sonra_or;
+        ornek_gecerli <= 1'b1;
     end
 
     // ---------------------------------------------------------------
-    // Seri -> paralel. 14 bit, MSB once (AD9251 veri sayfasi Sekil 4).
-    // Her saat cevriminde iki bit giriyor, yani 7 cevrimde bir ornek.
+    // Desen denetimi ve kanal sirasi.
+    //
+    // Iki yorumu da ayni anda sinariz: duz (once=A) ve takas
+    // (once=B). Hangisi tutuyorsa polarite odur. Ikisi de tutmuyorsa
+    // hizali dusuyor ve yukarisi veriyi kullanmiyor.
+    //
+    // TEK ESLESME YETMIYOR. Rastgele veride 14 bitin bir desene
+    // uymasi 1/16384 — 80 MSPS'te saniyede bes bin kez olur. 256
+    // ardisik eslesme istiyoruz; gurultude olma olasiligi sifira
+    // yakin, ama gercek desende 3.2 us suruyor.
     // ---------------------------------------------------------------
-    localparam SAYAC_SON = (BIT / 2) - 1;   // 6
+    wire duz_tut   = (once  == desen_a) && (sonra == desen_b);
+    wire takas_tut = (sonra == desen_a) && (once  == desen_b);
 
-    reg [3:0]      sayac;
-    reg [BIT-1:0]  kaydir_a, kaydir_b;
-    reg            fco_onceki;
-
-    wire cerceve_kenari = fco_yuk & ~fco_onceki;
+    reg [7:0] duz_say, takas_say;
 
     always @(posedge dco) begin
-        fco_onceki <= fco_yuk;
-
-        // FCO'nun yukselen kenari cercevenin basi. Sayaci ORAYA
-        // sifirliyoruz; serbest sayan bir sayac zamanla kayar ve
-        // kayma sessizce yanlis ornek uretir.
-        if (cerceve_kenari) begin
-            sayac    <= 0;
-            kaydir_a <= {d_a_yuk, d_a_dus, {(BIT-2){1'b0}}};
-            kaydir_b <= {d_b_yuk, d_b_dus, {(BIT-2){1'b0}}};
-            ornek_gecerli <= 1'b0;
+        if (!desen_dene) begin
+            // Denetim kapali: son bulunan polarite ve hizali DURUYOR.
+            // Sifirlamak, calisan bir alicinin ilk SPI yazmasindan
+            // sonra kendini kaybetmesi demekti.
+            duz_say   <= 8'd0;
+            takas_say <= 8'd0;
         end else begin
-            kaydir_a <= {kaydir_a[BIT-3:0], d_a_yuk, d_a_dus};
-            kaydir_b <= {kaydir_b[BIT-3:0], d_b_yuk, d_b_dus};
+            duz_say   <= duz_tut   ? (duz_say   == 8'hFF ? 8'hFF : duz_say   + 1'b1) : 8'd0;
+            takas_say <= takas_tut ? (takas_say == 8'hFF ? 8'hFF : takas_say + 1'b1) : 8'd0;
 
-            if (sayac == SAYAC_SON) begin
-                ornek_a       <= {kaydir_a[BIT-3:0], d_a_yuk, d_a_dus};
-                ornek_b       <= {kaydir_b[BIT-3:0], d_b_yuk, d_b_dus};
-                ornek_gecerli <= 1'b1;
-                sayac         <= 0;
-            end else begin
-                ornek_gecerli <= 1'b0;
-                sayac         <= sayac + 1'b1;
+            if (duz_say == 8'hFF) begin
+                takas  <= 1'b0;
+                hizali <= 1'b1;
+            end else if (takas_say == 8'hFF) begin
+                takas  <= 1'b1;
+                hizali <= 1'b1;
+            end else if (duz_say == 8'd0 && takas_say == 8'd0) begin
+                hizali <= 1'b0;
             end
         end
     end
 
-    // ---------------------------------------------------------------
-    // Hizalama denetimi. FCO her 7 cevrimde bir gelmeli. Gelmiyorsa
-    // ya saat yok ya da baglanti bozuk — o durumda 'hizali' dusuyor ve
-    // yukarisi veriyi kullanmiyor.
-    //
-    // Sessizce yanlis veri uretmektense hic uretmemek dogru: yanlis
-    // hizalanmis bir cerceve makul gorunen ama yanlis genlikli ornek
-    // verir, ve bunu ancak bilinen bir sinyalle olcerken fark edersin.
-    // ---------------------------------------------------------------
-    reg [7:0] cerceve_sayaci;
-    always @(posedge dco) begin
-        if (cerceve_kenari) begin
-            hizali         <= (cerceve_sayaci == SAYAC_SON);
-            cerceve_sayaci <= 0;
-        end else if (cerceve_sayaci != 8'hFF) begin
-            cerceve_sayaci <= cerceve_sayaci + 1'b1;
-        end else begin
-            hizali <= 1'b0;
-        end
+    initial begin
+        takas  = 1'b0;
+        hizali = 1'b0;
     end
 
 endmodule
