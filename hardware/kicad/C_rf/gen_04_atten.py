@@ -21,7 +21,22 @@ A = "dogrudan-sdr:PE4312"
 #
 # TQFN-20-1EP...EP2.1x2.1: 2.1 mm, yani nominalin 0.05 mm altinda
 # ve onerilen alanin guvenli tarafinda.
-FA = "Package_DFN_QFN:TQFN-20-1EP_4x4mm_P0.5mm_EP2.1x2.1mm_ThermalVias"
+# TERMAL VIA'LAR KALDIRILDI — OLCULDU, GEREKMIYOR VE ZARARLI.
+# KiCad'in "_ThermalVias" surumu acik pedin icine DELIKLI (PTH) via
+# koyuyor. Olculen sonuc: bu via'lar ile komsu sinyal pedi arasindaki
+# bosluk 0.201 mm. Yonlendirici DSN sinif kurallarinda guc aglarini
+# 300 um'de tutuyor, yani bu ciftler HER TURDA ihlal sayiliyor ve
+# ihlal geometriden geldigi icin COZULEMIYOR: D kartinin
+# yonlendirme gunlugunde ihlal sayisi turdan tura sabit
+# (152, 152, 152) kalirken yonlendirilmemis ag sayisi duşuyor.
+#
+# Via'lar zaten gerekmiyor: acik ped GND'ye bagli ve F.Cu'da GND
+# dokumu var, yani ped dokume oturuyor. PE4312 3.3 V'ta 130 uA cekiyor, yani 0.43 mW — 100 W'lik bir
+# final katinda termal via anlamli, 0.43 mW'lik bir zayiflaticida degil.
+# Dokumun ulasamadigi yere kisa toprak sapi gerekirse onu
+# yonlendirmeden SONRA dikis.py ekliyor — sabit izgarali footprint
+# via'sindan daha esnek.
+FA = "Package_DFN_QFN:TQFN-20-1EP_4x4mm_P0.5mm_EP2.1x2.1mm"
 R, C = "Device:R", "Device:C"
 FR = "Resistor_SMD:R_0603_1608Metric"
 FC = "Capacitor_SMD:C_0402_1005Metric"

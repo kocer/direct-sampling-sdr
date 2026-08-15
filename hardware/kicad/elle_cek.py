@@ -111,16 +111,51 @@ def agac(noktalar):
     return kenarlar
 
 
-def temiz(b, iz, ag):
-    """Iz baska bir agin pedini kesiyor mu?"""
+def temiz(b, iz, ag, bosluk=300000):
+    """Iz baska bir agin pedine BOSLUK KADAR yaklasiyor mu?
+
+    ONCEKI SURUM PEDI DAIRE SANIYORDU VE DAIREYI KUCUK ALIYORDU.
+    Yaricap "max(en, boy) / 2" idi. Bir dikdortgenin KOSESI merkeze
+    hypot(en, boy) / 2 uzaklikta — yani gercek uzanim %41'e kadar
+    eksik sayiliyordu. TO-247'nin 2.5 x 4.5 mm pedinde fark
+    2.250 yerine 2.574 mm.
+
+    Bedeli olculdu: D kartinda DRN_A izi Q10'un KAPI pedinin uzerine
+    35 mikron BINIYORDU. 50 V'luk dren rayi ile 100 W'lik bir gucun
+    kapisi arasinda kisa devre; parca calisir calismaz olur ve
+    sebebi kartta gozle gorunmez cunku ortusme kosede ve mikron
+    mertebesinde. Tee kaymasi arayan dongu (kay = 5..19 mm) bu yolu
+    "temiz" bulup kabul etmisti.
+
+    Iki degisiklik:
+      1 Pedin GERCEK sekli kullaniliyor (pcbnew'un kendi carpisma
+        testi; dairesel, oval, dikdortgen, dondurulmus, hepsi).
+      2 Sadece ortusmeye degil, BOSLUGA bakiliyor. Ortusmeyen ama
+        50 mikron kalan bir iz de uretilemez.
+    """
+    kat = iz.GetLayer()
+    try:
+        iz_sekil = iz.GetEffectiveShape(kat)
+    except Exception:
+        iz_sekil = None
     a, c = iz.GetStart(), iz.GetEnd()
     yari = iz.GetWidth() / 2
     for fp in b.Footprints():
         for p in fp.Pads():
             if p.GetNetname() == ag or not p.GetNetname():
                 continue
+            if not p.IsOnLayer(kat):
+                continue
+            if iz_sekil is not None:
+                try:
+                    if iz_sekil.Collide(p.GetEffectiveShape(kat), int(bosluk)):
+                        return False
+                    continue
+                except Exception:
+                    pass
+            # yedek yol: kosegeni kapsayan daire (max degil hypot)
             q = p.GetPosition()
-            r = max(p.GetSizeX(), p.GetSizeY()) / 2 + yari
+            r = math.hypot(p.GetSizeX(), p.GetSizeY()) / 2 + yari + bosluk
             dx, dy = c.x - a.x, c.y - a.y
             uz2 = dx * dx + dy * dy
             if uz2 == 0:

@@ -81,6 +81,9 @@ s.text("Iki cift DAC = dort kanal, cihaz basina bir kurulum gerilimi.\\n"
 s.text("SERVO — CIHAZ BASINA BIR TANE", 16, 235, 1.8)
 
 
+LM358_KAP = []
+
+
 def servo(n, x, y):
     """Bir cihazin bias servosu: olcu direnci -> INA240 -> integrator -> gecit."""
     # olcu direnci, kaynak bacaginda
@@ -97,6 +100,20 @@ def servo(n, x, y):
     s.pin_label(INA, "6", x + 45, y, 0, "+5V", "input", d=5.08)
     s.pin_power(INA, "2", x + 45, y, 0, "GND", d=5.08)
     s.nc(*s.P(INA, "4", x + 45, y))
+    # BESLEME AYIRMA KONDANSATORU — DORDUNDE DE YOKTU.
+    # +5V rayinda kondansator vardi ama hepsi baska cipin dibindeydi:
+    # olculdu, U31'in en yakini 21 mm, U34'un 50 mm. O mesafede
+    # kondansator ayirma yapmiyor; aradaki izin endüktansi
+    # (~1 nH/mm) yuksek frekansta baskin.
+    # INA240 (TI SBOS662C, "Power-Supply Recommendations"):
+    #   "a 0.1-uF capacitor placed as closely as possible to the
+    #    supply and ground pins"
+    # Bu cihaz PA'nin bias servosunun olcum kolu; gurultulu bir
+    # okuma dogrudan gecit gerilimine ve oradan dinlenme akimina
+    # gidiyor.
+    s.sym(C, f"C4{40 + n}", "100nF", x + 68, y, rot=90, fp=FC)
+    s.pin_label(C, "1", x + 68, y, 90, "+5V", "input")
+    s.pin_power(C, "2", x + 68, y, 90, "GND")
 
     # hata integratoru: VSET ile IMEAS'i karsilastir, gecidi sur
     # LM358 iki birimli: dort servo icin IKI paket. Birimi bos
@@ -115,6 +132,7 @@ def servo(n, x, y):
         s.sym(OPA, f"U{pkg}", "LM358", x + 95, y, fp=FOPA, unit=3)
         s.pin_label(OPA, "8", x + 95, y, 0, "+12V", "input", d=7.62)
         s.pin_power(OPA, "4", x + 95, y, 0, "GND", d=7.62)
+        LM358_KAP.append(pkg)
     s.sym(R, cnt("R"), "10k", x + 95, y + 22, rot=90, fp=FR)
     s.pin_label(R, "1", x + 95, y + 22, 90, f"IMEAS{n}", "passive")
     s.pin_label(R, "2", x + 95, y + 22, 90, f"IFB{n}", "passive")
@@ -133,6 +151,28 @@ def servo(n, x, y):
 
 for i in range(4):
     servo(i + 1, 40, 265 + i * 40)
+
+# ------------------------------------------------- LM358 besleme ayirma
+# +12V AYIRMA — YOKTU, VE EN YAKIN KONDANSATOR 227 mm OTEDEYDI.
+# (Olcum: U41 -> C665, 227.1 mm; U42 -> C665, 207.9 mm. Kart
+# 275x185 mm; yani kondansator kartin obur ucundaydi.)
+# LM358 burada bias servosunun integratoru ve cikisi dogrudan final
+# MOSFET'in gecidini suruyor. Besleme rayindaki bir sicrama gecit
+# gerilimine, o da dinlenme akimina biniyor — A sinifi bir katta
+# termal kacisin baslangic noktasi tam bu.
+#
+# KONDANSATOR SAYFANIN BOS ALANINA CIZILIYOR, opampin dibine DEGIL.
+# Once x+118'e koydum: pin_label her etiket icin pinden kisa bir TEL
+# cekiyor ve yogun servo blogunda o telin ucu VG1 (gecit) telinin
+# uzerine dustu — +12V rayi opamp CIKISINA kisa devre oldu ve ERC
+# "Output ile Output baglanmis" verdi. Semadaki yer kartta yerlesim
+# demek degil; yerlesimi gercek_yerlesim.py agdan kuruyor.
+for k, pkg in enumerate(sorted(set(LM358_KAP))):
+    kx, ky = 340, 270 + k * 30
+    s.sym(C, "C46%d" % k, "100nF", kx, ky, rot=90, fp=FC)
+    s.pin_label(C, "1", kx, ky, 90, "+12V", "input")
+    s.pin_power(C, "2", kx, ky, 90, "GND")
+    s.text("U%d besleme ayirma" % pkg, kx - 8, ky + 18, 1.2)
 
 s.text("OLCU DIRENCI 0.01R kaynak bacaginda. 6.67 A / 4 cihaz = 1.67 A\\n"
        "cihaz basina -> 16.7 mV dusum, INA240 x20 kazancla 334 mV.\\n"

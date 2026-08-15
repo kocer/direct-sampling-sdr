@@ -10,7 +10,21 @@ UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
 X = "dogrudan-sdr:ABLNO-V"
 FX = "dogrudan-sdr:Oscillator_Abracon_ABLNO_4pad_14.3x8.7mm"
 B = "dogrudan-sdr:ADCLK846"
-FB = "Package_DFN_QFN:HVQFN-24-1EP_4x4mm_P0.5mm_EP2.5x2.5mm_ThermalVias"
+FB = # TERMAL VIA'LAR KALDIRILDI — OLCULDU, GEREKMIYOR VE ZARARLI.
+# KiCad'in "_ThermalVias" surumu acik pedin icine DELIKLI (PTH) via
+# koyuyor. Olculen sonuc: bu via'lar ile komsu sinyal pedi arasindaki
+# bosluk 0.283 mm. Yonlendirici DSN sinif kurallarinda guc aglarini
+# 300 um'de tutuyor, yani bu ciftler HER TURDA ihlal sayiliyor ve
+# ihlal geometriden geldigi icin COZULEMIYOR: D kartinin
+# yonlendirme gunlugunde ihlal sayisi turdan tura sabit
+# (152, 152, 152) kalirken yonlendirilmemis ag sayisi duşuyor.
+#
+# Via'lar zaten gerekmiyor: acik ped GND'ye bagli ve F.Cu'da GND
+# dokumu var, yani ped dokume oturuyor. ADCLK846 1.8 V'ta ~180 mA, yani 0.32 W.
+# Dokumun ulasamadigi yere kisa toprak sapi gerekirse onu
+# yonlendirmeden SONRA dikis.py ekliyor — sabit izgarali footprint
+# via'sindan daha esnek.
+"Package_DFN_QFN:HVQFN-24-1EP_4x4mm_P0.5mm_EP2.5x2.5mm"
 LV = "Interface:SN65LVDS2DBV"
 FLV = "Package_TO_SOT_SMD:SOT-23-5"
 R, C, L = "Device:R", "Device:C", "Device:L"

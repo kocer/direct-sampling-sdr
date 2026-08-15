@@ -23,7 +23,23 @@ P = "dogrudan-sdr:RTL8211F"
 # kucuk EP her zaman lehimlenir, buyugu bacaklara kopru atabilir —
 # yani belirsizlikte kucuk taraf guvenli olan. Termal via'li surum,
 # parca ~1 W harciyor.
-FP = "Package_DFN_QFN:QFN-40-1EP_5x5mm_P0.4mm_EP3.6x3.6mm_ThermalVias"
+FP = # TERMAL VIA'LAR KALDIRILDI — OLCULDU, GEREKMIYOR VE ZARARLI.
+# KiCad'in "_ThermalVias" surumu acik pedin icine DELIKLI (PTH) via
+# koyuyor. Olculen sonuc: bu via'lar ile komsu sinyal pedi arasindaki
+# bosluk 0.229 mm. Yonlendirici DSN sinif kurallarinda guc aglarini
+# 300 um'de tutuyor, yani bu ciftler HER TURDA ihlal sayiliyor ve
+# ihlal geometriden geldigi icin COZULEMIYOR: D kartinin
+# yonlendirme gunlugunde ihlal sayisi turdan tura sabit
+# (152, 152, 152) kalirken yonlendirilmemis ag sayisi duşuyor.
+#
+# Via'lar zaten gerekmiyor: acik ped GND'ye bagli ve F.Cu'da GND
+# dokumu var, yani ped dokume oturuyor. RTL8211F ~0.5 W harciyor; bu gercek bir isi ama A karti ALTI
+# katmanli ve In1/In4 tam toprak duzlemi — dokum lateral yayilim
+# icin yeterli, ve gerekirse dikis.py hedefli via atiyor.
+# Dokumun ulasamadigi yere kisa toprak sapi gerekirse onu
+# yonlendirmeden SONRA dikis.py ekliyor — sabit izgarali footprint
+# via'sindan daha esnek.
+"Package_DFN_QFN:QFN-40-1EP_5x5mm_P0.4mm_EP3.6x3.6mm"
 J = "dogrudan-sdr:HR911130A"
 FJ = "dogrudan-sdr:RJ45_Hanrun_HR911130A"
 E = "dogrudan-sdr:ECP5-BGA256"

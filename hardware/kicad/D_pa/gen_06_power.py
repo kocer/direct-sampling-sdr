@@ -286,6 +286,14 @@ s.sym(TMP, "U55", "MCP9700AT", 340, 190, fp=FTMP)
 s.pin_label(TMP, "1", 340, 190, 0, "+3V3", "input", d=7.62)
 s.pin_label(TMP, "2", 340, 190, 0, "FLANGE_T", "output", d=7.62)
 s.pin_power(TMP, "3", 340, 190, 0, "GND", d=7.62)
+# MCP9700 AYIRMA KONDANSATORU — YOKTU.
+# Veri sayfasi (DS20001942) "Layout Considerations": VDD ile VSS
+# arasina 0.1 uF, cipe mumkun oldugunca yakin. Bu sensor PA'nin
+# flans sicakligini olcuyor ve okumasi asiri sicaklik kesmesini
+# tetikliyor; gurultulu bir okuma ya erken keser ya hic kesmez.
+s.sym(C, "C690", "100nF", 385, 175, rot=90, fp=FC)
+s.pin_label(C, "1", 385, 175, 90, "+3V3", "input")
+s.pin_power(C, "2", 385, 175, 90, "GND")
 
 # DPD ornekleme rolesi surucusu (04_detect'teki K20)
 s.sym(QN, "Q32", "2N7002", 400, 250, fp=FQN)

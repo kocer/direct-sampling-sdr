@@ -154,7 +154,15 @@ def main():
             w = csv.writer(fh)
             w.writerow(["Comment", "Designator", "Footprint", "LCSC"])
             for (val, fp), refs in sorted(grup.items()):
-                kod = LCSC.get(val, PASIF.get(val, ("?",)))[0]
+                # CSV OZETLE AYNI ARAMA ZINCIRINI KULLANMALI.
+                # Burada yalniz LCSC ve PASIF tablolarina bakiliyordu;
+                # ekrandaki ozet ise ustune pasif_ara()'yi da
+                # cagiriyor. Sonuc: ozet "BASE" derken CSV ayni satira
+                # "?" yaziyordu. Uc kartta 68 satir boyle: siparise
+                # giden dosya, ekranda temiz gorunen bir BOM'dan
+                # sessizce daha kotu.
+                kod = (LCSC.get(val) or PASIF.get(val)
+                       or pasif_ara(val) or ("?",))[0]
                 w.writerow([val, ",".join(sorted(refs)), fp, kod])
         print(f"\nyazildi: {path}")
 

@@ -215,7 +215,7 @@ def rtl8211f():
         P.append(pin(n,nm,"power_in","T",i,2))
     P.append(pin("41","GND","power_in","B",0,2))       # exposed pad
     return build("RTL8211F","U",
-        "Package_DFN_QFN:QFN-40-1EP_5x5mm_P0.4mm_EP3.8x3.8mm_ThermalVias",
+        "Package_DFN_QFN:QFN-40-1EP_5x5mm_P0.4mm_EP3.6x3.6mm",
         "Gigabit Ethernet PHY, RGMII, QFN-40","RTL8211FI-CG",P)
 
 
@@ -237,7 +237,7 @@ def pe4312():
     for i,n in enumerate(["10","11","18","Pad"]):
         P.append(pin(n,"GND","power_in","B",i,1))
     return build("PE4312","U",
-        "Package_DFN_QFN:QFN-20-1EP_4x4mm_P0.5mm_EP2.6x2.6mm_ThermalVias",
+        "Package_DFN_QFN:TQFN-20-1EP_4x4mm_P0.5mm_EP2.1x2.1mm",
         "0-31.5dB digital step attenuator, QFN-20","PE4312C-Z",P)
 
 
@@ -410,7 +410,7 @@ def adclk846():
         P.append(pin(num, "VS", "power_in", "T", i, 2))
     P.append(pin("25", "EPAD", "power_in", "B", 0, 2))
     return build("ADCLK846", "U",
-        "Package_DFN_QFN:HVQFN-24-1EP_4x4mm_P0.5mm_EP2.5x2.5mm_ThermalVias",
+        "Package_DFN_QFN:HVQFN-24-1EP_4x4mm_P0.5mm_EP2.5x2.5mm",
         "1:6 LVDS saat dagitim tamponu 1.8V, LFCSP-24",
         "ADCLK846BCPZ-REEL7", P)
 

@@ -11,7 +11,21 @@ A = "dogrudan-sdr:PE4312"
 # veri sayfasi (DOC-81482 Sekil 26) acik pedi 2.15 +-0.05 mm kare
 # veriyor, onerilen lehim alani 2.20 mm. 2.6 mm her kenarda 0.2 mm
 # fazla bakir birakiyordu.
-FA = "Package_DFN_QFN:TQFN-20-1EP_4x4mm_P0.5mm_EP2.1x2.1mm_ThermalVias"
+# TERMAL VIA'LAR KALDIRILDI — OLCULDU, GEREKMIYOR VE ZARARLI.
+# KiCad'in "_ThermalVias" surumu acik pedin icine DELIKLI (PTH) via
+# koyuyor. Olculen sonuc: bu via'lar ile komsu sinyal pedi arasindaki
+# bosluk 0.201 mm. Yonlendirici DSN sinif kurallarinda guc aglarini
+# 300 um'de tutuyor, yani bu ciftler HER TURDA ihlal sayiliyor ve
+# ihlal geometriden geldigi icin COZULEMIYOR: D kartinin
+# yonlendirme gunlugunde ihlal sayisi turdan tura sabit
+# (152, 152, 152) kalirken yonlendirilmemis ag sayisi duşuyor.
+#
+# Via'lar zaten gerekmiyor: acik ped GND'ye bagli ve F.Cu'da GND
+# dokumu var, yani ped dokume oturuyor. PE4312 0.43 mW harciyor.
+# Dokumun ulasamadigi yere kisa toprak sapi gerekirse onu
+# yonlendirmeden SONRA dikis.py ekliyor — sabit izgarali footprint
+# via'sindan daha esnek.
+FA = "Package_DFN_QFN:TQFN-20-1EP_4x4mm_P0.5mm_EP2.1x2.1mm"
 G = "dogrudan-sdr:PGA-103"
 FG = "Package_TO_SOT_SMD:SOT-89-3"
 Q = "Transistor_FET:Q_NMOS_GDS"
@@ -89,6 +103,19 @@ for i, p in enumerate(("1", "15", "16", "17", "19", "20")):
     s.pin_label(R, "1", rx, ry, 90, "+3V3", "input")
     s.pin_label(R, "2", rx, ry, 90, f"PA_C{i}", "passive")
     s.pin_label(A, p, 80, 165, 0, f"PA_C{i}", "input", d=7.62)
+
+# PE4312 BESLEME AYIRMA — D KARTINDA HIC YOKTU.
+# C kartinda dort zayiflaticinin her birine iki adet 100nF konmus;
+# D'deki tek zayiflatici (U10) atlanmis. Iki VDD bacagi var (6 ve 9),
+# her birine bir tane. Cipin icinde negatif gerilim ureteci calisiyor
+# (pin 12 topraga bagli, normal mod) ve o pompa besleme rayina
+# anahtarlama gurultusu biniyor — ayirma kondansatoru bu yuzden
+# yalnizca "iyi uygulama" degil, cipin kendi gurultusunu kendi
+# rayinda tutmanin yolu.
+for i, cy in enumerate((140, 156)):
+    s.sym(C, "C11%d" % i, "100nF", 230, cy, rot=90, fp=FC)
+    s.pin_label(C, "1", 230, cy, 90, "+3V3", "input")
+    s.pin_power(C, "2", 230, cy, 90, "GND")
 
 s.text("ACILISTA 31.5 dB — EN COK ZAYIFLATMA.\\n"
        "Veri sayfasi s.6: seri modda bile acilis durumunu C0.5-C16\\n"
