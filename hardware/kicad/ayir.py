@@ -154,7 +154,52 @@ def ayir(b, tur=400, elle=(), pay=2.0):
                     int(q.x + s * dx / d * adim * MM),
                     int(q.y + s * dy / d * adim * MM)))
                 sinirla(fps[ref])
-    return len(cift)
+
+    # SON CARE: SIKISAN PARCAYI BOS YERE TASI.
+    #
+    # It-kak yerel calisiyor: dort toroidin ortasina sikismis bir
+    # kondansator hangi yone itilse baska bir toroide giriyor ve
+    # dongu bosa donuyor. D kartinda C11 ve C512 tam bunu yapiyordu
+    # (dokuz cakismanin kaynagi iki parcaydi).
+    #
+    # Burada oynayabilen taraf spiral tarama ile en yakin GERCEKTEN
+    # bos noktaya tasiniyor. Uzaklasmak istenmez ama ic ice gecmis
+    # bir parcadan iyidir: kart basilir, parca takilamaz.
+    fps = {f.GetReference(): f for f in b.Footprints()}
+    kalan = cakismalar(fps)
+    tasindi = 0
+    for a, c in list(kalan):
+        for ref in (a, c):
+            if ref[0] in SABIT or ref in elle:
+                continue
+            fp = fps[ref]
+            k0 = kutu(fp)
+            w, h = k0.GetWidth() / MM, k0.GetHeight() / MM
+            p0 = fp.GetPosition()
+            bulundu = None
+            for r in [x * 0.5 for x in range(4, 60)]:
+                for aci in range(0, 360, 15):
+                    nx = p0.x / MM + r * math.cos(math.radians(aci))
+                    ny = p0.y / MM + r * math.sin(math.radians(aci))
+                    fp.SetPosition(pcbnew.VECTOR2I(int(nx * MM), int(ny * MM)))
+                    sinirla(fp)
+                    kk = kutu(fp)
+                    if any(kk.Intersects(kutu(fps[o]))
+                           for o in fps if o != ref
+                           and fps[o].GetLayer() == fp.GetLayer()
+                           and kutu(fps[o]).GetWidth() > 0):
+                        continue
+                    bulundu = fp.GetPosition()
+                    break
+                if bulundu:
+                    break
+            if bulundu:
+                fp.SetPosition(bulundu)
+                tasindi += 1
+                break
+            fp.SetPosition(p0)
+    fps = {f.GetReference(): f for f in b.Footprints()}
+    return len(cakismalar(fps))
 
 
 def kenar_montajlar(b):

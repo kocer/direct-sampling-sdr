@@ -368,6 +368,21 @@ def yerlesim_A(fps, pn, kondu):
         n += koy(fps, phy, 195, y, 0, kondu)
         # magjack THT: govdesi kart uzerinde, on yuzu kenarla hizali
         n += koy(fps, mj, A_EN - 1, y, 270, kondu, kenar_govde=True)
+        # KRISTAL VE YUK BOBINI ACIK KURALLA. Bunlar kalanlar()'a
+        # birakiliyordu ve PHY'nin courtyard'inin icine dusuyorlardi
+        # (olculdu: Y610 U40'in 0.5 mm icinde, L606 kristale degiyor).
+        # Y ve L de SABIT harflerinde, yani ayirici oynatamaz.
+        # PHY'nin SOL ustune, birbirinden ayri.
+        kr = [r for r, pd in pn.items()
+              if r.startswith("Y") and any(f"PHY{i+1}_X" in a
+                                           for a in pd.values())]
+        for r in sorted(kr):
+            n += koy(fps, r, 185.5, y - 6.5, 0, kondu)
+        bo = [r for r, pd in pn.items()
+              if r.startswith("L") and any(a == f"PHY{i+1}_REGOUT"
+                                           for a in pd.values())]
+        for r in sorted(bo):
+            n += koy(fps, r, 185.5, y + 6.5, 0, kondu)
     # ---------- DAC ve veris zinciri, ALT
     for d, (x, y) in A_DAC.items():
         n += koy(fps, d, x, y, 0, kondu)
@@ -389,7 +404,19 @@ def yerlesim_A(fps, pn, kondu):
     # ---------- guc: SAG UST KOSE, ADC'den en uzak
     # XT60 govdesi buyuk (kablo girisi dahil ~25 mm); regulatorler
     # onun altina kaymali, yoksa U1 XT60'in icine giriyor.
-    n += koy(fps, "J1", 14, 6, 0, kondu)
+    # J1 y=6 DEGIL y=16. XT60'in courtyard'i 22.4 mm YUKSEK; y=6'da
+    # ust kenari -5.2'ye, yani KARTIN DISINA cikiyordu ve Q1 ile
+    # cakisiyordu. Ayirici bunu duzeltemez: hem J hem Q, SABIT
+    # harflerinde: iki sabit parca cakisirsa ayirici pes ediyor,
+    # yani duzeltme buraya, kurala yazilmali.
+    n += koy(fps, "J1", 14, 16, 0, kondu)
+    # Q1 (ters polarite MOSFET'i) XT60'IN SAGINA, ICINE DEGIL.
+    # J1 kenar konnektoru sayildigi icin koy() onu ust kenara
+    # yapistiriyor ve courtyard'i y=-4.3..18.1'i kapliyor; Q1
+    # kalanlar() ile "en cok bagli komsusunun dibine" konunca tam
+    # oraya dusuyordu. Ikisi de SABIT harflerinde (J ve Q), yani
+    # ayirici ayiramaz — kural buraya yazilmali.
+    n += koy(fps, "Q1", 24, 10, 0, kondu)
     # IKI BUCK YAPISKAN GRUP OLARAK. Once U1/U2 ve L1/L2 tek tek
     # konuyordu ve bobin 20 mm oteye dusuyordu: bir alicinin en
     # yuksek dv/dt'li dugumu, on ucun 20 mm yaninda 2 cm'lik bir
@@ -586,6 +613,7 @@ def guc_bacaklari(kart):
 
 
 def ac_kalanlara_kondansator(fps, pn, kondu, sinir_mm=5.0, kart=None):
+    import ayir as _ayir
     """Yakininda kondansatoru olmayan her entegreye bir tane cek.
 
     NEDEN AYRI BIR GECIS. ayristirma_topa raya bagli butun entegreler
@@ -687,7 +715,19 @@ def ac_kalanlara_kondansator(fps, pn, kondu, sinir_mm=5.0, kart=None):
                 for u2 in fps:
                     if not u2.startswith("U") or u2 == ic:
                         continue
-                    if ray not in pn.get(u2, {}).values():
+                    # VAZGECILMEZLIK SINAMASI DA power_in ILE.
+                    # Once "o raya bagli her entegre" sayiliyordu,
+                    # lojik girisinden bagli olanlar dahil. D'de +5V'a
+                    # bagli on bes entegre var ama gercek besleme
+                    # bacagi olan yedi tane; on bir kondansatorun her
+                    # biri birinin "tek kondansatoru" cikiyor ve hicbir
+                    # aday kalmiyordu. U31 bu yuzden 25.8 mm otedeki
+                    # kondansatorle bas basa kaldi.
+                    if gb is not None:
+                        if not any(v == ray and (u2, k) in gb
+                                   for k, v in pn.get(u2, {}).items()):
+                            continue
+                    elif ray not in pn.get(u2, {}).values():
                         continue
                     if yakin_sayisi(u2, ray) == 1 and \
                        yakin_sayisi(u2, ray, disla=c) == 0:
@@ -725,16 +765,23 @@ def ac_kalanlara_kondansator(fps, pn, kondu, sinir_mm=5.0, kart=None):
                     ac = 2 * _m.pi * k2 / 16.0
                     cx = hp.x / MM + yaricap * _m.cos(ac)
                     cy = hp.y / MM + yaricap * _m.sin(ac)
-                    cakisti = False
-                    for r2, f2 in fps.items():
-                        if r2 == sec:
-                            continue
-                        o2 = f2.GetPosition()
-                        w2, h2 = olcu(f2)
-                        if abs(o2.x / MM - cx) < (w + w2) / 2 and \
-                           abs(o2.y / MM - cy) < (h + h2) / 2:
-                            cakisti = True
-                            break
+                    # CAKISMA OLCUSU AYIR ILE AYNI OLMALI.
+                    #
+                    # Once olcu() kullaniyordum (1.4 mm pay), ayir ise
+                    # kendi kutu()'suyla bakiyor. Iki olcu ayrilinca
+                    # sonuc su oldu: gecis kondansatoru bacagin 5.4 mm
+                    # yanina koyuyor ve "bos" diyor, arkasindan gelen
+                    # ayir orayi cakisik sayip parcayi 25.8 mm oteye
+                    # tasiyordu. Iki mekanizma birbirinin isini bozuyor
+                    # ve D'de U31 bu yuzden kondansatorsuz kaliyordu.
+                    fps[sec].SetPosition(pcbnew.VECTOR2I(int(cx * MM),
+                                                         int(cy * MM)))
+                    kk = _ayir.kutu(fps[sec])
+                    cakisti = any(
+                        kk.Intersects(_ayir.kutu(f2))
+                        for r2, f2 in fps.items()
+                        if r2 != sec and f2.GetLayer() == fps[sec].GetLayer()
+                        and _ayir.kutu(f2).GetWidth() > 0)
                     if not cakisti:
                         yer = (cx, cy)
                         break
@@ -1575,7 +1622,21 @@ def yerlesim_D(fps, pn, kondu):
         # tasti) ve kartin kullanilabilir genisligi ~236 mm. D'de
         # kalan 28 courtyard cakismasinin sebebi buydu — yer
         # yetmiyordu, ayirici de yoktan yer uretemez.
-        w = max([cap(r) for r in bant_bobinleri(i) if r in fps] or [14.0])
+        # KARMA: BUYUK CEKIRDEK YAN YANA, KUCUK CEKIRDEK ISTIFLI.
+        #
+        # Once hepsi yan yanaydi: yedi bant 285.6 mm istedi, yer 236.
+        # Sonra hepsini dikey istifledim ve bu sefer YUKSEKLIK tasti —
+        # iki T94 50.5 mm tutuyor, seride ~26 mm yer var (ustte surucu
+        # trafosu y=89, altta rolenin ust kenari 115.3; G2RL govdesi
+        # 29.4 mm YUKSEK, merkezi 130 oldugu icin ust kenari 130 degil
+        # 115.3 — kendi yorumumda bunu 130 sanmistim).
+        #
+        # Karma cozum olcuyle: T94'lu uc bant yan yana (3 x 50 mm),
+        # T68 ve T50'li dort bant istifli (2 x 18.6 + 2 x 13.8) =
+        # 214.8 mm + araliklar ~221 mm, 236'nin altinda.
+        capl = [cap(r) for r in bant_bobinleri(i) if r in fps] or [14.0]
+        istif = max(capl) < 20.0          # T94 20'nin ustunde
+        w = max(capl) if istif else sum(capl) + 0.5 * (len(capl) - 1)
         # Bypass bandinin (bobinsiz) genisligi rolenin kendisi
         # kadar: G2RL-2 govdesi 13.1 mm.
         w = max(w, 14.0)
@@ -1583,8 +1644,22 @@ def yerlesim_D(fps, pn, kondu):
         imlec += w + 1.0          # bantlar arasi 1 mm
     for i in range(1, 8):
         bx = bant_x[i]
-        n += koy(fps, f"KL{i}", bx, 130, 0, kondu)
-        n += koy(fps, f"QL{i}", bx, 155, 0, kondu)
+        # ROLE SIRASI 130 -> 142, SURUCULERI 155 -> 166.
+        #
+        # LPF bobin seridi ustte surucu trafosuna (T10, y=80), altta
+        # rolenin UST kenarina sikismisti. G2RL govdesi 29.4 mm, yani
+        # merkez 130 iken ust kenar 115.3 — serit 15.8 mm kaliyordu ve
+        # istiflenmis bir T68 cifti 37.7 mm istiyor.
+        #
+        # Asagisi BOS: y=130..150 bandindaki parcalarin hepsi x>250'de
+        # (kuplor ve dedektor blogu), LPF sutunlari ise x=4..236. Yani
+        # kart buyutmeye ya da iki siraya gerek yok, blok yerinde
+        # aciliyor.
+        n += koy(fps, f"KL{i}", bx, 142, 0, kondu)
+        # QL SIRASI 166 -> 172. Q32 (baska bir 2N7002) kalanlar() ile
+        # 164'e dusuyordu ve iki SOT-23 iki milimetre arayla kaliyordu;
+        # ikisi de Q harfinde, yani ayirici ayiramaz.
+        n += koy(fps, f"QL{i}", bx, 172, 0, kondu)
         # BANDIN FILTRESI KENDI SUTUNUNDA. Onceden LPF bobinlerini
         # genel dolguya birakmistim; T68/T94 toroidler role
         # govdelerinin icine dustu (10 adet pth_inside_courtyard).
@@ -1607,8 +1682,14 @@ def yerlesim_D(fps, pn, kondu):
         # DIKEY ISTIF: imlec y ekseninde ilerliyor, x sabit (bx).
         # Blok 99'da ortalanıyor; iki T94 (25 mm) 50.5 mm tutuyor,
         # yani 73.7..124.2 arasi. Role 130'da, yani degmiyorlar.
-        yuk = sum(cap(r) for r in bobin) + 0.5 * max(0, len(bobin) - 1)
-        bimlec = 99 - yuk / 2
+        capb = [cap(r) for r in bobin]
+        istif_b = (max(capb) if capb else 0) < 20.0
+        if istif_b:
+            yuk = sum(capb) + 0.5 * max(0, len(capb) - 1)
+            bimlec = 108 - yuk / 2
+        else:
+            gen = sum(capb) + 0.5 * max(0, len(capb) - 1)
+            bimlec = bx - gen / 2
         for r in bobin:
             w = cap(r)
             # Bobinler arasi 0.5 mm: tam capa esit adimda
@@ -1619,10 +1700,13 @@ def yerlesim_D(fps, pn, kondu):
             # 14.1 mm kaliyordu. Uc mm asagi: T10 alt kenari 89.05,
             # toroid ust kenari 89.69. Filtre kondansatorleri de
             # birlikte iniyor (asagida 111 -> 114).
-            n += koy(fps, r, bx, bimlec + w / 2, baci, kondu)
+            if istif_b:
+                n += koy(fps, r, bx, bimlec + w / 2, baci, kondu)
+            else:
+                n += koy(fps, r, bimlec + w / 2, 108, baci, kondu)
             bimlec += w + 0.5
         for j, r in enumerate(kond):
-            n += koy(fps, r, bx - 8 + j * 8, 114, 90, kondu)
+            n += koy(fps, r, bx - 8 + j * 8, 126, 90, kondu)
     # ---------- kuplor ve detektorler: LPF cikisi
     # Kart 20 mm genisleyince kuplor/dedektor blogu da 20 mm saga:
     # LPF sirasi artik x=250'ye kadar geliyor.
