@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""03_bias: A sinifi bias servosu, cihaz basina bir tane.
+"""REFERANS ARALIGI — BU DOSYA: RS1-RS4, U20-U29 (DAC),
+U31-U39 (INA240 akim olcum), U41-U49 (LM358 integrator).
+Aralik listesinin tamami gen_02_final.py basinda.
+
+03_bias: A sinifi bias servosu, cihaz basina bir tane.
 Kaynak: ../../PA_TASARIM.md §2 ve §3."""
 import json, os
 from schlib import Sheet

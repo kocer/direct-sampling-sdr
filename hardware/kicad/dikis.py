@@ -230,7 +230,98 @@ def dik(pcb, aralik=ARALIK):
     return n
 
 
+def fiducial(pcb, pay=6.0):
+    """Uc hizalama isareti — otomatik dizgi makinesi icin.
+
+    ** UC KARTTA DA SIFIR TANE VARDI. ** Dizgi makinesi karti
+    fiducial'lardan hizaliyor; yoksa JLCPCB gibi servisler ya karti
+    geri ceviriyor ya da kendileri rastgele bir yere ekliyor — o
+    zaman hizalama toleransi dusuyor ve 0.5 mm adimli QFN'lerde
+    (PE4312, DRV8833, TPS62130, AD8318) bu dogrudan koprulenmis
+    bacak demek.
+
+    Uc tane, KOSEGEN OLMAYAN uc kosede: makine kartin donusunu
+    ancak asimetrik bir uclu ile anlayabiliyor. 1 mm bakir daire,
+    2 mm maske acikligi (standart).
+
+    ** NEDEN ICE ALMA ADIMINDA: ** fiducial'in agi yok, netlistte
+    yok, yerlesime de katilmiyor. pcb_kur'a koysaydik ayak izi
+    sayisi degisir ve DSN parmak izi bozulurdu — yani her fiducial
+    eklemesi butun yonlendirmeyi gecersiz kilardi. Buraya, dikis
+    via'larinin yanina ait.
+    """
+    b = pcbnew.LoadBoard(pcb)
+    for fp in list(b.Footprints()):
+        if fp.GetReference().startswith("FID"):
+            return 0                      # zaten var, ikinci kez ekleme
+    kutu = b.GetBoardEdgesBoundingBox()
+    x0, y0 = kutu.GetLeft() / MM, kutu.GetTop() / MM
+    x1, y1 = kutu.GetRight() / MM, kutu.GetBottom() / MM
+    # YER ARANIYOR, SABIT KOSE DEGIL. Kose noktalari ZATEN DOLU:
+    # montaj delikleri (5,5), guc konnektoru (A'da XT60 14,6) ve
+    # kenar konnektorleri oralarda. Fiducial'in etrafinda 2 mm
+    # maske acikligi var; parcanin ustune denk gelirse dizgi
+    # makinesi onu bulamaz.
+    # Uc kose bolgesinde 1 mm adimla tarayip ilk BOS noktayi
+    # aliyoruz. Bos = hicbir ayak izinin courtyard'ina 3 mm'den
+    # yakin degil.
+    kutular = []
+    for fp in b.Footprints():
+        try:
+            k = fp.GetCourtyard(pcbnew.F_CrtYd).BBox()
+            if k.GetWidth() <= 0:
+                k = fp.GetBoundingBox()
+        except Exception:
+            k = fp.GetBoundingBox()
+        kutular.append((k.GetLeft() / MM, k.GetRight() / MM,
+                        k.GetTop() / MM, k.GetBottom() / MM))
+
+    def bos_mu(x, y, pay2=3.0):
+        for l, r, u, a2 in kutular:
+            if l - pay2 < x < r + pay2 and u - pay2 < y < a2 + pay2:
+                return False
+        return True
+
+    def ara(bx, by, ax, ay):
+        for adim in range(0, 60):
+            for k in range(adim + 1):
+                x = bx + ax * k
+                y = by + ay * (adim - k)
+                if x0 + 3 < x < x1 - 3 and y0 + 3 < y < y1 - 3 and bos_mu(x, y):
+                    return (x, y)
+        return None
+
+    yerler = [ara(x0 + pay, y0 + pay, 1, 1),
+              ara(x1 - pay, y0 + pay, -1, 1),
+              ara(x0 + pay, y1 - pay, 1, -1)]
+    yerler = [p for p in yerler if p]
+    try:
+        import pcb_kur
+        libs = pcb_kur.fp_kutuphaneleri()
+        kutuphane = libs["Fiducial"]
+    except Exception:
+        return 0
+    n = 0
+    for i, (x, y) in enumerate(yerler):
+        try:
+            fp = pcbnew.FootprintLoad(kutuphane, "Fiducial_1mm_Mask2mm")
+        except Exception:
+            fp = None
+        if fp is None:
+            continue
+        fp.SetPosition(pcbnew.VECTOR2I(int(x * MM), int(y * MM)))
+        fp.SetReference(f"FID{i + 1}")
+        b.Add(fp)
+        n += 1
+    if n:
+        b.Save(pcb)
+    return n
+
+
 if __name__ == "__main__":
     yol = sys.argv[1]
     a = float(sys.argv[2]) if len(sys.argv) > 2 else ARALIK
     print(f"{os.path.basename(yol)}: {dik(yol, a)} dikis via'si")
+    nf = fiducial(yol)
+    if nf:
+        print(f"   {nf} fiducial eklendi")

@@ -21,15 +21,26 @@ import pcbnew
 HERE = os.path.dirname(os.path.abspath(__file__))
 MM = 1000000          # pcbnew ic birimi: nanometre
 
+# KART OLCUSU TEK KAYNAKTAN: gercek_yerlesim.
+#
+# Burada en/boy elle yazilirdi (170x130, 240x180, 160x120) ve
+# gercek_yerlesim'deki gercek olculerle (235x225, 350x235, 275x185)
+# TUTMUYORDU. Zararsiz gorunuyordu cunku kenari gercek_yerlesim
+# ciziyor; ama iki ayri "gercek" birakmak, bir gun birinin
+# otekinden habersiz degismesi demek — nitekim dis_hat montaj
+# deliklerini BU olculere gore koyuyordu ve gercek_yerlesim
+# onlari sonradan tasimak zorunda kaliyordu.
+# Artik olcu gercek_yerlesim'den geliyor; buradaki deger sadece
+# kuvvet-guduml u ilk dizimin baslangic kutusu ve o da ayni sayi.
+import gercek_yerlesim as _GY
+
 KARTLAR = {
-    # Olculer KAT PLANINDAN (kat_plani.py): capalar o kutuya gore
-    # yerlestirildi, kart onlari icermek zorunda.
     "A": dict(dizin="A_main", proj="dogrudan_sdr_A", katman=6,
-              en=170, boy=130),
+              en=_GY.A_EN, boy=_GY.A_BOY),
     "C": dict(dizin="C_rf", proj="dogrudan_sdr_C", katman=2,
-              en=240, boy=180),
+              en=_GY.C_EN, boy=_GY.C_BOY),
     "D": dict(dizin="D_pa", proj="dogrudan_sdr_D", katman=2,
-              en=160, boy=120),
+              en=_GY.D_EN, boy=_GY.D_BOY),
 }
 
 # ---------------------------------------------------------------- yigin
@@ -296,17 +307,77 @@ def kurallar(board, kart):
     # JLCPCB sinirlari: en kucuk delik 0.20 mm, en kucuk iz/aciklik
     # 0.127 mm. Varsayilan KiCad kurallari daha dar ve elde ettigimiz
     # ayak izleri "drill out of range" veriyordu.
-    ds.m_MinThroughDrill = int(0.20 * MM)
+    # ASGARI DELIK 0.20 DEGIL 0.30. Kural 0.20'de kalinca
+    # kutuphanedeki 0.2 mm isi vialari DRC'den sessizce
+    # geciyordu — kural kendisiyle tutarliydi ama uretimle
+    # degil. delikleri_buyut() pedleri 0.3'e cikariyor;
+    # kural da onu denetleyecek sekilde ayarlaniyor.
+    ds.m_MinThroughDrill = int(0.30 * MM)
     ds.m_TrackMinWidth = int(0.127 * MM)
     ds.m_ViasMinSize = int(0.40 * MM)
     ds.m_MinClearance = int(0.127 * MM)
+    # BOSLUK TAVANI KARTA GORE — DRC ILE YONLENDIRICI AYNI SEYI
+    # SOYLEMEK ZORUNDA.
+    # A kartinda BGA kacisi icin DSN boslugu 127 um'ye indirildi
+    # (dsn_yaz: 0.8 mm adimli CABGA256'da 300 um ile via GEOMETRIK
+    # OLARAK sigmiyor). Ag sinifinin DRC boslugu 200 um kalirsa
+    # yonlendiricinin cektigi her iz DRC hatasi olur. Sinif degeri
+    # burada kartin tabanina kirpiliyor:
+    #     A  127 um   (JLCPCB 4+ katman standart sinif 0.09 mm)
+    #     C  150 um
+    #     D  250 um   (2 oz dis bakir; o surecte asgari 0.25 mm)
+    # Genis guc izleri yine 300 um arayla cekiliyor — onu DSN
+    # tarafindaki sinif kurali sagliyor. Buradaki deger bir TABAN,
+    # hedef degil.
+    # DEGERLER URETIM SINIRI, YONLENDIRME HEDEFI DEGIL.
+    # Yonlendirici DSN'de A'da 127, C'de 150, D'de 300 um hedefiyle
+    # cekiyor. DRC kuralini AYNI sayiya koyarsak kural bir seyi
+    # denetlemiyor: yonlendiricinin ciktisi tanim geregi tam o
+    # degerde ve 1-2 um'lik yuvarlama farki hata olarak cikiyor
+    # (olculdu: "clearance 0.2000; actual 0.1517" tipinde 501 kayit,
+    # hepsi yuvarlama mesafesinde). DRC'nin isi URETILEBILIRLIGI
+    # denetlemek:
+    #   A  6 katman, JLCPCB standart siniri 0.0889 mm -> 0.10
+    #   C  2 katman, standart sinir 0.127 mm           -> 0.127
+    #   D  2 katman 2 oz, o surecte sinir 0.254 mm     -> 0.25
+    # Yonlendirici her kartta bu tabanin uzerinde bir hedefle
+    # calisiyor, yani arada gercek bir pay var.
+    # D'YE 0.25 VERILMISTI, GERI ALINDI. Gerekce 2 oz bakirin
+    # uretim siniriydi ama o sinir IZLER icin gecerli; PEDLERIN
+    # arasi paketin kendi geometrisi ve degistirilemiyor.
+    # Olculdu, karttaki en kucuk ped-ped acikligi (ayni ayak izi
+    # icinde, farkli aglar):
+    #     A 0.177 mm (AD9251 QFN-64)
+    #     C 0.200 mm (PE4312 QFN-20)
+    #     D 0.177 mm (AD8318 QFN-16)
+    # 0.25'lik bir kural bunlarin hepsini "ihlal" sayardi ve DRC
+    # her kosuda kalici gurultu uretirdi — gercek bir ihlal o
+    # gurultunun icinde kaybolur.
+    # Iz araligini kural degil YONLENDIRICI garanti ediyor: DSN
+    # sinif kurallari A'da 127, C'de 150, D'de 300 um. Ice aldiktan
+    # sonra gercek en kucuk iz araligi olculup raporlaniyor.
+    BOSLUK_TAVANI = {"A": 0.10, "C": 0.127, "D": 0.127}
+    tavan = BOSLUK_TAVANI.get(kart, 0.2)
     ncmap = board.GetAllNetClasses()
+    # ** ASIL KURALI BELIRLEYEN SINIF "Default". **
+    # Asagida AG_SINIFI'ndan uretilen siniflar (RF50, LVDS, GUC...)
+    # kart dosyasina KAYDEDILMIYOR: kaydedilip geri okununca kartta
+    # tek sinif kaliyor, "Default". Yani butun DRC boslugu onun
+    # degeriyle, 0.200 mm ile olculuyordu.
+    # Olculdu: C kartinda yonlendirici 150 um araliga cekti (DSN
+    # sinif kurali oyle diyor) ve DRC 501 clearance hatasi verdi —
+    # hepsi "clearance 0.2000 mm; actual 0.15 mm". Yani yonlendirici
+    # ile DRC ayni kartta iki farkli kural kullaniyordu.
+    # Default'un boslugu kartin tabanina cekiliyor; DSN tarafindaki
+    # sinif kurallari zaten guc izlerini 300 um'de tutuyor.
+    if "Default" in ncmap:
+        ncmap["Default"].SetClearance(int(tavan * MM))
     for ad, k in AG_SINIFI.items():
         nc = ncmap[ad] if ad in ncmap else pcbnew.NETCLASS(ad)
         nc.SetTrackWidth(int(k["track"] * MM))
         nc.SetViaDiameter(int(k["via"] * MM))
         nc.SetViaDrill(int(k["drill"] * MM))
-        nc.SetClearance(int(k["clear"] * MM))
+        nc.SetClearance(int(min(k["clear"], tavan) * MM))
         if "diff" in k:
             nc.SetDiffPairWidth(int(k["track"] * MM))
             nc.SetDiffPairGap(int(k["diff"] * MM))
@@ -314,8 +385,26 @@ def kurallar(board, kart):
     return ncmap
 
 
-def dis_hat(board, en, boy):
-    """Kart dis hatti, 3 mm kose yaricapi yerine duz — uretim ucuz."""
+def dis_hat(board, en, boy, kart=None, gnd=None):
+    """Kart dis hatti, 3 mm kose yaricapi yerine duz — uretim ucuz.
+
+    MONTAJ DELIKLERI VE SASE BAGI. Uc kart ayni kasaya giriyor ve
+    metal ayaklarla vidalaniyor. Her kart kendi montaj deliginden
+    kasaya baglanirsa aralarinda toprak dongusu olusur: kasa
+    uzerinden akan sebeke/anahtarlama akimi alis on ucunun
+    referansina biner. Sistemde TEK sase referans noktasi var ve
+    o C kartinda — anten konnektorleri orada, kasa zaten anten
+    toprak referansi.
+
+        C   anten konnektorlerine en yakin delik KAPLAMALI, GND'de
+        A   dort delik de kaplamasiz
+        D   dort delik de kaplamasiz
+
+    C'de kaplamali delik LISTENIN BASINDA uretiliyor; gercek_yerlesim
+    delikleri pedli olan basa gelecek sekilde siralayip ilkini
+    (5,5) kosesine koyuyor — C'de anten konnektorleri sol kenarda,
+    J1 y=25'te, yani o kose 20 mm otesi.
+    """
     for a, b, c, d in ((0, 0, en, 0), (en, 0, en, boy),
                        (en, boy, 0, boy), (0, boy, 0, 0)):
         s = pcbnew.PCB_SHAPE(board)
@@ -326,14 +415,20 @@ def dis_hat(board, en, boy):
         s.SetWidth(int(0.1 * MM))
         board.Add(s)
     # dort kose montaj deligi, 3.2 mm (M3)
-    for x, y in ((5, 5), (en - 5, 5), (5, boy - 5), (en - 5, boy - 5)):
-        libs = fp_kutuphaneleri()
+    libs = fp_kutuphaneleri()
+    koseler = ((5, 5), (en - 5, 5), (5, boy - 5), (en - 5, boy - 5))
+    for i, (x, y) in enumerate(koseler):
+        kaplamali = (kart == "C" and i == 0)
+        ad = ("MountingHole_3.2mm_M3_Pad" if kaplamali
+              else "MountingHole_3.2mm_M3")
         try:
-            fp = pcbnew.FootprintLoad(libs["MountingHole"],
-                                      "MountingHole_3.2mm_M3")
+            fp = pcbnew.FootprintLoad(libs["MountingHole"], ad)
             if fp:
                 fp.SetPosition(pcbnew.VECTOR2I(int(x * MM), int(y * MM)))
                 board.Add(fp)
+                if kaplamali and gnd is not None:
+                    for pad in fp.Pads():
+                        pad.SetNet(gnd)
         except Exception:
             pass
 
@@ -363,6 +458,51 @@ def toprak_dokum(board, kart):
         z.AddPolygon(pts)
         board.Add(z)
         n += 1
+    return n
+
+
+ASGARI_DELIK = 0.30      # mm, JLCPCB standart surec
+# HALKA 0.15 DEGIL 0.10.
+# 0.15 ile isi viasinin pedi 0.5 -> 0.6 mm oluyordu ve QFN'in sinyal
+# pedlerine 0.15 mm kaliyordu (kural 0.2): C'de 32, D'de 8 clearance
+# hatasi. PE4312 ve DRV8833'un isi via dizisi zaten sinyal pedlerinin
+# dibinde; ped buyutulecek yer yok.
+# 0.3 mm delik + 0.5 mm ped = her yanda 0.10 mm halka, ki JLCPCB'nin
+# via icin standart alt siniri. Delik buyutmenin amaci zaten surec
+# sinifiydi (0.2 mm ileri surec), halka degil.
+ASGARI_HALKA = 0.10      # mm, delik basina her yandan bakir
+
+
+def delikleri_buyut(board):
+    """0.2 mm delikleri 0.3 mm'ye cikar — URETIM SURECI MESELESI.
+
+    Kutuphanedeki "*_ThermalVias" ayak izleri isi vialarini 0.2 mm
+    delikle koyuyor. Olculdu: A'da 9 (U15), C'de 184 (PE4312 x4 +
+    DRV8833 x14), D'de 10 (U10, U50) — toplam 203 delik.
+
+    DRC bunu YAKALAMIYOR cunku kartin kendi asgari delik kurali da
+    0.2 mm; kural kendisiyle tutarli oldugu icin sessiz. Ama 0.2 mm
+    JLCPCB'de ileri surec: fiyati yukseltiyor ve teslim suresini
+    uzatiyor, ustelik uc kartin UCUNU birden etkiliyor.
+
+    Isi direnci acisindan kayip yok: alti adet 0.3 mm'lik via, on
+    adet 0.2 mm'likten daha genis kesit veriyor. Ped de buyuyor
+    (0.3 + 2 x 0.15 = 0.6 mm) yoksa halka kalmaz ve delik pedin
+    kenarindan cikar.
+    """
+    n = 0
+    for fp in sorted(board.Footprints(), key=lambda f: f.GetReference()):
+        for pad in fp.Pads():
+            d = pad.GetDrillSizeX() / MM
+            if not 0 < d < ASGARI_DELIK:
+                continue
+            pad.SetDrillSize(pcbnew.VECTOR2I(int(ASGARI_DELIK * MM),
+                                             int(ASGARI_DELIK * MM)))
+            en_az = ASGARI_DELIK + 2 * ASGARI_HALKA
+            if pad.GetSizeX() / MM < en_az:
+                pad.SetSize(pcbnew.VECTOR2I(int(en_az * MM),
+                                            int(en_az * MM)))
+            n += 1
     return n
 
 
@@ -473,8 +613,9 @@ def kur(kart):
                                                      int(cy * MM)))
         print(f"   {kart}: {kalan} cakisma kaldi, kart "
               f"{k['en']}x{k['boy']} mm'ye buyutuluyor")
-    dis_hat(board, k["en"], k["boy"])
+    dis_hat(board, k["en"], k["boy"], kart, agi.get("GND"))
     nz = toprak_dokum(board, kart)
+    buyutulen = delikleri_buyut(board)
 
     # ag sinifi atamasi: desene gore
     ncmap = board.GetAllNetClasses()

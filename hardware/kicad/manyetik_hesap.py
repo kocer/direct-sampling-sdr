@@ -88,7 +88,7 @@ Vcc, Pout, Zload = 50.0, 100.0, 50.0
 R_dd = Vcc ** 2 / (2 * Pout)
 oran_z = Zload / R_dd
 oran_n = math.sqrt(oran_z)
-print(f"\nT11 FINAL CIKIS")
+print(f"\nT31 FINAL CIKIS  (02_final)   ** BIRINCIL ORTA UCLU **")
 print(f"  drain-drain empedansi  R_dd = Vcc^2/(2*Pout) = {R_dd:.1f} ohm")
 print(f"  yuk {Zload:.0f} ohm  ->  empedans orani 1:{oran_z:.0f}, "
       f"sarim orani 1:{oran_n:.0f}")
@@ -116,7 +116,7 @@ print("       Asimetri cift harmonik iptalini bozar — push-pull'un")
 print("       tek kazandirdigi sey o.")
 
 # --- final giris trafosu -------------------------------------------------
-print(f"\nT10 FINAL GIRIS")
+print(f"\nT30 FINAL GIRIS  (02_final)")
 Zin_gate = 1.0        # bastirma direnci ile ayarlanan gecit yuku
 oran_z_in = 50.0 / Zin_gate
 oran_n_in = math.sqrt(oran_z_in)
@@ -131,7 +131,7 @@ for c in ("BN43-202", "FT50-43"):
 print("  Surucuden gelen guc yarim watt; doyma sorunu yok.")
 
 # --- surucu 2 trafolari ---------------------------------------------------
-print(f"\nT10/T11 SURUCU 2  (01_driver)")
+print(f"\nT10 / T12 SURUCU 2  (01_driver)  ** T12 ORTA UCLU **")
 for ad, z1, z2, P in (("giris  4:1", 50.0, 12.5, 0.5),
                       ("cikis  1:2", 25.0, 50.0, 8.0)):
     orz = z2 / z1
@@ -144,18 +144,33 @@ for ad, z1, z2, P in (("giris  4:1", 50.0, 12.5, 0.5),
           f"B = {B:.1f} mT")
 
 # --- yonlu kuplor ---------------------------------------------------------
-print(f"\nT20/T21 YONLU KUPLOR  (04_detect)")
-kuplaj_db = 30.0
-N_kuplor = round(10 ** (kuplaj_db / 20))
-print(f"  -{kuplaj_db:.0f} dB kuplaj  ->  sarim orani 1:{N_kuplor}")
-print(f"  FT50-43, birincil 1 sarim (duz gecen tel), ikincil {N_kuplor} sarim")
-print(f"  ikincil 51 ohm ile sonlandirilmis (04_detect'te cizili)")
-print(f"  100 W'ta orneklenen: {100 / 10 ** (kuplaj_db / 10) * 1000:.0f} mW = "
-      f"+{10 * math.log10(100 / 10 ** (kuplaj_db / 10) * 1000):.0f} dBm")
-print("  YONLULUK sarimin duzgunlugune bagli: ikincil cekirdege ESIT")
-print("  aralikli ve tam olarak sarilmali. 20 dB yonluluk yeterli,")
-print("  dikkatli sarimla cikiyor; ozensiz sarimda 10 dB'ye duser ve")
-print("  SWR olcumu yaniltir.")
+# TANDEM MATCH. Iki ozdes trafo, iki AYRI is:
+#   T20  1 sarim hatta seri        -> AKIM ornegi   i = I/N
+#   T21  N sarim hat-toprak arasi  -> GERILIM ornegi v = V/N
+# Portlar T20'nin N sarimli sarginin iki ucu; her portun soguk ucu
+# 51R uzerinden ortak dugume (CPL_COM) gidiyor ve o dugumu T21'in
+# tek sarimli ucu suruyor. Sonuc:
+#     V_ileri = v + 51 i        V_yansiyan = v - 51 i
+# Yansiyan port yuk 51 ohm iken sifir. Iki ornek toplandigi icin
+# kuplaj tek trafolu devrenin 2 kati (+6 dB).
+print(f"\nT20/T21 YONLU KUPLOR — TANDEM MATCH  (04_detect)")
+N_kuplor = 32
+kuplaj_db = 20 * math.log10(N_kuplor / 2.0)
+print(f"  sarim orani 1:{N_kuplor}  ->  kuplaj -{kuplaj_db:.1f} dB")
+print(f"  T20: birincil 1 sarim (duz gecen tel), ikincil {N_kuplor} sarim")
+print(f"  T21: {N_kuplor} sarim hat-toprak arasi, 1 sarim CPL_COM'a")
+print(f"  her iki port 51 ohm (1%) ile CPL_COM'a sonlandirilmis")
+_p = 100 / 10 ** (kuplaj_db / 10) * 1000
+print(f"  100 W'ta orneklenen: {_p:.0f} mW = +{10 * math.log10(_p):.1f} dBm")
+print("  Dedektor onundeki sont 19R1'e indirildi: 6 dB'lik kazanci geri")
+print("  aliyor, AD8318 100 W'ta yine ~0 dBm goruyor.")
+print("  YONLULUK sarimin duzgunlugune bagli: cok sarimli sargi")
+print("  cekirdege ESIT aralikli ve tam olarak sarilmali. 20 dB")
+print("  yonluluk yeterli, dikkatli sarimla cikiyor; ozensiz sarimda")
+print("  10 dB'ye duser ve SWR olcumu yaniltir.")
+print("  SARIM YONU: devreye almada 50 ohm kukla yukte REV'in")
+print("  sifirlandigi dogrulanacak; ters cikarsa T21'in TEK SARIMLI")
+print("  ucu ters baglanacak (semada ifade edilemeyen tek sey bu).")
 
 print()
 print("=" * 74)

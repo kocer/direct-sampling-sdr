@@ -125,7 +125,13 @@ def analog(ref, x, y, cha, chb):
     s.pin_power(A, "56", x, y, 0, "GND", d=15.24)     # SENSE -> AGND
     s.pin_label(A, "57", x, y, 0, vcm, "output", d=20.32)
     s.pin_label(A, "58", x, y, 0, f"RBIAS_{ref}", "passive", d=25.4)
-    s.pin_power(A, "0", x, y, 0, "GND", d=7.62)       # exposed paddle
+    # ACIK PED = PIN 65, "0" DEGIL.
+    # Sembolde acik ped "0" numarasindaydi, ayak izinde (QFN-64-1EP)
+    # ise "65". Numaralar tutmadigi icin GND var olmayan bir pine
+    # gidiyordu ve ped 65 kartta AGSIZ kaliyordu — olctum, iki ADC'de
+    # de. AD9251 veri sayfasi: acik ped AGND'ye baglanmali; hem tek
+    # toprak referansi hem tek termal yol o.
+    s.pin_power(A, "65", x, y, 0, "GND", d=7.62)
 
     cx = x + 34
     s.sym(C, cnt("C"), "1uF", cx, y + 40, fp=FC)

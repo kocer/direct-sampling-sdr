@@ -35,8 +35,21 @@ def cnt(p):
 s.text("DAC-1 — CIFT PORT (MODE = HIGH), banka 2", 16, 14, 2.0)
 
 s.sym(D, "U30", "AD9767ASTZ", 60, 70, fp=FD, unit=1)
+# PORT 1'IN BIT SIRASI TERSTI.
+# Veri sayfasi Rev.C Tablo 6: pin 1 = DB13P1 (MSB) ... pin 14 = DB0P1.
+# Bu depodaki sembol de boyle (lib/gen_symbols.py). Ama burada
+# "DAC1_P1_D{13 - i}" yaziyordu, yani pin 1'e D0, pin 14'e D13 —
+# port 1 ters, port 2 (asagida) dogru. AYNI CIPTE IKI PORT ZIT
+# KONVANSIYONDA.
+# Sonucu sessiz: LSB DAC'in MSB'sine gider, 14 bitlik kelime
+# bit-ters permutasyona ugrar, cikis tam olcekli gurultu olur —
+# ama butun hatlarda sinyal "var" gorunur, hicbir olcum eksik
+# baglanti gostermez.
+# Adi silikonla uyusturuyoruz, gateware'de telafi etmiyoruz:
+# yalan soyleyen bir ag adi birakmak, sonraki kisiyi ayni tuzaga
+# dusurur.
 for i in range(14):
-    s.pin_label(D, str(14 - i), 60, 70, 0, f"DAC1_P1_D{13 - i}", "input", d=12.7)
+    s.pin_label(D, str(14 - i), 60, 70, 0, f"DAC1_P1_D{i}", "input", d=12.7)
 s.pin_label(D, "17", 60, 70, 0, "DAC1_WRT1", "input", d=12.7)
 # CLK1 SAAT AGACINDAN (02_clock), FPGA'dan DEGIL. Ilk cizimde
 # ikisini de FPGA'ya baglamistim; o zaman TX saati RX saatiyle ayni
@@ -63,8 +76,9 @@ s.text("CIFT PORT SECILDI. Interleaved veri yolunu 160 MHz'e cikariyor;\\n"
 s.text("DAC-2 — INTERLEAVED (MODE = LOW), banka 1", 200, 14, 2.0)
 
 s.sym(D, "U31", "AD9767ASTZ", 250, 70, fp=FD, unit=1)
+# U30 ile ayni ters siralama buradaydi — ayni duzeltme.
 for i in range(14):
-    s.pin_label(D, str(14 - i), 250, 70, 0, f"DAC2_D{13 - i}", "input", d=12.7)
+    s.pin_label(D, str(14 - i), 250, 70, 0, f"DAC2_D{i}", "input", d=12.7)
 s.pin_label(D, "17", 250, 70, 0, "DAC2_IQWRT", "input", d=12.7)
 s.pin_label(D, "18", 250, 70, 0, "DAC2_CLK", "input", d=17.78)
 s.pin_label(D, "16", 250, 70, 0, "+3V3", "input", d=22.86)
@@ -189,15 +203,24 @@ B2 = unit_pins(E, 4)
 nets2 = ([f"DAC1_P1_D{i}" for i in range(14)] +
          [f"DAC1_P2_D{i}" for i in range(14)] +
          ["DAC1_WRT1", "DAC1_WRT2"] +
-         # Banka 2'nin iki bos pini durum LED'lerine. Once NC
-         # isaretlenmislerdi; LED DC surdugu icin bankanin geri
-         # kalanindaki DAC veri yoluyla ayni ayakta olmalari sorun
-         # degil, ve uzun yol da onemsiz.
-         ["LED_STATUS", "LED_RX"])
+         # Banka 2'nin iki bos pini: biri durum LED'i, biri SISTEM
+         # SAATININ GIRISI.
+         # Once ikisi de LED'di (LED_STATUS, LED_RX) ve FPGA'ya hic
+         # saat girmiyordu — ADCLK846'nin FPGA cikisi sonlandirma
+         # direncinde bitiyordu (bkz. gen_02_clock.py, U18).
+         # LED_RX banka 8'e (R6) tasindi; bosalan ball K16 saate
+         # verildi. K16 = PCLKT2_0, yani bankanin GERCEK saat pini;
+         # bir LED'i orada tutup saati baska yere koymak, saat
+         # yetenegi olan tek ball'i cope atmak olurdu.
+         ["LED_STATUS", "FPGA_CLK80"])
 io2 = sorted(n for n, nm in B2.items() if nm.startswith("PR"))
 assert len(io2) == 32 and len(nets2) == 32, (len(io2), len(nets2))
 for p, net in yol_esle(io2, nets2, "DAC1_P1", "DAC1_P2", "DAC2"):
-    s.pin_label(E, p, B2X, B2Y, 0, net, "output", d=7.62)
+    # SAAT GIRIS, GERISI CIKIS. Hepsini "output" yazarsak FPGA_CLK80
+    # uzerinde iki surucu gorunur (U18 pin 5 ve U10 K16) ve ERC
+    # bunu cakisma sayar.
+    yon = "input" if net == "FPGA_CLK80" else "output"
+    s.pin_label(E, p, B2X, B2Y, 0, net, yon, d=7.62)
 for p in io2[len(nets2):]:
     s.nc(*s.P(E, p, B2X, B2Y))
 for n, nm in sorted(B2.items()):

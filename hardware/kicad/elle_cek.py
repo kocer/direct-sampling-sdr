@@ -31,9 +31,28 @@ D_KRITIK = {
     # dort finalin kapisi: surucuden esit uzaklikta
     "G10": (0.5, "F.Cu"), "G11": (0.5, "F.Cu"),
     "G12": (0.5, "F.Cu"), "G13": (0.5, "F.Cu"),
-    # itme-cekme kollari: cikis trafosuna esit
-    # 2 oz bakir: 6.67 A icin 2.2 mm yeterli, 4 mm degil
-    "DRN_A": (2.2, "F.Cu", "T"), "DRN_B": (2.2, "F.Cu", "T"),
+    # ITME-CEKME KOLLARI: DENGELI TEE.
+    #
+    # Olculdu: T31'in DRN_A pedinden Q10'a 44.8 mm, Q11'e 33.2 mm.
+    # Iki KOL birbirinin aynasi (A: 44.8/33.2, B: 33.2/44.8) yani
+    # kollar arasi simetri TAM — ama KOL ICINDEKI iki paralel cihaz
+    # esit degil, 11.6 mm fark var. Paralel guc MOSFET'lerinde drain
+    # yolu farkli olursa akim paylasimi bozulur: kisa yoldaki cihaz
+    # daha cok ceker, daha cok isinir, Rds(on) artar. A sinifinda
+    # cihaz basina 58 W dagilirken bu fark hangi cihazin once
+    # gidecegini belirler.
+    #
+    # Bu yerlesimde geometrik olarak esitlenemez (dort cihaz bir
+    # sirada, trafo bir yanda). Cozum yonlendirmede: trafonun
+    # pedinden IKI CIHAZIN TAM ORTASINA tek bir iz, oradan iki yana
+    # SIMETRIK ayrilma. Tee noktasi iki drain pedinin orta noktasi
+    # oldugu icin iki dal MATEMATIKSEL OLARAK esit uzunlukta.
+    # 2.2 -> 1.2 mm: kol basina iki cihaz paralel, yani bu iz
+    # 6.67 A degil 3.33 A tasiyor (2 oz'da 0.79 mm yetiyor).
+    # Ag sinifiyla ayni genislik olmali, yoksa elle cizilen dal
+    # ile yonlendiricinin cektigi govde arasinda basamak olur.
+    "DRN_A": (1.2, "F.Cu", "T", "tee"),
+    "DRN_B": (1.2, "F.Cu", "T", "tee"),
     # surucunun kendi kollari
     "D2_DA": (1.5, "F.Cu", "T"), "D2_DB": (1.5, "F.Cu", "T"),
     "D2_GA_S": (0.5, "F.Cu", "Q"), "D2_GB_S": (0.5, "F.Cu", "Q"),
@@ -134,6 +153,7 @@ def cek(pcb, tablo):
     for ag, kayit in sorted(tablo.items()):
         gen, katman = kayit[0], kayit[1]
         zincir = kayit[2] if len(kayit) > 2 else None
+        kip = kayit[3] if len(kayit) > 3 else None
         pts = pedler(b, ag)
         if len(pts) < 2:
             continue
@@ -156,7 +176,66 @@ def cek(pcb, tablo):
         # pedler HEDEFE (listedeki son parca tipine) olan uzakliga
         # gore siralanip zincir halinde baglaniyor. Ayni kural iki
         # kolda ayni topolojiyi veriyor.
-        if zincir:
+        if kip == "tee" and zincir:
+            # DENGELI TEE: kok (trafo pedi) -> yapraklarin ORTASI ->
+            # her yaprak. Orta nokta iki yapraga esit uzaklikta
+            # oldugu icin iki dal birebir ayni uzunlukta cikiyor;
+            # ortak govde ikisinde de ayni, yani toplam yollar da
+            # esit. Meander gerekmiyor.
+            # YAPRAK = CIHAZ PEDI. Bu agda cihazlarin disinda baska
+            # pedler de var (geri besleme direncinin ucu gibi);
+            # onlari ortalamaya katmak tee noktasini kaydiriyor ve
+            # simetriyi bozuyordu (olculdu: J 8.2 yerine 19.4'e
+            # kaydi ve iki dal esitsizlesti).
+            yaprak = [k for k, q in enumerate(pts) if q[2].startswith("Q")]
+            if len(yaprak) >= 2:
+                jx = sum(pts[k][0] for k in yaprak) // len(yaprak)
+                jy = sum(pts[k][1] for k in yaprak) // len(yaprak)
+                # TEE NOKTASI PIN SIRASININ DISINDA.
+                # TO-247'nin uc bacagi AYNI y'de, 5.08 mm arayla:
+                # iki drain pedini birlestiren yatay cizgi aradaki
+                # KAPI ve KAYNAK pedlerinin uzerinden geciyor
+                # (olculdu: Q10 ped 1, G10). Tee noktasini trafo
+                # tarafina 8 mm kaydiriyoruz; iki dal hala jx
+                # ekseninde simetrik, yani esit uzunlukta.
+                kok = next((k for k, q in enumerate(pts)
+                            if q[2].startswith(zincir)), None)
+                yon = 1 if (kok is not None and pts[kok][1] > jy) else -1
+                # KAYMA MIKTARINI ARA, TAHMIN ETME.
+                # 8 mm denendi: tam servo direnci sirasina denk
+                # geldi (R244, y=17.2). 6 mm denendi: cihazin kendi
+                # kapi pedinin 2.4 mm yakinindan geciyor. Aradaki
+                # bosluklar 1-2 mm; sabit bir sayi yazmak yerine
+                # temizini buluyoruz. jx degismedigi icin iki dal
+                # her kaymada esit uzunlukta kaliyor.
+                jy0 = jy
+                for kay in range(5, 20):
+                    jy = jy0 + yon * int(kay * MM)
+                    tamam = True
+                    for k in yaprak:
+                        tt = pcbnew.PCB_TRACK(b)
+                        tt.SetStart(pcbnew.VECTOR2I(int(jx), int(jy)))
+                        tt.SetEnd(pcbnew.VECTOR2I(pts[k][0], pts[k][1]))
+                        tt.SetWidth(int(gen * MM))
+                        if not temiz(b, tt, ag):
+                            tamam = False
+                            break
+                    if tamam:
+                        break
+                pts = list(pts) + [(jx, jy, "TEE", "0")]
+                j = len(pts) - 1
+                # GOVDEYI CIZMIYORUZ, SADECE IKI DALI.
+                # Trafodan tee noktasina giden govde kalabalik
+                # bolgeden geciyor (akim olcum yukselteci tam
+                # aralarinda) ve duz cizgiyle cizilemiyor. Onu
+                # yonlendirici cekiyor: cizilen iki dal aynı agin
+                # korumali bakiri, yonlendirici trafonun pedini o
+                # bakira bagliyor. Simetriyi belirleyen sey zaten
+                # dallar — govde ikisinde de ORTAK.
+                kenarlar = [(j, k) for k in yaprak]
+            else:
+                kenarlar = agac(pts)
+        elif zincir:
             hedef = next((q for q in pts if q[2].startswith(zincir)), None)
             if hedef:
                 pts = sorted(pts, key=lambda q: -math.dist(q[:2], hedef[:2]))
@@ -204,6 +283,96 @@ def cek(pcb, tablo):
     return silinen, n, rapor
 
 
+# ------------------------------------------------------------------ BGA kacisi
+#
+# ** 0.8 mm ADIMLI BGA'DA KACISI YONLENDIRICIYE BIRAKMA. **
+#
+# ECP5 CABGA256: 16x16 top, 0.8 mm adim, 0.32 mm top pedi. Dis iki
+# halka (112 top) ust katmandan yatay kacabiliyor; ic 144 topun
+# kacisi ancak KOSEGEN bosluktan via ile mumkun:
+#     kosegen bosluk merkezi ... en yakin top KENARI
+#         0.8*sqrt(2)/2 - 0.32/2 = 0.406 mm
+#     via (0.50 dis cap) + boslu (0.127) = 0.377 mm    -> 29 um pay
+# Yani yer VAR ama sadece 29 um. Yonlendirici bu yerlestirmeyi arama
+# ile buluyor: her aday via icin alti katmandaki her komsuyu
+# sorguluyor. Olculdu (jstack): tek is parcacikli MazeShoveTraceAlgo
+# 2.5 saat boyunca %97 CPU ile bu isi yapiyor ve bitiremiyor.
+#
+# Oysa bu is ARAMA GEREKTIRMIYOR: hangi topun hangi kosegen bosluga
+# ineceği geometriden belli. Via'yi biz koyuyoruz, yonlendiriciye
+# "via'dan hedefe" diye cok daha kolay bir problem kaliyor.
+#
+# Olculdu, ic 144 topun dagilimi:
+#     60 sinyal, 21 guc, 15 toprak, 4 bos
+# Guc ve toprak toplari zaten sadece duzleme inmek istiyor; onlarin
+# via'si da buradan geliyor ve yonlendiricinin isi 36 kalem azaliyor.
+#
+# ATAMA TEK ANLAMLI: (i,j) indisli top DISA dogru kosegen bosluga
+# gidiyor, yani sol yaridaki i-0.5'e, sag yaridaki i+0.5'e. Bu
+# eşleme birebir — iki top ayni bosluga talip olamiyor.
+BGA_ADIM = 0.8
+BGA_HALKA = 2          # dis iki halka ust katmandan kaciyor
+BGA_VIA = 0.50         # dis cap, mm (pcb_kur.ASGARI_DELIK + 2x0.10 halka)
+BGA_DELIK = 0.30
+BGA_IZ = 0.15          # top pedinden via'ya giden kisa sap
+
+
+def bga_kacis(pcb, ref="U10"):
+    """BGA'nin ic toplarindan kosegen bosluga via + kisa sap ciz."""
+    b = pcbnew.LoadBoard(pcb)
+    fp = next((f for f in b.Footprints() if f.GetReference() == ref), None)
+    if fp is None:
+        return 0, 0
+    kat = {pcbnew.LayerName(i): i for i in b.GetEnabledLayers().CuStack()}
+    ust = list(kat.values())[0]
+    alt = list(kat.values())[-1]
+    c = fp.GetPosition()
+    # zaten cizilmis mi (zincir iki kez kosarsa via birikmesin)
+    varolan = {(v.GetPosition().x, v.GetPosition().y)
+               for v in b.GetTracks() if isinstance(v, pcbnew.PCB_VIA)}
+    n_via = n_iz = 0
+    for pad in sorted(fp.Pads(), key=lambda p: p.GetNumber()):
+        ag = pad.GetNetname()
+        if not ag or "unconnected" in ag:
+            continue
+        q = pad.GetPosition()
+        dx = (q.x - c.x) / MM
+        dy = (q.y - c.y) / MM
+        # halka indisi: merkezden kacinci sira
+        ix = round(abs(dx) / BGA_ADIM - 0.5)
+        iy = round(abs(dy) / BGA_ADIM - 0.5)
+        halka = 7 - max(ix, iy)          # 0 = en distaki halka
+        if halka < BGA_HALKA:
+            continue                      # dis halkalar ustten kaciyor
+        vx = q.x + int((BGA_ADIM / 2 * MM) * (1 if dx >= 0 else -1))
+        vy = q.y + int((BGA_ADIM / 2 * MM) * (1 if dy >= 0 else -1))
+        if (vx, vy) in varolan:
+            continue
+        v = pcbnew.PCB_VIA(b)
+        v.SetPosition(pcbnew.VECTOR2I(vx, vy))
+        v.SetWidth(int(BGA_VIA * MM))
+        v.SetDrill(int(BGA_DELIK * MM))
+        v.SetLayerPair(ust, alt)
+        v.SetNetCode(pad.GetNetCode())
+        b.Add(v)
+        varolan.add((vx, vy))
+        n_via += 1
+        t = pcbnew.PCB_TRACK(b)
+        t.SetStart(q)
+        t.SetEnd(pcbnew.VECTOR2I(vx, vy))
+        t.SetWidth(int(BGA_IZ * MM))
+        t.SetLayer(ust)
+        t.SetNetCode(pad.GetNetCode())
+        b.Add(t)
+        n_iz += 1
+    b.Save(pcb)
+    return n_via, n_iz
+
+
+# BGA'SI OLAN KARTLAR: ayak izi referansi -> kacis cizilecek mi
+BGA_KARTLARI = {"A": "U10"}
+
+
 if __name__ == "__main__":
     pcb = sys.argv[1] if len(sys.argv) > 1 else "D_pa/dogrudan_sdr_D.kicad_pcb"
     kart = "D"
@@ -214,3 +383,6 @@ if __name__ == "__main__":
     print(f"{os.path.basename(pcb)}: {s} eski iz silindi, {n} iz cekildi")
     for ag, uz, p in rapor:
         print(f"   {ag:9s} {uz:6.1f} mm  ({p} ped)")
+    if kart in BGA_KARTLARI:
+        nv, ni = bga_kacis(pcb, BGA_KARTLARI[kart])
+        print(f"   BGA kacisi {nv} via + {ni} sap ({BGA_KARTLARI[kart]})")

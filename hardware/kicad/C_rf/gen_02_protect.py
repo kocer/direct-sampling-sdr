@@ -13,7 +13,17 @@ DFW = "Device:D"
 FDFW = "Diode_SMD:D_SOD-323"
 FK = "Relay_SMD:Relay_DPDT_Omron_G6K-2F-Y"
 GDT = "Device:GDT_2Pin"
-FGDT = "Varistor:RV_Disc_D12mm_W3.9mm_P7.5mm"
+# GDT AYAK IZI YEREL — PED NUMARALARI YUZUNDEN.
+# Device:GDT_2Pin sembolunun pinleri 1 ve 3 (uc kutuplu GDT'den
+# turetilmis, ortadaki elektrot yok). Varistor:RV_Disc'in pedleri
+# ise 1 ve 2. Numaralar tutmayinca "GND" pin 3'e yaziliyor, kartta
+# karsiligi olmuyor ve ped 2 AGSIZ kaliyor.
+#
+# Dort kanalin dordunde de oyleydi: anten girisindeki gaz desarj
+# tupunun bir ucu havadaydi, yani yildirim/statik korumasi hic
+# yoktu. Semada bagli gorunuyor, ERC de temiz — bu hatanin
+# gorunecegi tek yer kartin kendisi.
+FGDT = "dogrudan-sdr:GDT_Disc_D12mm_W3.9mm_P7.5mm"
 TVS = "Device:D_TVS"
 FSMB = "Diode_SMD:D_SMB"
 D = "Device:D"

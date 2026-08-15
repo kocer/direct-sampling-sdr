@@ -15,6 +15,23 @@
 # Sira degismez:
 #   pcb_kur -> yerlesim -> ayir -> ipek -> elle_cek -> dsn_yaz
 set -e
+# YERLESIM TEKRARLANABILIR OLMALI — METIN KARMASINI SABITLE.
+# Python 3.3'ten beri metin karmasi her SURECTE farkli tohumlaniyor,
+# yani bir set'i dolasma sirasi kosudan kosuya degisiyor. Zincirdeki
+# kodun birkac yerinde referans adlarindan olusan set'ler dolasiliyor
+# ve esitlikler "ilk gorulen" lehine bozuluyor: ayni girdiyle iki
+# kosu farkli yerlesim uretiyordu (D'de C110 bir kosuda x=21.6'ya,
+# otekinde x=71.0'a; A'da R450 12 mm oteye).
+#
+# NEDEN ONEMLI: SES dosyasi TEK bir yerlesime ait. Kart yeniden
+# kurulunca parcalar oynarsa yonlendiricinin izleri artik baska
+# pedlere denk geliyor — 45 kisa devrenin bilinen sebebi bu.
+#
+# Bulunan iki yeri sorted() ile duzelttim (gercek_yerlesim.kalanlar).
+# Tohumu burada da sabitliyorum cunku garanti tek bir fonksiyonda
+# degil, ALTI ayri betikte ve ileride yazilacak kodda da gerekiyor.
+# Olculdu: bu satirla ust uste iki kosu bit-bit ayni DSN veriyor.
+export PYTHONHASHSEED=0
 K=$1
 case $K in
   A) P=A_main/dogrudan_sdr_A ;;
@@ -52,19 +69,83 @@ if true; then
   python3 ayir.py $P.kicad_pcb   2>/dev/null | grep -a cakisma || true
   python3 ipek.py $K             >/dev/null 2>&1
   python3 elle_cek.py $P.kicad_pcb 2>/dev/null | grep -aE "^   " || true
+  # AGSIZ PED DENETIMI — DSN'DEN ONCE, VE ZINCIRI DURDURUR.
+  # Sembol pin numarasi ayak izi ped numarasiyla tutmazsa ag hicbir
+  # yere gitmiyor ve ne ERC ne DRC bunu goruyor. Ilk kosuda 31 boyle
+  # ped vardi; ikisi kart olduruyordu (PHY ayak izi yanlis parcaya
+  # aitti, kristalin XO ucu govde pedine gidiyordu).
+  python3 ped_denetim.py $K 2>/dev/null || { echo "HATA: agsiz ped var, yukariya bak"; exit 1; }
   python3 dsn_yaz.py $P.kicad_pcb "$S/$K.dsn" 2>/dev/null | grep -a katman || true
 fi
 
 if [ "$2" = "route" ]; then
   echo "== $K yonlendiriliyor =="
-  nohup "$S/jdk-21.0.12+8/bin/java" -jar "$S/fr1.9.0.jar" \
-    -de "$S/$K.dsn" -do "$S/$K.ses" -mp 40 > "$S/logs/${K}_route.log" 2>&1 &
+  # JAVA VE JAR YOLU DEGISKENLE. Once ikisi de sabit yazilmisti
+  # ($S/jdk-21.0.12+8/bin/java) ve o dizin gecici bir calisma
+  # klasoruydu — silinince zincirin yonlendirme adimi sessizce
+  # hicbir sey yapmaz oldu. freerouting 1.9.0 JDK 17 ile
+  # derlenmis (MANIFEST'ten okundu), sistem java'si kosturuyor.
+  JAVA=${JAVA:-java}
+  FR_JAR=${FR_JAR:-$S/fr1.9.0.jar}
+  if [ ! -f "$FR_JAR" ] && [ ! -x "${FR_BIN:-$S/fr2/freerouting-2.3.0-linux-x64/bin/freerouting}" ]; then
+      echo "HATA: ne freerouting 2.3.0 ne de 1.9.0 jar bulundu"
+      exit 1
+  fi
+  mkdir -p "$S/logs"
+  # FREEROUTING 2.3.0 — 1.9.0'DAN NEDEN CIKTIK.
+  #
+  # 1.9.0'da (Ekim 2023) yonlendirme ile optimizasyon ayri asamalar
+  # ve OPTIMIZASYON TEK CEKIRDEKLI. Olctum: D kartinin autoroute'u
+  # 31 saniye, ardindan gelen optimizasyon 3.5 saatte bitmedi ve
+  # .ses ancak en sonda yaziliyor — yani saatlerce bekleyip elde
+  # hicbir sey olmuyordu. Durdurmayi denedim: -mp 0/1/2/5 ve
+  # -oit 0/1/10/50/99, sekiz kosu, hicbiri optimizasyonu sinirlamiyor.
+  #
+  # 2.3.0'da -mt optimizasyonu is parcaciklarina bolmus (varsayilan
+  # cekirdek sayisi - 1) ve her tur ayri raporlaniyor: kac ag kaldi,
+  # kac ihlal var, ne kadar surdu. 1.9.0 kara kutuydu.
+  #
+  # Kendi Java 25 runtime'iyla geliyor (jpackage); kutuda 17 var,
+  # jar tek basina calismiyor ("class file version 69.0").
+  FR_BIN=${FR_BIN:-$S/fr2/freerouting-2.3.0-linux-x64/bin/freerouting}
+  if [ -x "$FR_BIN" ]; then
+      nohup "$FR_BIN" \
+        -de "$S/$K.dsn" -do "$S/$K.ses" -mp 100 > "$S/logs/${K}_route.log" 2>&1 &
+  else
+      echo "  NOT: $FR_BIN yok, 1.9.0'a dusuluyor (cok daha yavas)"
+      nohup "$JAVA" -jar "$FR_JAR" \
+        -de "$S/$K.dsn" -do "$S/$K.ses" -mp 40 > "$S/logs/${K}_route.log" 2>&1 &
+  fi
   disown
   echo "arka planda basladi"
 fi
 
 if [ "$2" = "import" ]; then
   echo "== $K iceri aliniyor =="
+  # YERLESIM PARMAK IZI — SES BU KARTA MI AIT?
+  # Yukaridaki kurulum blogu karti netlistten YENIDEN kuruyor. O
+  # yeniden kurulum, SES'in uretildigi DSN'deki yerlesimle birebir
+  # ayni olmazsa yonlendiricinin izleri baska pedlere denk gelir ve
+  # kart sessizce kisa devre dolar (45 kisa devrenin sebebi buydu ve
+  # hicbir adim sikayet etmemisti). Zincir artik tekrarlanabilir;
+  # bu sinama o tekrarlanabilirligin BOZULDUGUNU haber veriyor.
+  python3 - "$P.kicad_pcb" "$S/$K.dsn.parmak" <<'PY' || exit 1
+import sys
+sys.path.insert(0, ".")
+import dsn_yaz, pcbnew
+try:
+    beklenen = open(sys.argv[2]).read().strip()
+except OSError:
+    print("HATA: parmak izi yok — dsn_yaz'i yeniden kostur"); sys.exit(1)
+simdiki = dsn_yaz.parmak(pcbnew.LoadBoard(sys.argv[1]))
+if simdiki != beklenen:
+    print("HATA: yerlesim SES ile uyusmuyor — ice alma iptal.")
+    print(f"  DSN  {beklenen[:16]}")
+    print(f"  kart {simdiki[:16]}")
+    print("  Zincir tekrarlanabilirligini kaybetmis; once onu duzelt.")
+    sys.exit(1)
+print("  yerlesim parmak izi tutuyor")
+PY
   python3 - "$P.kicad_pcb" "$S/$K.ses" <<'PY' 2>/dev/null
 import sys
 sys.path.insert(0, ".")

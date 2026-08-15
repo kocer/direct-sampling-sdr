@@ -7,13 +7,40 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
 
 P = "dogrudan-sdr:RTL8211F"
-FP = "Package_DFN_QFN:QFN-48-1EP_6x6mm_P0.4mm_EP4.6x4.6mm"
+# AYAK IZI YANLIS PARCAYA AITTI.
+#
+# QFN-48_6x6mm_P0.4mm yaziyordu. RTL8211F(I)-CG ise WQFN-40-EP(5x5):
+# KIRK pin, 5x5 mm govde. Yani pin sayisi, govde olcusu ve adim,
+# ucu de tutmuyordu. Cip bu ped desenine LEHIMLENEMEZ — kart
+# uretilse bile iki ethernet portu monte edilemezdi.
+#
+# Belirti nasil gorunuyordu: kartta 42-49 pedleri agsizdi. Once
+# "sembolde eksik pin var" diye okudum ve sembole EP ekledim; yanlis
+# taniydi. Sembol 41 pinle DOGRUYDU (40 bacak + acik ped 41);
+# fazlalik ayak izindeydi.
+#
+# EP olcusu 3.6x3.6 secildi. Veri sayfasinin mekanik cizimi elde yok;
+# kucuk EP her zaman lehimlenir, buyugu bacaklara kopru atabilir —
+# yani belirsizlikte kucuk taraf guvenli olan. Termal via'li surum,
+# parca ~1 W harciyor.
+FP = "Package_DFN_QFN:QFN-40-1EP_5x5mm_P0.4mm_EP3.6x3.6mm_ThermalVias"
 J = "dogrudan-sdr:HR911130A"
 FJ = "dogrudan-sdr:RJ45_Hanrun_HR911130A"
 E = "dogrudan-sdr:ECP5-BGA256"
 FE = ("Package_BGA:BGA-256_14.0x14.0mm_Layout16x16_P0.8mm_"
       "Ball0.45mm_Pad0.32mm_NSMD")
-XTAL = "Device:Crystal"
+# DORT PEDLI KRISTALIN SEMBOLU DE DORT PINLI OLMALI.
+# Once "Device:Crystal" yaziyordu: IKI pinli bir sembol, ama ayak izi
+# Crystal_SMD_3225-4Pin. Sonuc, kartta olculdu: ped 3 ve ped 4 AGSIZ
+# kaldi, ve daha kotusu XO ped 2'ye baglandi.
+#
+# 3225 dizilimi capraz: ped 1 ve 3 kristalin UCLARI, ped 2 ve 4 metal
+# GOVDE (KiCad'in "GND24" adi tam bunu anlatiyor). Yani XO gercekte
+# kristale degil govdeye gidiyordu — ve XI ile XO arasinda kristal
+# YOKTU. Iki PHY'nin de 25 MHz saati olusmaz, yani ethernet hic
+# calismaz. Kart uzerinde belirtisi "PHY olu"; sebebi aramak gunler
+# alirdi cunku semada her sey bagli gorunuyor.
+XTAL = "Device:Crystal_GND24"
 FX = "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm"
 R, C, L = "Device:R", "Device:C", "Device:L"
 LED = "Device:LED"
@@ -91,6 +118,8 @@ def phy(ref, x, y, n, jref, jx, jy, sx, sy):
     s.pin_label(P, "21", ax, ay, 0, f"PHY{n}_1V0", "input", d=10.16)
     s.pin_label(P, "30", ax, ay, 0, f"PHY{n}_REGOUT", "output", d=27.94)
     s.pin_power(P, "41", ax, ay, 0, "GND", d=5.08)
+    # 41 = ACIK PED. QFN-40'in altindaki 3.6x3.6 mm ped; hem tek
+    # termal yol hem ic regulatorun toprak donusu.
     s.pin_label(P, "39", ax, ay, 0, f"PHY{n}_RSET", "passive", d=33.02)
     s.pin_label(P, "36", ax, ay, 0, f"PHY{n}_XI", "input", d=38.1)
     s.pin_label(P, "37", ax, ay, 0, f"PHY{n}_XO", "output", d=43.18)
@@ -129,7 +158,11 @@ def phy(ref, x, y, n, jref, jx, jy, sx, sy):
     cx, cy = sx, sy + 100
     s.sym(XTAL, cnt("Y"), "25MHz", cx, cy, fp=FX)
     s.pin_label(XTAL, "1", cx, cy, 0, f"PHY{n}_XI", "passive")
-    s.pin_label(XTAL, "2", cx, cy, 0, f"PHY{n}_XO", "passive")
+    s.pin_label(XTAL, "3", cx, cy, 0, f"PHY{n}_XO", "passive")
+    # Govde pedleri topraga: hem ekranlama hem mekanik tutunma.
+    # Bosta birakilan metal govde 25 MHz'te anten gibi davraniyor.
+    s.pin_power(XTAL, "2", cx, cy, 0, "GND")
+    s.pin_power(XTAL, "4", cx, cy, 0, "GND")
     for i, net in enumerate((f"PHY{n}_XI", f"PHY{n}_XO")):
         s.sym(C, cnt("C"), "18pF", cx + 25 + i * 20, cy, fp=FC)
         s.pin_label(C, "1", cx + 25 + i * 20, cy, 0, net, "passive")
@@ -162,6 +195,14 @@ def phy(ref, x, y, n, jref, jx, jy, sx, sy):
     s.pin_label(C, "2", jx - 20, jy + 30, 90, "CHASSIS", "passive")
     # P10 = govde / Bob Smith dugumu, icerideki 1000pF 2kV uzerinden
     s.pin_label(J, "10", jx, jy, 0, "CHASSIS", "passive", d=12.7)
+    # KALKAN KULAKLARI DA CHASSIS'E. Sembolde bu dort ped yoktu ve
+    # kartta AGSIZ bakir olarak duruyorlardi: kablonun ekrani
+    # konnektorun govdesinde bitiyordu, gidecek bir yeri yoktu.
+    # Ekranin isi bu — gurultuyu tasiyip TEK bir noktadan kasaya
+    # birakmak. Dordu birden CHASSIS'e; CHASSIS de asagida tek
+    # noktadan GND'ye bagli.
+    for pn in ("SH1", "SH2", "SH3", "SH4"):
+        s.pin_label(J, pn, jx, jy, 0, "CHASSIS", "passive", d=17.78)
     # dahili LED'ler
     for pn, net in [("11", f"PHY{n}_LED1_A"), ("12", f"PHY{n}_LED1"),
                     ("14", f"PHY{n}_LED2_A"), ("13", f"PHY{n}_LED2")]:
@@ -194,6 +235,31 @@ s.pin_power(R, "2", 750, 100, 0, "GND")
 s.text("Asagi cekilen strap'ler GND_STRAP uzerinden 0R ile toprakta.\\n"
        "Tek noktadan ayrilabiliyor: adres catismasi cikarsa direnc\\n"
        "sokulup baska kombinasyon denenir.", 740, 112, 1.3)
+
+# ---------------------------------------------------------------- sase bagi
+# CHASSIS YUZEN ADAYDI. Uzerinde sadece J40.10, J41.10 ve iki 100nF/2kV
+# vardi; hicbir yerde topraga ya da kasaya baglanmiyordu. Yuzen bir
+# "sase" agi ekran icin en kotu durum: ekranin ustundeki gurultunun
+# akacak yolu yok, ag antene donusuyor ve iki magjack birbirine
+# kapasitif bagli kaliyor.
+#
+# SISTEMDE TEK SASE REFERANS NOKTASI VAR: C KARTI (anten
+# konnektorleri orada, kaplamali montaj deligi GND'ye bagli). A ve
+# D'nin montaj delikleri KAPLAMASIZ — ikinci bir metal temas noktasi
+# toprak dongusu demek, dongu de 50 Hz ve anahtarlama gurultusunu
+# alis onucuna tasir.
+# Bu kartta ekran topraga ELEKTRIKSEL olarak buradan, tek noktadan
+# baglaniyor: R692 0R. Olcum sirasinda ayrilabilsin diye direnc,
+# duz bakir degil.
+s.pin_label(R, "1", 750, 128, 0, "CHASSIS", "passive")
+s.sym(R, "R692", "0R", 750, 128, fp=FR)
+s.pin_power(R, "2", 750, 128, 0, "GND")
+s.text("SASE BAGI — RJ45 kalkani ve orta uc dugumu CHASSIS'te; CHASSIS\\n"
+       "topraga TEK NOKTADAN, R692 (0R) ile bagli. Montaj delikleri bu\\n"
+       "kartta KAPLAMASIZ: sase referansi C kartinda, orada anten\\n"
+       "konnektorlerinin dibindeki delik kaplamali ve GND'de.\\n"
+       "Iki karttan da kasaya baglanirsa toprak dongusu olusur.",
+       740, 355, 1.3)
 
 s.text("STRAP DIRENCLERI 1k (NETLIST.md §5.2)\\n"
        "Bu alti bacak hem RGMII verisi hem reset anindaki strap.\\n"
@@ -233,8 +299,9 @@ s.text("** PARCA DEGISTI: HR911105A -> HR911130A ** (veri sayfasi geldi)\\n"
        "** AYAK IZI BASMADAN ONCE 1:1 CIKTI ALINIP PARCA UZERINE KONACAK. **\\n"
        "Cizimden olculdu; delik capları ve aciklıklar dogru ama tek\\n"
        "dogrulama yolu fiziksel karsilastirma.\\n\\n"
-       "Kalkan CHASSIS agina: toprak duzlemine tek noktadan, 1M + 1nF ile\\n"
-       "(yerlesim asamasinda eklenecek).", 740, 300, 1.35)
+       "Kalkan CHASSIS agina: dort kalkan pedi (SH1-SH4) + P10 CHASSIS'te,\\n"
+       "CHASSIS topraga R692 (0R) ile TEK NOKTADAN bagli. Ayrintisi\\n"
+       "sagda, sase bagi notunda.", 740, 300, 1.35)
 
 # ------------------------------------------------------------------ FPGA
 s.text("FPGA BANKA 3 — RGMII x2", 300, 400, 2.0)

@@ -21,7 +21,14 @@ R, C, L = "Device:R", "Device:C", "Device:L"
 FR = "Resistor_SMD:R_0603_1608Metric"
 FRP = "Resistor_SMD:R_2512_6332Metric"
 FC = "Capacitor_SMD:C_0603_1608Metric"
-FCP = "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm"
+# 470uF/63V GOVDESI D10 DEGIL. O deger-gerilim ciftinde tipik
+# govde 16 x 25 mm; D10 ayak izine fiziksel olarak oturmuyor.
+# Ayak izi kucuk kalinca kart basiliyor ama parca takilamiyor.
+FCP = "Capacitor_THT:CP_Radial_D16.0mm_P7.50mm"
+# 12 V rayinda 22uF: 0603'te en fazla 4.7uF @ 16 V uretiliyor.
+# Ustelik seramikte DC bias kaybi var, 16 V sinifini 12 V'ta
+# kullanmak kapasitenin cogunu goturur — 25 V sinifi ve 1206.
+FCB = "Capacitor_SMD:C_1206_3216Metric"
 FL = "Inductor_SMD:L_Taiyo-Yuden_NR-30xx"
 HDR = "Connector_Generic:Conn_02x10_Odd_Even"
 HDR6 = "Connector_Generic:Conn_01x06"
@@ -41,6 +48,15 @@ def cnt(p):
     return f"{p}{599 + nr[0]}"
 
 
+# REGULATOR CEVRESINDEKI KONDANSATORLER SABIT ADLI (C601, C602,
+# C660-C667). Sebebi olculdu: cnt() ile uretilen adlar sayfaya bir
+# parca eklenince kayiyor. Ideal diyot devresi eklenince 470uF
+# elektrolitikler C601/C602 iken C603/C604 oldu; yerlesim betigi
+# hala "C601" diye elle konumlandiriyordu ve iki kucuk seramigi
+# kartin guc kosesine tasidi, 470uF'ler genel dolguya dustu.
+# Yerlesimde ADIYLA anilan her parca sabit adli olmali.
+
+
 s.text("GUC VE KORUMA", 16, 14, 2.2)
 s.text("final       50 V / 6.7 A = 333 W     (A sinifi 100 W)\\n"
        "surucu 2    12 V / 1.0 A =  12 W\\n"
@@ -54,7 +70,10 @@ s.pin_label(CONN, "1", 45, 75, 0, "VIN50", "input")
 s.pin_power(CONN, "2", 45, 75, 0, "GND")
 # Kart disindan gelen raylar icin bayrak: bu kartta 50 V ve 3.3 V
 # ureten bir pin yok, ERC surucu goremiyor.
-for _n, _x in (("+50V", 200), ("+3V3", 240), ("GND", 280)):
+# VIN50 de bayrakli: ideal diyot denetleyicisinin ANODE bacagi
+# "power input" tipinde ve bu agi suren bir cikis pini yok (kaynak
+# kartin disinda, J30'da). Bayraksiz ERC hata veriyor.
+for _n, _x in (("VIN50", 160), ("+50V", 200), ("+3V3", 240), ("GND", 280)):
     if _n == "GND":
         s.power("GND", _x, 110)
         s.wire(_x, 110, _x, 103.65)
@@ -64,24 +83,91 @@ for _n, _x in (("+50V", 200), ("+3V3", 240), ("GND", 280)):
         s.wire(_x, 110, _x, 103.65)
         s.pwr_flag(_x, 103.65)
 
-s.sym(Q, "Q30", "IRF9540N", 85, 72, fp=FQP)
-s.pin_label(Q, "3", 85, 72, 0, "VIN50", "passive", d=7.62)
-s.pin_label(Q, "2", 85, 72, 0, "+50V", "output", d=7.62)
-s.sym(R, cnt("R"), "100k", 85, 98, rot=90, fp=FR)
-s.pin_label(R, "1", 85, 98, 90, "VIN50_G", "passive")
-s.pin_power(R, "2", 85, 98, 90, "GND")
-s.pin_label(Q, "1", 85, 72, 0, "VIN50_G", "passive", d=12.7)
-s.sym("Device:D_Zener", "D30", "15V", 108, 98, rot=90, fp="Diode_SMD:D_SOD-323")
-s.pin_label("Device:D_Zener", "2", 108, 98, 90, "VIN50_G", "passive")
-s.pin_power("Device:D_Zener", "1", 108, 98, 90, "GND")
+# TERS POLARITE: IDEAL DIYOT + N-KANAL. P-MOSFET KALKTI.
+#
+# OLCUM. Eski hali IRF9540N idi, Rds(on) 0.117 ohm (10 V Vgs, 25 C).
+# A sinifi 100 W'ta final 6.67 A cekiyor:
+#     P = 6.67^2 x 0.117 = 5.2 W
+# TO-220 sogutucusuz Rth(j-a) ~62 C/W. 5.2 x 62 = 322 C sicaklik
+# artisi. Kartta bu parca icin sogutucu ayak izi YOK ve kendisi
+# kartin ortasinda. Yani ilk tam guclu veriste oluyordu.
+# Ustelik Rds(on) sicaklikla ~%80 artiyor (175 C'de 2x'e yakin):
+# kacis, teshis edilebilir bir ariza bile birakmiyor.
+#
+# COZUM. LM74700-Q1 ideal diyot denetleyicisi + IRFB4110 N-kanal.
+#     IRFB4110  100 V, Rds(on) 3.7 mohm @ Vgs 10 V
+#     P = 6.67^2 x 0.0037 = 0.165 W   -> 10 C artis, sogutucu gerekmez
+# 31 kat dusuk kayip. Bedeli: bir SOT-23-6 denetleyici ve uc
+# kondansator (0.90 $ + 0.03 $).
+#
+# NEDEN LTC4359 DEGIL. Iki parca da isi goruyor ama LTC4359'un
+# mutlak azami ters gerilimi -40 V; bu kartta ters baglanan besleme
+# -50 V demek, yani koruma parcasinin kendisi sinir disinda kalir.
+# LM74700-Q1: ANODE-GND mutlak azami -65 V .. +65 V (veri sayfasi
+# SNOSD17G Tablo 6.1). Ustelik 4 kat ucuz ve stokta.
+#
+# BAGLANTI (veri sayfasi Tablo 5-1): ANODE = giris = MOSFET KAYNAGI,
+# CATHODE = cikis = MOSFET SAVAGI. Govde diyodu ileri yonde iletiyor,
+# ters baglamada geciti kaynaga cekip kanali kesiyor.
+QNP = "Transistor_FET:Q_NMOS_GDS"
+IDEAL = "Power_Management:LM74700"
+FIDEAL = "Package_TO_SOT_SMD:SOT-23-6"
+s.sym(QNP, "Q30", "IRFB4110PBF", 85, 72, fp=FQP)
+s.pin_label(QNP, "1", 85, 72, 0, "VIN50_G", "passive", d=12.7)
+s.pin_label(QNP, "2", 85, 72, 0, "+50V", "output", d=7.62)
+s.pin_label(QNP, "3", 85, 72, 0, "VIN50", "passive", d=7.62)
+s.sym(IDEAL, "U52", "LM74700QDBVRQ1", 85, 100, fp=FIDEAL)
+s.pin_label(IDEAL, "6", 85, 100, 0, "VIN50", "input", d=7.62)     # ANODE
+s.pin_label(IDEAL, "4", 85, 100, 0, "+50V", "input", d=12.7)      # CATHODE
+s.pin_label(IDEAL, "5", 85, 100, 0, "VIN50_G", "output", d=17.78)  # GATE
+# EN dogrudan ANODE'a: "always ON" baglantisi, veri sayfasi Tablo 5-1.
+# EN-GND mutlak azami +65 V, 50 V rayi sorun degil.
+s.pin_label(IDEAL, "3", 85, 100, 0, "VIN50", "input", d=22.86)     # EN
+s.pin_power(IDEAL, "2", 85, 100, 0, "GND", d=7.62)
+s.pin_label(IDEAL, "1", 85, 100, 0, "VCAP50", "passive", d=27.94)  # VCAP
+# Sarj pompasi kondansatoru VCAP ile ANODE ARASINA (GND'ye degil).
+# Veri sayfasi §9.3.2: iki ucu da 50 V'ta yuzuyor, uzerindeki fark
+# en fazla 13 V. 0603/50 V yeterli ve gerilim sinifi degeri
+# tasiyor (kondansator_denetim.py tablosu: 0603 @ 50 V -> 1 uF).
+s.sym(C, "C660", "100nF", 120, 100, rot=90, fp=FC)
+s.pin_label(C, "1", 120, 100, 90, "VCAP50", "passive")
+s.pin_label(C, "2", 120, 100, 90, "VIN50", "passive")
+# Veri sayfasi Tablo 6.3 "External capacitance": ANODE'a en az 22 nF,
+# CATHODE'a en az 100 nF. 0805/100 V: seramikte DC bias kaybi 50 V
+# rayda buyuk, bir boy yukari cikiyoruz.
+FC50 = "Capacitor_SMD:C_0805_2012Metric"
+s.sym(C, "C661", "22nF", 142, 100, rot=90, fp=FC50)
+s.pin_label(C, "1", 142, 100, 90, "VIN50", "passive")
+s.pin_power(C, "2", 142, 100, 90, "GND")
+s.sym(C, "C662", "100nF", 164, 100, rot=90, fp=FC50)
+s.pin_label(C, "1", 164, 100, 90, "+50V", "input")
+s.pin_power(C, "2", 164, 100, 90, "GND")
+# TVS GIRISTE. LM74700'un tavani 65 V ve bu kartin EN DUSUK gerilim
+# tavani artik o. Ideal diyotta klasik tuzak: sicak takmada kablo
+# endüktansi ile cikistaki 940 uF cinliyor ve giris 2 x Vin'e kadar
+# firlayabilir. SMBJ54A 54 V'ta iletmiyor (ray 50 V), 60 V'tan
+# sonra kirilip enerjiyi aliyor.
+s.sym("Device:D_TVS", "D31", "SMBJ54A", 186, 100, rot=90,
+      fp="Diode_SMD:D_SMB")
+s.pin_label("Device:D_TVS", "1", 186, 100, 90, "VIN50", "passive")
+s.pin_power("Device:D_TVS", "2", 186, 100, 90, "GND")
 for i, v in enumerate(("470uF", "470uF")):
-    s.sym(C, cnt("C"), v, 135 + i * 22, 75, rot=90, fp=FCP)
+    s.sym(C, ("C601", "C602")[i], v, 135 + i * 22, 75, rot=90, fp=FCP)
     s.pin_label(C, "1", 135 + i * 22, 75, 90, "+50V", "input")
     s.pin_power(C, "2", 135 + i * 22, 75, 90, "GND")
 
-s.text("Ters polarite: P-MOSFET, A kartindakinin ayni mantigi ama\\n"
-       "buyugu. 6.7 A gectigi icin TO-220 ve dusuk Rds(on).\\n"
-       "Zener Vgs'i 15 V'ta sinirliyor (50 V rayda -50 V gorurdu).",
+s.text("TERS POLARITE — IDEAL DIYOT (LM74700-Q1 + IRFB4110)\\n\\n"
+       "Eski cozum IRF9540N P-MOSFET'ti: 0.117 ohm x 6.67 A^2 = 5.2 W.\\n"
+       "Sogutucusuz TO-220'de 320 C artis demek, yani parca 100 W'lik\\n"
+       "ilk veriste olurdu. Simdi 3.7 mohm x 6.67 A^2 = 0.17 W;\\n"
+       "sogutucu gerekmiyor, kartin ortasinda durabilir.\\n\\n"
+       "15 V zener KALKTI: gecit gerilimini artik denetleyici\\n"
+       "sinirliyor (VCAP-ANODE en fazla 13 V, IRFB4110 Vgs sinirlari\\n"
+       "+-20 V). Gecit-kaynak direnci de kalkti: kapatmayi denetleyici\\n"
+       "yapiyor, 300 uA'lik sarj pompasini bosuna yuklemiyoruz.\\n\\n"
+       "BESLEME 55 V'U GECMESIN. Denetleyicinin onerilen calisma\\n"
+       "tavani 60 V, mutlak azami 65 V — bu kartin en dusuk gerilim\\n"
+       "tavani odur, MOSFET'in 100 V'u degil.",
        16, 120, 1.35)
 
 # ---------------------------------------------------------------- turev raylar
@@ -108,6 +194,15 @@ s.pin_label(HVB, "8", x12, y12, 0, "SW_12V", "output", d=12.7)
 s.sym(C, cnt("C"), "100nF", x12 + 45, y12 - 22, rot=90, fp=FC)
 s.pin_label(C, "1", x12 + 45, y12 - 22, 90, "BST_12V", "passive")
 s.pin_label(C, "2", x12 + 45, y12 - 22, 90, "SW_12V", "passive")
+# GIRIS SERAMIGI. 50 V rayinda yalnizca iki 470uF elektrolitik vardi;
+# elektrolitigin ESR'i ve bacak endüktansi anahtarlama kenarindaki
+# kesikli akimi karsilamiyor. LM5164 veri sayfasi: VIN'in dibine
+# 2.2 uF / 100 V seramik. 1210 — 1206'da 100 V sinifinda tavan
+# 2.2 uF ve tam sinirda calismak "var ama tek kaynak" demek.
+s.sym(C, "C663", "2.2uF", x12 - 25, y12, rot=90,
+      fp="Capacitor_SMD:C_1210_3225Metric")
+s.pin_label(C, "1", x12 - 25, y12, 90, "+50V", "input")
+s.pin_power(C, "2", x12 - 25, y12, 90, "GND")
 s.sym(R, cnt("R"), "100k", x12 + 45, y12 + 28, rot=90, fp=FR)
 s.pin_label(R, "1", x12 + 45, y12 + 28, 90, "RON_12V", "passive")
 s.pin_power(R, "2", x12 + 45, y12 + 28, 90, "GND")
@@ -115,7 +210,8 @@ s.sym(L, "L50", "47uH", x12 + 80, y12, rot=90, fp=FL)
 s.pin_label(L, "1", x12 + 80, y12, 90, "SW_12V", "passive")
 s.pin_label(L, "2", x12 + 80, y12, 90, "+12V", "output")
 for k, v in enumerate(("22uF", "100nF")):
-    s.sym(C, cnt("C"), v, x12 + 110 + k * 20, y12, rot=90, fp=FC)
+    s.sym(C, ("C664", "C665")[k], v, x12 + 110 + k * 20, y12, rot=90,
+          fp=FCB if v == "22uF" else FC)
     s.pin_label(C, "1", x12 + 110 + k * 20, y12, 90, "+12V", "input")
     s.pin_power(C, "2", x12 + 110 + k * 20, y12, 90, "GND")
 s.glabel("+12V", x12 + 10, y12 + 55, "input")
@@ -133,6 +229,18 @@ for k, (rr, hi) in enumerate((("140k", True), ("10k", False))):
 
 x5, y5 = 60, 265
 s.sym(BUCK, "U51", "TPS62130", x5, y5, fp=FBUCK)
+# U51'IN KENDI GIRIS KONDANSATORU. Ayni dugumde U50'nin cikis
+# kondansatorleri var ama onlar U50'nin BLOGUNA ait; iki regulator
+# bir kondansatoru paylasirsa biri mutlaka uzakta kalir. Kesikli
+# giris akimi TPS62130'un VIN bacaginin dibinden gelmeli.
+# 1206 / 25 V: 12 V rayinda 16 V sinifi DC bias ile kapasitesinin
+# yarisini kaybediyor.
+for _r, _v, _f in (("C650", "10uF", "Capacitor_SMD:C_1206_3216Metric"),
+                   ("C651", "100nF", FC)):
+    s.sym(C, _r, _v, x5 - 30 + 18 * (_r == "C651"), y5 + 40, rot=90, fp=_f)
+    s.pin_label(C, "1", x5 - 30 + 18 * (_r == "C651"), y5 + 40, 90,
+                "+12V", "input")
+    s.pin_power(C, "2", x5 - 30 + 18 * (_r == "C651"), y5 + 40, 90, "GND")
 s.pin_label(BUCK, "10", x5, y5, 0, "+12V", "input", d=15.24)
 s.pin_label(BUCK, "13", x5, y5, 0, "+12V", "input", d=20.32)
 s.pin_power(BUCK, "6", x5, y5, 0, "GND", d=8.89)
@@ -161,7 +269,7 @@ for k, (rr, hi) in enumerate((("105k", True), ("20k", False))):
         s.pin_label(R, "1", rx, ry, 90, "FB_5V", "passive")
         s.pin_power(R, "2", rx, ry, 90, "GND")
 for k, v in enumerate(("22uF", "100nF")):
-    s.sym(C, cnt("C"), v, x5 + 140 + k * 20, y5, rot=90, fp=FC)
+    s.sym(C, ("C666", "C667")[k], v, x5 + 140 + k * 20, y5, rot=90, fp=FC)
     s.pin_label(C, "1", x5 + 140 + k * 20, y5, 90, "+5V", "input")
     s.pin_power(C, "2", x5 + 140 + k * 20, y5, 90, "GND")
 

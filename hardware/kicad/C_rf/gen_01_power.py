@@ -1,5 +1,21 @@
 #!/usr/bin/env python3
-"""01_power: C karti guc. Kaynak: ../NETLIST_C.md §6."""
+"""01_power: C karti guc. Kaynak: ../NETLIST_C.md §6.
+
+REFERANS ARALIGI — BU DOSYA: U90-U99, R80-R89, C80-C89, L80-L89.
+Buck U80 idi ve gen_05_driver.py'nin role suruculeri de U70-U83
+uretiyordu: U80 CAKISTI, kartta DRV8833 kazandi ve TPS62130 HIC
+OLUSMADI. Sonucu iki kat kotu:
+  - C kartinda +5V uretilmiyordu; 40 pedin kaynagi yoktu, yani
+    roleler, zayiflaticilar ve surucu lojigi komple beslemesiz.
+  - A kartindan gelen ham giris (VIN_PROT, 9-18 V) bir DRV8833'un
+    besleme pinlerine bagliydi. DRV8833'un azami beslemesi 11.8 V;
+    12 V ustu bir kaynakta parca aninda gider ve o hat sigortadan
+    sonra 2 A tasiyabiliyor.
+C kartinin ayrilan U araliklari:
+    gen_04_atten  : U40-U49
+    gen_05_driver : U60-U69 (74HC595)  U70-U89 (DRV8833)
+    gen_01_power  : U90-U99
+"""
 import json, os
 from schlib import Sheet
 
@@ -24,7 +40,20 @@ s.text("Iki ray geliyor: VIN_PROT (9-18 V) ve +3V3, ikisi de A kartindan\\n"
 # ---------------------------------------------------------------- +5V buck
 s.text("+5V — role bobinleri", 16, 45, 1.6)
 x, y = 60, 80
-s.sym(BUCK, "U80", "TPS62130", x, y, fp=FBUCK)
+s.sym(BUCK, "U90", "TPS62130", x, y, fp=FBUCK)
+# GIRIS KONDANSATORU YOKTU. Bu kartta VIN_PROT'ta hicbir kondansator
+# yoktu: buck'in kesikli giris akimi kart arasi baglik ve kablo
+# uzerinden A kartinin girisine kadar gidiyordu. Olculen giris
+# cevrimi 54 mm — ve gercekte cevrim kartin disina cikiyor.
+# TPS62130 veri sayfasi Tablo 8: en az 10 uF seramik VIN'in dibinde.
+# 1206: VIN_PROT 18 V'a cikiyor, 25 V sinifi sart ve 0603'te 25 V'ta
+# tavan 2.2 uF.
+FC1206 = "Capacitor_SMD:C_1206_3216Metric"
+for _r, _v, _f in (("C83", "10uF", FC1206), ("C84", "100nF", FC)):
+    s.sym(C, _r, _v, x - 30 + 18 * (_r == "C84"), y + 40, rot=90, fp=_f)
+    s.pin_label(C, "1", x - 30 + 18 * (_r == "C84"), y + 40, 90,
+                "VIN_PROT", "input")
+    s.pin_power(C, "2", x - 30 + 18 * (_r == "C84"), y + 40, 90, "GND")
 s.pin_label(BUCK, "10", x, y, 0, "VIN_PROT", "input", d=15.24)
 s.pin_label(BUCK, "13", x, y, 0, "VIN_PROT", "input", d=20.32)   # EN
 s.pin_power(BUCK, "6", x, y, 0, "GND", d=8.89)
@@ -33,7 +62,7 @@ s.pin_power(BUCK, "8", x, y, 0, "GND", d=13.97)    # DEF ayarlanabilir
 s.nc(*s.P(BUCK, "9", x, y))                        # SS/TR dahili
 s.nc(*s.P(BUCK, "4", x, y))                        # PG
 s.pin_label(BUCK, "14", x, y, 0, "+5V", "input", d=25.4)         # VOS
-s.pin_label(BUCK, "5", x, y, 0, "FB_U80", "input", d=30.48)
+s.pin_label(BUCK, "5", x, y, 0, "FB_U90", "input", d=30.48)
 
 sw = s.P(BUCK, "1", x, y)
 lx, ly = sw[0] + 15, sw[1]
@@ -56,9 +85,9 @@ for i, v in enumerate(("22uF", "22uF", "100nF")):
 fx, fy = 200, 80
 s.sym(R, "R80", "105k", fx, fy, rot=90, fp=FR)
 s.pin_label(R, "1", fx, fy, 90, "+5V", "input")
-s.pin_label(R, "2", fx, fy, 90, "FB_U80", "passive")
+s.pin_label(R, "2", fx, fy, 90, "FB_U90", "passive")
 s.sym(R, "R81", "20k", fx, fy + 20, rot=90, fp=FR)
-s.pin_label(R, "1", fx, fy + 20, 90, "FB_U80", "passive")
+s.pin_label(R, "1", fx, fy + 20, 90, "FB_U90", "passive")
 s.pin_power(R, "2", fx, fy + 20, 90, "GND")
 
 s.text("Vout = 0.8 x (1 + R80/R81).  5 V icin oran 5.25 -> 105k / 20k.\\n\\n"

@@ -9,6 +9,11 @@ UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
 R, C, L = "Device:R", "Device:C", "Device:L"
 FR = "Resistor_SMD:R_0603_1608Metric"
 FC = "Capacitor_SMD:C_0603_1608Metric"
+# 10uF/25V 0603'te YOK: 0603'te 25 V sinifinda tavan 2.2 uF
+# (kondansator_denetim.py tablosu). 18 V'a kadar cikan VIN_PROT
+# rayinda 25 V sinifi asgari, o yuzden 1206.
+FC1206 = "Capacitor_SMD:C_1206_3216Metric"
+FC0805 = "Capacitor_SMD:C_0805_2012Metric"
 FL = "Inductor_SMD:L_Taiyo-Yuden_NR-30xx"
 BUCK = "Regulator_Switching:TPS62130"
 FBUCK = "Package_DFN_QFN:VQFN-16-1EP_3x3mm_P0.5mm_EP1.68x1.68mm"
@@ -22,10 +27,29 @@ s = Sheet("01_power", "Guc agaci", UU["01_power"],
 
 
 def buck(ref, x, y, vin_label, vout_label, lref, fb_hi, fb_lo, note,
-         pg_label=None, en_label=None):
+         pg_label=None, en_label=None, cin=(), cin_fp=None):
     """Bir TPS62130 kati: giris, bobin, cikis, geri besleme boleni."""
     s.sym(BUCK, ref, "TPS62130", x, y, fp=FBUCK)
     P = lambda n: s.P(BUCK, n, x, y)
+    # GIRIS KONDANSATORU YOKTU.
+    # Bir buck'ta giris kondansatoru sussuz gibi gorunur ama devrenin
+    # en kritik parcasidir: yuksek taraf anahtari her periyotta
+    # kapaninca giris akimi SIFIRDAN TEPE AKIMA ziplar. O kesikli
+    # akimi verecek bir kondansator IC'nin dibinde yoksa, akim
+    # kaynagin ta kendisinden — burada A kartinin XT60'indan ve
+    # kablodan — cekilir. Cevrim kartin yarisi kadar buyur, di/dt
+    # yuksektir, sonuc hem yayilim hem giris rayinda gurultudur.
+    # TPS62130 veri sayfasi Tablo 8: en az 10 uF seramik, VIN
+    # bacaginin DIBINDE. Ikinci 100 nF yuksek frekans icin.
+    # Bu iki parca yerlesimde regulatorle TEK BLOK yerlesiyor
+    # (kicad/gercek_yerlesim.py, regulator_blok).
+    for cref, cval, cfp in zip(cin, ("10uF", "100nF"),
+                               (cin_fp or FC1206, FC)):
+        s.sym(C, cref, cval, x - 30 + 18 * cin.index(cref), y + 30,
+              rot=90, fp=cfp)
+        s.pin_label(C, "1", x - 30 + 18 * cin.index(cref), y + 30, 90,
+                    vin_label, "input")
+        s.pin_power(C, "2", x - 30 + 18 * cin.index(cref), y + 30, 90, "GND")
     # giris
     s.pin_label(BUCK, "10", x, y, 0, vin_label, "input", d=15.24)
     s.pin_label(BUCK, "13", x, y, 0, en_label or ("EN_" + ref), "input", d=20.32)
@@ -147,14 +171,14 @@ s.text("Q1 kaynagi girise, drain VIN_PROT'a. Govde diyodu ters baglamada iletmiy
 s.text("ANA RAY +3V3 — TPS62130, 3-17V giris, 3A", 20, 100)
 buck("U1", 45, 125, "VIN_PROT", "+3V3", "L1", ("R3", "100k"), ("R4", "32k"),
      "Vout = 0.8 x (1 + R3/R4).  3.3V icin oran 3.125\\n"
-     "L1 ve Cout datasheet Tablo 8'den.",
-     pg_label="PG_3V3", en_label="VIN_PROT")
+     "L1, Cin ve Cout datasheet Tablo 8'den.",
+     pg_label="PG_3V3", en_label="VIN_PROT", cin=("C3", "C4"))
 
 s.text("FPGA CEKIRDEK +1V1 — TPS62130 #2", 220, 100)
 buck("U2", 245, 125, "+3V3", "+1V1", "L2", ("R5", "10k"), ("R6", "26.7k"),
      "1.1V icin oran 0.375.  EN zinciri: U1 PG -> U2 EN,\\n"
      "guc siralamasi VCC(1.1) once, sonra VCCAUX, sonra VCCIO.",
-     en_label="PG_3V3")
+     en_label="PG_3V3", cin=("C5", "C6"), cin_fp=FC0805)
 
 # ---------------------------------------------------------------- LDO'lar
 s.text("HASSAS RAYLAR — her biri AYRI LDO, AYRI ADA. Anahtarlamalidan BESLENMEZ (§1).",

@@ -27,6 +27,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 GUC = re.compile(r"^(GND|\+|VIN_PROT|CHASSIS|GND_HDR|GND_STRAP|GND_MODE)")
 
 
+# ref -> sema sayfasi. padnetler dolduruyor.
+# NEDEN: "regulatorun kendi cikis kondansatoru" ile "ayni raydaki
+# baska bir entegrenin ayristirma kondansatoru" agdan ayirt
+# edilemiyor — ikisi de {+3V3, GND}. Sema sayfasi ayirt ediyor:
+# regulatorun kondansatoru guc sayfasinda cizildi.
+SAYFA = {}
+
+
 def padnetler(dizin, proj):
     out = f"/tmp/gy_{proj}.net"
     subprocess.run(["kicad-cli", "sch", "export", "netlist",
@@ -35,6 +43,11 @@ def padnetler(dizin, proj):
                    capture_output=True, check=True)
     t = open(out, encoding="utf-8").read()
     pn = {}
+    SAYFA.clear()
+    for m in re.finditer(
+            r'\(comp\s*\(ref "([^"]+)"\).*?\(sheetpath\s*\(names "([^"]*)"\)',
+            t, re.S):
+        SAYFA[m.group(1)] = m.group(2).strip("/")
     for m in re.finditer(
             r'\(net\s*\(code "\d+"\)\s*\(name "([^"]*)"\)(.*?)\n\t\t\)', t, re.S):
         ag, body = m.groups()
@@ -65,11 +78,30 @@ def ag_ile(pn, desen, haric=()):
 # +5.7 mm'de). Sol kenara 0 derece ile koyunca govde kartin ICINE
 # bakiyor — konnektor takilamaz. KiCad'de donme ekrandan saat yonunun
 # tersi, Y ekseni asagi: 180 sol, 0 sag, 90 ust, 270 alt.
-# Pedin dis yuzu kenardan bu kadar iceride. 0.3 mm'ydi; 0.6'ya
-# cikarildi ki DSN sinirini 0.5 mm iceri cekince ped tamamen
-# yonlendirilebilir alanin icinde kalsin. Kenar montaj SMA'sinda
-# 0.3 mm'lik ek sap HF'te olcusuz kalir — 54 MHz'te dalga boyu 5.5 m.
-PED_ICERI = 0.6
+# Pedin dis yuzu kenardan bu kadar iceride.
+# 0.3 -> 0.6 -> 0. Once "DSN sinirini 0.5 mm iceri cekince ped
+# tamamen yonlendirilebilir alanda kalsin" diye 0.6 yazmistim. O
+# gerekce yanlisti: yonlendiricinin pedin TAMAMINI gormesi gerekmiyor,
+# bir yerinden tutmasi yetiyor ve launch pedi 5.08 mm derin — 0.5 mm
+# kirpildiktan sonra 4.58 mm erisilebilir bakir kaliyor.
+# Bosluk birakmanin bedeli ise gercek: bu konnektorun toprak
+# tirnaklari kartin kenarina KENETLENIYOR (kart, konnektorun yarigina
+# giriyor). Ped kenardan geride kalirsa tirnak pede degmez ve RF
+# girisinin toprak donusu hic olusmaz.
+# Hedef: pedin dis ucu Edge.Cuts cizgisinin DIS SINIRIYLA hizali.
+# 0.0 denedim: ped dis ucu tam merkez cizgide olunca DRC her kenar
+# montaj pedinde copper_edge_clearance veriyor (A 45, C 60, D 10).
+# Sebep olculdu: Edge.Cuts bir CIZGI ve genisligi 0.1 mm, yani
+# -0.05..+0.05 arasini kapliyor. KiCad boslugu cizginin SEKLINE gore
+# olcuyor, merkezine gore degil; ped 0.00'da baslayinca cizginin ic
+# yarisiyla 0.05 mm ortusuyor ve bosluk NEGATIF cikiyor. Negatif
+# boslugu hicbir kural (min 0mm dahil) karsilayamaz, o yuzden
+# .kicad_dru muafiyeti de kurtarmiyordu.
+# 0.05 mm iceri: ped cizginin dis sinirina dayaniyor, bosluk tam 0
+# oluyor ve muafiyet gecerli hale geliyor. Frezenin yolu merkez
+# cizgi oldugu icin fiziksel olarak hala hizali — 0.05 mm, kesim
+# toleransinin (+-0.15 mm) ucte biri.
+PED_ICERI = 0.05
 KART_OLCU = [0, 0]   # uygula() dolduruyor
 
 KENAR_ACI = {"sol": 180, "sag": 0, "ust": 90, "alt": 270}
@@ -145,12 +177,30 @@ def koy(fps, ref, x, y, aci=None, kondu=None, kenar=False,
         pedler = list(fp.Pads())
         if pedler and KART_OLCU[0]:
             en_k, boy_k = KART_OLCU
-            xs = [q.GetPosition().x / MM for q in pedler]
-            ys = [q.GetPosition().y / MM for q in pedler]
-            wx = max(q.GetSizeX() / MM for q in pedler) / 2
-            wy = max(q.GetSizeY() / MM for q in pedler) / 2
-            sol, sag = min(xs) - wx, max(xs) + wx
-            ust, alt = min(ys) - wy, max(ys) + wy
+            # PED KUTUSU DONMUS HALDE ALINMALI.
+            # Once GetSizeX()/GetSizeY() kullaniyordum. Bunlar pedin
+            # KENDI cercevesindeki olculer — donme uygulanmamis.
+            # Ustelik butun pedlerin en buyugu alinip hem x hem y icin
+            # ayni sayi kullaniliyordu; SMA'da 5.08 mm'lik launch pedi
+            # ile 1.6 mm'lik toprak pedleri karisti.
+            #
+            # Hata YONE GORE ISARET DEGISTIRIYORDU, o yuzden tek bir
+            # duzeltmeyle kapanmiyordu:
+            #   180 derece (sol/sag kenar) : ped 1.14 mm KART DISINDA
+            #    90 derece (ust kenar)     : ped 0.65 mm ICERIDE
+            # Disari tasan bakir uretimde YOK — freze onu kesiyor,
+            # 5.08 mm'lik launch pedi 3.94 mm'ye iniyor ve kenarda
+            # kesilmis bakir kaliyor. Iceride kalan da kotu: bu
+            # konnektorun toprak tirnaklari kartin kenarina
+            # KENETLENIYOR, 0.65 mm boslukta tirnak pede degmiyor ve
+            # RF girisinin toprak donusu hic olusmuyor.
+            #
+            # GetBoundingBox() donmeyi zaten uygulanmis veriyor.
+            kutular = [q.GetBoundingBox() for q in pedler]
+            sol = min(q.GetLeft() for q in kutular) / MM
+            sag = max(q.GetRight() for q in kutular) / MM
+            ust = min(q.GetTop() for q in kutular) / MM
+            alt = max(q.GetBottom() for q in kutular) / MM
             # hangi kenara yakinsa o kenara hizala
             d = {"sol": x, "sag": en_k - x, "ust": y, "alt": boy_k - y}
             yon = min(d, key=d.get)
@@ -251,13 +301,63 @@ def yerlesim_A(fps, pn, kondu):
         for i, r in enumerate(seri[:2]):
             n += koy(fps, r, A_ZINCIR_X["seri"], y - 2.5 + i * 5, 0, kondu)
         for r in dif:
-            n += koy(fps, r, A_ZINCIR_X["dif"], y, 90, kondu)
+            # 90 DEGIL 270 — FARK CIFTI CAPRAZLANMASIN.
+            # Seri dirençlerde P ustte (y-2.5), N altta (y+2.5).
+            # Kondansator 90 derecede ped 1'i ALTA aliyordu:
+            #     R'de  P 117.50  N 122.50
+            #     C'de  P 120.78  N 119.22     <- ters
+            # Iki ag kondansatorde yer degistiriyor, yani bakir
+            # cizilirken caprazlanmak zorunda ve tek katmanda
+            # caprazlanma imkansiz: yonlendirici bir bacaga VIA
+            # koyuyor — tam ADC'nin analog girisinde, kartin en
+            # hassas noktasinda. Via hem endüktans hem cift icinde
+            # uzunluk farki demek.
+            # 270 derece ped sirasini ters ceviriyor ve dizilim
+            # dirençlerle ortusuyor. Dort kanalda da ayni.
+            n += koy(fps, r, A_ZINCIR_X["dif"], y, 270, kondu)
     # ---------- ADC'ler
     for adc, y in A_ADC_Y.items():
         n += koy(fps, adc, A_ADC_X, y, 0, kondu)
     # ---------- saat adasi: tampon iki ADC'nin TAM ORTASINDA
     n += koy(fps, "Y10", *A_VCXO, 0, kondu)
     n += koy(fps, "U15", *A_BUF, 0, kondu)
+    # ---------- LVDS SONLANDIRMASI ALICININ DIBINDE
+    # R220/R221 genel dolguya dusuyordu: ADC'nin saat pininden 23.4 ve
+    # 11.3 mm otede. 100R sonlandirma hattin SONUNDA ise ise yarar;
+    # 23 mm geride birakilirsa aradaki parca sonlandirilmamis bir sap
+    # olur. Sinyal sonlandirmayi gecip ADC'ye gidiyor, empedans
+    # suregelmedigi icin yansiyip geri donuyor. FR4'te 23 mm ~155 ps,
+    # gidis-donus ~310 ps; o yansima ornekleme kenarinin uzerine
+    # biniyor ve kenar jitter'ine donusuyor.
+    # Bu kartta jitter butcesi 81 fs (VCXO 60 fs + ADCLK846 54 fs) ve
+    # 30 MHz'te 96 dB SNR tavani ona dayaniyor. Sonlandirmayi yanlis
+    # yere koymak, 60 fs'lik osilatoru ve ADCLK846'yi secmenin butun
+    # anlamini goturuyor.
+    # Iki sonlandirma da kendi ADC'sine gore AYNI geometride: saat
+    # pininin 3.6 mm solunda. Boylece iki kanalin sapi da ozdes.
+    for adc, r in (("U20", "R220"), ("U21", "R221")):
+        if adc not in fps or r not in fps:
+            continue
+        sp = [q.GetPosition() for q in fps[adc].Pads()
+              if q.GetNetname().startswith(f"ADCLK_{adc}")]
+        if not sp:
+            continue
+        px = min(q.x for q in sp) / MM
+        py = sum(q.y for q in sp) / len(sp) / MM
+        n += koy(fps, r, px - 3.6, py, 90, kondu)
+    # ---------- FPGA saatinin LVDS alicisi, TAMPONUN DIBINDE
+    # U18 (SN65LVDS2) tampondan gelen LVDS cifti tek uclu 3.3 V
+    # CMOS'a cevirip FPGA'nin K16 saat ball'una veriyor. Genel
+    # dolguya birakinca U15'ten 28.8 mm oteye dustu: diferansiyel
+    # cift o mesafeyi kart ortasindan gecerek kat ediyor ve
+    # yol boyunca ortak mod gurultusu topluyor.
+    # 12 mm oteye, FPGA tarafina: cift kisa kaliyor, tek uclu
+    # cikis da zaten gurultuye LVDS'ten daha dayanikli oldugu icin
+    # uzun olan kismi o tasiyor.
+    # R222 (100R sonlandirma) ALICININ dibinde olmali — sonlandirma
+    # hattin sonunda ise ise yariyor, ortasinda degil.
+    n += koy(fps, "U18", A_BUF[0] + 12, A_BUF[1] - 7, 0, kondu)
+    n += koy(fps, "R222", A_BUF[0] + 12, A_BUF[1] - 11, 90, kondu)
     # ---------- FPGA, SDRAM
     n += koy(fps, "U10", 130, 120, 0, kondu)
     # SDRAM banka 7 = sol-UST
@@ -289,9 +389,18 @@ def yerlesim_A(fps, pn, kondu):
     # ---------- guc: SAG UST KOSE, ADC'den en uzak
     # XT60 govdesi buyuk (kablo girisi dahil ~25 mm); regulatorler
     # onun altina kaymali, yoksa U1 XT60'in icine giriyor.
-    for r, (x, y) in (("J1", (14, 6)), ("U1", (14, 42)),
-                      ("U2", (14, 62)), ("L1", (34, 42)), ("L2", (34, 62))):
-        n += koy(fps, r, x, y, 0, kondu)
+    n += koy(fps, "J1", 14, 6, 0, kondu)
+    # IKI BUCK YAPISKAN GRUP OLARAK. Once U1/U2 ve L1/L2 tek tek
+    # konuyordu ve bobin 20 mm oteye dusuyordu: bir alicinin en
+    # yuksek dv/dt'li dugumu, on ucun 20 mm yaninda 2 cm'lik bir
+    # bakir levha olarak duruyordu. Simdi zincir bir butun:
+    #   [giris C] [IC] [bobin] [cikis C]
+    # Blok saga uzaniyor (aci=0), IC x=20'de basliyor, en fazla
+    # ~16 mm yer kapliyor — sag komsusu LED sirasi x=92'de.
+    n += regulator_blok(fps, pn, kondu, "U1", "L1", 28, 42, 0,
+                        cin=("C4", "C3"), cout=("C1",))
+    n += regulator_blok(fps, pn, kondu, "U2", "L2", 28, 66, 0,
+                        cin=("C6", "C5"), cout=("C2",))
     # ---------- durum LED'leri: UST KENAR, SOL. Kartin o kosesi bostu
     # ve LED'in gorunur olmasi gerekiyor — kasada on panele en yakin
     # yer burasi. DC surulduklerinden FPGA'ya olan uzun yol onemsiz.
@@ -339,6 +448,16 @@ def ayristirma_topa(fps, pn, kondu):
     for ref in sorted(fps):
         padlar = pn.get(ref, {})
         if not ref.startswith("C") or len(padlar) != 2:
+            continue
+        # YAPISKAN GRUBUN KONDANSATORUNE DOKUNMA.
+        # Bu fonksiyon ayristirma kondansatorlerini besledikleri
+        # BACAGIN dibine tasiyor ve bunu `kondu`ya bakmadan yapiyordu:
+        # regulator blogunun giris/cikis kondansatorlerini de alip
+        # goturdu (D'de C650/C651 blogun 200 mm otesine dustu).
+        # Regulator kondansatoru ayristirma kondansatoru DEGIL;
+        # yeri cevrim geometrisiyle belirlendi, bacak yakinligiyla
+        # degil.
+        if ref in BLOK_SABIT:
             continue
         aglar = set(padlar.values())
         if "GND" not in aglar:
@@ -413,7 +532,15 @@ def ayristirma_topa(fps, pn, kondu):
             c = fps[ic].GetPosition()
             dx = 1 if q.x >= c.x else -1
             dy = 1 if q.y >= c.y else -1
-            koy(fps, ref, q.x / MM + dx * 1.9, q.y / MM + dy * 1.9, 0, kondu)
+            # HEDEF ENTEGRE BIR YAPISKAN GRUBUN ICINDEYSE DAHA UZAGA.
+            # Blogun etrafinda 0.5 mm'lik dikisler var; bacagin 1.9 mm
+            # yaninda yer YOK. Oraya konan kondansator iki sabit parca
+            # arasina sikisip kaliyordu: ayirici onu bir taraftan
+            # itip oteki taraftan geri itiyor, cakisma hic
+            # cozulmuyordu (A'da C227).
+            uzak = 6.5 if ic in BLOK_SABIT else 1.9
+            koy(fps, ref, q.x / MM + dx * uzak, q.y / MM + dy * uzak,
+                0, kondu)
         n += 1
     return n
 
@@ -476,8 +603,19 @@ def kalanlar(fps, pn, kondu, en, boy):
             if ref.startswith("C") and len(padlar) == 2 and "GND" in aglar:
                 ray = next((a for a in aglar if a != "GND"), None)
                 if ray:
-                    ic = [r for r in yerli if r.startswith("U")
-                          and ray in pn.get(r, {}).values()]
+                    # KUMEYI SIRALI DOLAS. `yerli` bir set ve icinde
+                    # metin var; Python metin karmasini her surecte
+                    # farkli tohumluyor, yani bu liste her kosuda
+                    # baska sirada geliyordu. Asagidaki max() esitligi
+                    # ILK GORDUGU lehine bozuyor, o yuzden ayni ray
+                    # uzerinde ayni sayida bacagi olan iki entegreden
+                    # hangisinin secildigi kosudan kosuya degisiyordu:
+                    # D kartinda C110 bir kosuda x=71.0'e, otekinde
+                    # x=21.6'ya dustu. Yerlesim tekrarlanmayinca bir
+                    # kurulumdan alinan SES otekine uymuyor — kisa
+                    # devrelerin bilinen sebebi bu.
+                    ic = sorted(r for r in yerli if r.startswith("U")
+                                and ray in pn.get(r, {}).values())
                     if ic:
                         en_iyi = max(ic, key=lambda r: sum(
                             1 for v in pn[r].values() if v == ray))
@@ -487,7 +625,11 @@ def kalanlar(fps, pn, kondu, en, boy):
                                 hedef = (p.x / MM + 2.4, p.y / MM + 2.4)
                                 break
             if hedef is None:
-                aday = [r for r in kom.get(ref, ()) if r in yerli]
+                # Ayni gerekce: kom[] degerleri de set. Ortalama
+                # sirasiz da ayni cikardi ama kayan nokta toplami
+                # sirayla degisiyor ve koy() 0.05 mm izgaraya
+                # yuvarliyor — esik ustunde bir parca oynuyordu.
+                aday = sorted(r for r in kom.get(ref, ()) if r in yerli)
                 if not aday:
                     continue
                 xs = [fps[r].GetPosition().x / MM for r in aday]
@@ -513,6 +655,219 @@ def olcu(fp, pay=1.4):
         pass
     b = fp.GetBoundingBox()
     return b.GetWidth() / MM + pay, b.GetHeight() / MM + pay
+
+
+# ------------------------------------------------------- YAPISKAN GRUP
+#
+# NEDEN VAR. Anahtarlamali bir regulatorde uc dugum kritik:
+#
+#   GIRIS CEVRIMI   giris kondansatoru -> IC -> toprak -> geri
+#                   Akim burada KESIKLI: her anahtarlama periyodunda
+#                   sifirdan tepe akima ziplayip geri dusuyor. di/dt
+#                   en yuksek burada, yani yayilan alan da. Cevrim
+#                   alani ne kadar buyukse o kadar iyi bir anten.
+#   ANAHTAR DUGUMU  IC -> bobin
+#                   Gerilim burada 0 ile Vin arasinda nanosaniyelerde
+#                   gidip geliyor: dv/dt en yuksek dugum. Bakir alani
+#                   ne kadar genisse kapasitif kuplaj o kadar cok.
+#   CIKIS CEVRIMI   bobin -> cikis kondansatoru -> toprak
+#                   Akim surekli, en az kritik olani; yine de uzun
+#                   olursa cikis dalgalanmasi ve toprak gurultusu.
+#
+# OLCULEN (ayak izi merkezleri arasi mm — once / sonra):
+#              giris          bobin          cikis
+#     A/U1     4.0 -> 3.4    20.0 -> 4.5   16.1 -> 3.1
+#     A/U2     3.5 -> 3.4    20.0 -> 4.5    4.1 -> 3.1
+#     C/U90   54.4 -> 3.4    10.0 -> 4.5   48.0 -> 3.2
+#     D/U50   12.2 -> 5.2     9.8 -> 6.1   10.3 -> 3.1
+#     D/U51  185.0 -> 3.4     9.3 -> 4.5   15.5 -> 3.2
+# Ped-ped olculunce (elektriksel olarak onemli olan o) hepsi
+# 2.0-3.2 mm arasinda. D/U50 biraz genis cunku LM5164 SOIC-8'in
+# govdesi 4.9 mm ve 47uH bobin 3 mm — fizik siniri, yerlesim degil.
+#
+# D/U51'in eski 185 mm'lik giris cevrimi kartin bir ucundan otekine
+# gidiyordu. A'daki 20 mm'lik anahtar dugumu ise mikrovolt dinleyen
+# bir alicinin 20 mm yaninda duran bir verici gibi calisiyordu.
+#
+# A/U1, A/U2 ve C/U90'da GIRIS KONDANSATORU HIC YOKTU (semada da
+# yoktu, sadece yerlesimde uzak degildi). Eklendi: A'da C3/C4 ve
+# C5/C6, C'de C83/C84, D/U51'de C650/C651, D/U50'de C663 (2.2uF
+# 100 V seramik). Bir buck'ta kesikli akimi verecek kondansator
+# yoksa o akim kaynagin kendisinden, yani kablodan cekilir.
+#
+# COZUM. Regulator + giris kondansatoru + bobin + cikis kondansatoru
+# TEK BLOK. Blok kendi ic geometrisiyle kuruluyor, sonra bir butun
+# olarak konumlandiriliyor; parcalari `kondu` kumesine giriyor,
+# yani ne ayirici ne de genel dolgu onlari birbirinden ayirabiliyor.
+# Ayni mekanizma ayristirma kondansatorleri icin de kullanilacak.
+BLOK_SABIT = set()
+BLOK_KULLANILDI = set()   # bir bloga girmis kondansator ikinciye girmez
+BLOK_ARA = 0.5            # blok icinde courtyard'lar arasi bosluk, mm
+
+
+def _cap_ada(fps, pn, ag, sayfa=None, en_fazla=2):
+    """Iki bacagi {ag, GND} olan kondansatorler — KUCUKTEN BUYUGE.
+
+    Kucukten baslamak onemli: yuksek frekans cevrimini kapatan sey
+    seramik olan, elektrolitik degil. 470 uF'lik toplu enerji
+    kondansatorunu IC'nin dibine cakmak yer israfi; 100 nF'i 20 mm
+    oteye atmak ise cevrimin ta kendisini bozuyor.
+    Sayfa suzgeci: ayni raydaki BASKA entegrelerin ayristirma
+    kondansatorlerini kapmayalim diye (bir kartta +3V3'e bagli 200
+    kondansator var, regulatorun kendi cikisi bunlardan biri).
+    """
+    out = []
+    for ref, padlar in sorted(pn.items()):
+        if not ref.startswith("C") or len(padlar) != 2:
+            continue
+        if set(padlar.values()) != {ag, "GND"}:
+            continue
+        if sayfa is not None and SAYFA.get(ref) != sayfa:
+            continue
+        if ref in BLOK_KULLANILDI or ref not in fps:
+            continue
+        out.append(ref)
+    # KUCUK OLAN ONCE. Sira referans adina gore olursa 470 uF'lik
+    # elektrolitik IC'nin dibine, 100 nF 20 mm oteye dusebiliyor —
+    # tam tersi. Esitlikte referans adi: sonuc tekrarlanabilir kalsin.
+    out.sort(key=lambda r: (round(olcu(fps[r], 0)[0] * olcu(fps[r], 0)[1], 3), r))
+    return out[:en_fazla] if en_fazla else out
+
+
+def regulator_blok(fps, pn, kondu, ic, bobin, x, y, aci=0, sayfa=None,
+                   cin=None, cout=None):
+    """Anahtarlamali regulatoru cevresiyle birlikte TEK BLOK koy.
+
+    ic     regulator referansi (blok merkezi burada)
+    bobin  anahtar dugumune bagli bobin
+    x, y   blogun capasi = IC'nin govde merkezi
+    aci    blogun uzanma yonu: 0 saga, 90 asagi, 180 sola, 270 yukari
+           (KiCad'de Y ekseni asagi bakiyor)
+
+    Dizilim, akim yonunde:  [giris C] [IC] [bobin] [cikis C]
+    Boylece giris cevrimi de anahtar dugumu de mumkun olan en kisa
+    hale geliyor ve cikis kondansatoru bobinin hemen ardinda.
+    """
+    if ic not in fps or bobin not in fps:
+        return 0
+    un = pn.get(ic, {})
+    ln = pn.get(bobin, {})
+    ortak = (set(un.values()) & set(ln.values())) - {"GND", ""}
+    if not ortak:
+        return 0
+    # ANAHTAR DUGUMUNU DOGRU SEC. IC ile bobin IKI ag paylasiyor:
+    # anahtar dugumu (SW) ve cikis rayi — TPS62130'un VOS bacagi da
+    # cikisa bagli. Alfabetik ilkini almak "+3V3"u anahtar dugumu
+    # sanmaya yol aciyordu; o durumda cikis kondansatoru hic
+    # bulunamiyor (blok cikissiz kaliyor, olculdu).
+    # Anahtar dugumu ISIMSIZ ve az bacakli olan: ray isimleri "+"
+    # ile basliyor, anahtar dugumu ise semada etiketlenmemis.
+    sw = sorted(ortak, key=lambda a: (a.startswith("+"),
+                                      len([1 for p in pn.values()
+                                           if a in p.values()]), a))[0]
+    vout = sorted(set(ln.values()) - {sw, "GND", ""})
+    vout = vout[0] if vout else None
+    # giris rayi: IC'nin en cok bacaginin bagli oldugu, cikis/anahtar
+    # olmayan ray. TPS62130'da VIN iki bacak, bu onu tek basina
+    # secmeye yetiyor.
+    sayim = {}
+    for ag in un.values():
+        if ag in ("GND", "", sw, vout):
+            continue
+        sayim[ag] = sayim.get(ag, 0) + 1
+    vin = max(sorted(sayim), key=lambda a: sayim[a]) if sayim else None
+    # KONDANSATORLERI ELLE VERMEK ESAS, OTOMATIK BULMA YEDEK.
+    # Ag + sayfa suzgeci yetmiyor: guc sayfasinda +3V3'e bagli on
+    # kondansator var (LDO girisleri, cikislari, regulatorun kendi
+    # cikisi) ve hepsi ayni olcude. Hangisinin blogun parcasi
+    # oldugunu netlist bilmiyor, SEMAYI YAZAN biliyor.
+    sayfa = sayfa if sayfa is not None else SAYFA.get(ic)
+    cin = list(cin) if cin else (_cap_ada(fps, pn, vin, sayfa) if vin else [])
+    cout = (list(cout) if cout else
+            (_cap_ada(fps, pn, vout, sayfa) if vout else []))
+    BLOK_KULLANILDI.update(cin)
+    BLOK_KULLANILDI.update(cout)
+
+    ileri = {0: (1, 0), 90: (0, 1), 180: (-1, 0), 270: (0, -1)}[aci % 360]
+    yan = (-ileri[1], ileri[0])
+
+    # YONLER ONCE, OLCU SONRA. olcu() courtyard'i O ANKI donusuyle
+    # okuyor; once yerlestirip sonra dondurursek blok icindeki
+    # araliklar yanlis hesaplanir ve parcalar ust uste biner.
+    fps[bobin].SetOrientationDegrees(aci)
+    # IC'NIN DONMESINI PEDLER SECSIN, ZINCIR YONU DEGIL.
+    # Blok yonu karttaki bos yere gore seciliyor; ama VIN bacaklari
+    # zincirin ters ucunda kalirsa giris cevrimi govdenin etrafindan
+    # dolasiyor. Olculdu: ayni merkez mesafesinde ped-ped 2.1 mm ile
+    # 6.4 mm arasinda degisiyor, tek fark govdenin donusu.
+    # Dort donusu de deneyip VIN pedlerini giris kondansatoruna,
+    # anahtar pedini bobine bakan yone getireni seciyoruz.
+    en_iyi, en_iyi_puan = aci, None
+    for deneme in (0, 90, 180, 270):
+        fps[ic].SetOrientationDegrees((aci + deneme) % 360)
+        c0 = fps[ic].GetPosition()
+
+        def izdusum(ag):
+            v = [((q.GetPosition().x - c0.x) / MM * ileri[0]
+                  + (q.GetPosition().y - c0.y) / MM * ileri[1])
+                 for q in fps[ic].Pads() if q.GetNetname() == ag]
+            return sum(v) / len(v) if v else 0.0
+        # giris pedleri geriye (-ileri), anahtar pedi ileriye baksin
+        puan = izdusum(sw) - izdusum(vin)
+        if en_iyi_puan is None or puan > en_iyi_puan:
+            en_iyi, en_iyi_puan = (aci + deneme) % 360, puan
+    fps[ic].SetOrientationDegrees(en_iyi)
+    # KONDANSATORLER EKSENE DIK. 0805'in kisa kenari zincir boyunca
+    # duruyor; iki pedi de IC'nin AYNI kenarina bakiyor (VIN ve PGND
+    # yan yana), yani cevrim kondansatorun boyu kadar bile uzamiyor.
+    # Eksene paralel de denendi: ayni merkez mesafesinde ped-ped
+    # 4.8 mm yerine 5.9 mm cikti, yani daha kotu.
+    for r in cin + cout:
+        if r in fps:
+            fps[r].SetOrientationDegrees((aci + 90) % 360)
+
+    def boy_yon(ref):
+        """Parcanin blok EKSENI boyunca olcusu (+ bosluk)."""
+        w, h = olcu(fps[ref], BLOK_ARA)
+        return w if ileri[0] else h
+
+    def enine(ref):
+        w, h = olcu(fps[ref], BLOK_ARA)
+        return h if ileri[0] else w
+
+    n = 0
+    yerlestir = [(ic, 0.0, 0.0)]      # (ref, eksen konumu, yan konum)
+    cin = [r for r in cin if r in fps]
+    cout = [r for r in cout if r in fps]
+    # giris kondansatorleri IC'nin GERISINDE
+    if cin:
+        merkez = -boy_yon(ic) / 2 - boy_yon(cin[0]) / 2
+        yerlestir.append((cin[0], merkez, 0.0))
+        # Ikincisi birincinin YANINDA: cevrim uzamiyor, iki
+        # kondansator gercekten paralel bagli oluyor. Eksen konumu
+        # HER PARCA ICIN AYRI hesaplaniyor — ortak merkez kullanmak,
+        # eksende daha genis olan ikinci kondansatoru IC'nin
+        # courtyard'ina sokuyordu (D'de C663 ile U50, 0.15 mm).
+        for r in cin[1:]:
+            yerlestir.append((r, -boy_yon(ic) / 2 - boy_yon(r) / 2,
+                              (enine(cin[0]) + enine(r)) / 2))
+    # bobin ve cikis kondansatorleri IC'nin ONUNDE
+    yer = boy_yon(ic) / 2
+    if bobin in fps:
+        yer += boy_yon(bobin) / 2
+        yerlestir.append((bobin, yer, 0.0))
+        yer += boy_yon(bobin) / 2
+    if cout:
+        yerlestir.append((cout[0], yer + boy_yon(cout[0]) / 2, 0.0))
+        for r in cout[1:]:
+            yerlestir.append((r, yer + boy_yon(r) / 2,
+                              (enine(cout[0]) + enine(r)) / 2))
+    for ref, ileriye, yana in yerlestir:
+        px = x + ileri[0] * ileriye + yan[0] * yana
+        py = y + ileri[1] * ileriye + yan[1] * yana
+        n += koy(fps, ref, px, py, None, kondu)
+        BLOK_SABIT.add(ref)
+    return n
 
 
 def ayikla(fps, kondu, en, boy, tur=500):
@@ -562,11 +917,20 @@ def ayikla(fps, kondu, en, boy, tur=500):
                     ox, oy = (wi + wj) / 2, (hi + hj) / 2
                     ax, ay = abs(dx), abs(dy)
                     if ax < ox and ay < oy:
-                        cak += 1
                         ki = ref[i] in kondu
                         kj = ref[j] in kondu
                         if ki and kj:
+                            # IKISI DE ELLE KONMUS: zaten oynatmiyoruz.
+                            # Sayaci da ancak GERCEK courtyard'lar
+                            # kesisiyorsa artir. olcu() 1.4 mm guvenlik
+                            # payi ekliyor; yapiskan gruplar bilerek
+                            # 0.5 mm arayla sikistiriliyor ve pay'li
+                            # olcu onlari cakisma sayip her kosuda
+                            # yanlis alarm veriyordu.
+                            if ax < ox - 1.4 and ay < oy - 1.4:
+                                cak += 1
                             continue
+                        cak += 1
                         pi = 0.0 if ki else (1.0 if kj else 0.5)
                         pj = 0.0 if kj else (1.0 if ki else 0.5)
                         if ox - ax < oy - ay:
@@ -610,8 +974,16 @@ def ayikla(fps, kondu, en, boy, tur=500):
 # geometrinin otelenmisi.
 C_EN, C_BOY = 350, 235
 C_KANAL_Y = [25, 80, 135, 190]
-C_BANT_X0 = 42
+# BANT BANKASI 42'DEN 60'A KAYDI. Giris zinciri (GDT, TVS, T/R
+# rolesi, ikinci TVS cifti, seri direnc) artik antenin dibinde
+# duruyor ve 42 mm'ye sigmiyordu. Bant 7 boylece 300'e, en sagdaki
+# bobini 333'e dusuyor; cikis konnektorleri 348.6'da, arada 15 mm
+# kaliyor.
+C_BANT_X0 = 60
 C_BANT_ADIM = 40
+# Giris zincirinin x konumlari, SINYAL SIRASINDA. Aralar parcalarin
+# courtyard genisligine gore: GDT 4.5, SMB 7.4, role 9.4 mm.
+C_GIRIS_X = (9.0, 17.0, 27.0, 36.0, 40.0, 44.0)
 
 
 def yerlesim_C(fps, pn, kondu):
@@ -635,20 +1007,53 @@ def yerlesim_C(fps, pn, kondu):
     n = 0
     for k, ky in enumerate(C_KANAL_Y, start=1):
         n += koy(fps, f"J{k}", 0.5, ky, KENAR_ACI["sol"], kondu, kenar=True)
-        # KORUMA VE SERI DIRENCLER KENDI SERIDINDE.
-        # Genel dolguya birakmistim: RX{k}_B1_IN agi 212 mm cikti,
-        # yani antenle ilk bandin arasindaki 0 ohm direnc kartin ote
-        # ucundaydi. Dort kanalda ayni oldugu icin simetri bozulmadi
-        # ama 212 mm'lik bir RF hatti tek basina kayip ve anten.
-        # Zincir sirasi: SMA -> koruma -> seri direnc -> bant 1.
-        # Referans adimi kanal basina 9: ch1 R106/R107, ch2 R115/R116,
-        # ch3 R124/R125, ch4 R133/R134. Once 2 yazmistim ve yalnizca
-        # birinci kanal duzeldi.
-        for j, r in enumerate((f"E{99 + k}", f"D{100 + (k - 1) * 5}",
-                               f"R{106 + (k - 1) * 9}",
-                               f"R{107 + (k - 1) * 9}")):
-            if r in fps:
-                n += koy(fps, r, 10 + j * 7, ky, 90, kondu)
+        # GIRIS ZINCIRI AG ADINDAN TURETILIYOR, REFERANS ARITMETIGINDEN
+        # DEGIL.
+        #
+        # Eski hali "E{99+k}" ve "D{100+(k-1)*5}" diye referans sayisi
+        # uyduruyordu. Gercek adimlama kanal basina 9: koruma diyotlari
+        # D101/D105/D106, D110/D114/D115, D119/..., D128/... Formul
+        # D100 (yok), D105, D110, D115 uretiyordu — yani 1. kanalin
+        # diyotu 2. kanalin seridine, 2. kanalinki 3. ve 4. seride
+        # kondu. Olculdu: D105 (kanal 1) y=80'de, D110 (kanal 2)
+        # y=135'te, D115 (kanal 2) y=190'da. Yerlestirilemeyenler
+        # genel dolguya dustu ve GDT'sinden 100 mm oteye gitti;
+        # 100 mm'lik bir baglantinin ucundaki TVS asiri gerilimi
+        # bastirmaz, kendi endüktansi darbeyi gecirir.
+        #
+        # Ag adi uydurulamaz: parcayi hangi aga bagliysa ondan
+        # buluyoruz.
+        ant, rxa = f"ANT{k}", f"RX{k}_ANT"
+
+        def bagli(ag, onek, _pn=pn):
+            return sorted(r for r, p in _pn.items()
+                          if ag in p.values() and r.startswith(onek))
+
+        # T/R ROLESI ANTENIN DIBINDE, BANT BANKASININ SONUNDA DEGIL.
+        # Once C_EN-42'ye (x=308) konuyordu, "alis/veris ayrimi
+        # filtreden sonra yapiliyor" gerekcesiyle. Netlist tersini
+        # soyluyor: KT{k} ANT{k} ile RX{k}_ANT arasinda, yani
+        # filtrelerden ONCE. Olculen bedeli: ANT{k} agi 303 mm,
+        # RX{k}_ANT 287 mm — alinan sinyal ilk filtreye varmadan
+        # once kartin boyunu iki kez kat ediyordu. O 590 mm hem
+        # dogrudan kayip (kazanctan ONCE, yani tamami gurultu
+        # rakamina biniyor) hem de dort kanalin yan yana kosan
+        # uzun hatlari arasinda karsilikli kuplaj — bu kartin butun
+        # degeri olan kanal esitligini bozan sey.
+        # TX yolu uzuyor; dogru takas bu, cunku TX yuksek seviyeli
+        # ve gurultuye duyarsiz.
+        zincir = (bagli(ant, "E") + bagli(ant, "D") + [f"KT{k}"]
+                  + bagli(rxa, "D") + bagli(rxa, "R"))
+        for j, r in enumerate(zincir):
+            if r in fps and j < len(C_GIRIS_X):
+                n += koy(fps, r, C_GIRIS_X[j], ky, 90, kondu)
+        # Role surucusu kendi rolesinin USTUNDE, altinda degil.
+        # Altta (ky+13) 4. kanalinki y=203'e dusuyor ve alt kenardaki
+        # role surucu bandindaki U70'in uzerine biniyordu; ikisi de
+        # sabit sinifta oldugu icin ayirici ayiramiyordu. Ust taraf
+        # dort kanalda da bos: bant bobinleri ky-9'da ama x>=69'da,
+        # bu ise x=27.
+        n += koy(fps, f"QT{k}", C_GIRIS_X[2], ky - 13, 0, kondu)
         for bant in range(1, 8):
             bx = C_BANT_X0 + (bant - 1) * C_BANT_ADIM
             n += koy(fps, f"K{k}{bant}", bx, ky, 0, kondu)
@@ -659,19 +1064,43 @@ def yerlesim_C(fps, pn, kondu):
             bobin = sorted(r for r in ic if r.startswith("L"))
             kond = sorted(r for r in ic if r.startswith("C"))
             baci = 0 if bant % 2 else 90
-            for i, r in enumerate(bobin):
-                n += koy(fps, r, bx + 9 + i * 8, ky - 9, baci, kondu)
+            # BOBIN ADIMI CEKIRDEGE GORE, SABIT 8 mm DEGIL.
+            # Bant 1 ve 6 elde sarilmis T50 toroid kullaniyor
+            # (courtyard 13.8 mm), 2-5 ise 0805/NR-30 SMD bobin
+            # (1.8-3.6 mm). Hepsine 8 mm adim verilince toroidler ic
+            # ice giriyordu: dort kanalda 24 courtyard cakismasi.
+            # GORUNMUYORDU cunku eski T50 ayak izinde F.CrtYd yoktu
+            # ve cakisma sinamasi genisligi 0 olan parcalari atliyor.
+            # Ayak izine courtyard eklenince ortaya cikti.
+            # Uc toroid 3 x 13.8 + 2 x 0.5 = 42.4 mm; bant adimi
+            # 40 mm ama komsu bantlarin bobinleri kucuk ve ortalanmis
+            # oldugu icin tasma yan banda girmiyor (olculdu).
+            def cap_l(r):
+                try:
+                    kk = fps[r].GetCourtyard(pcbnew.F_CrtYd).BBox()
+                    if kk.GetWidth() > 0:
+                        return kk.GetWidth() / MM
+                except Exception:
+                    pass
+                return 4.0
+            gen = [cap_l(r) for r in bobin if r in fps]
+            imle = bx + 9 - (sum(gen) + 0.5 * max(0, len(gen) - 1)) / 2
+            for r in bobin:
+                if r not in fps:
+                    continue
+                w = cap_l(r)
+                # ky-9 DEGIL ky-14. Role govdesi 10.6 mm yuksek,
+                # yani ky+-5.3'u kapliyor; 13.8 mm'lik toroid
+                # ky-9'da 3.2 mm ile rolenin icine giriyordu
+                # (dort kanalda 16 cakisma). 14 mm'de toroidin
+                # alt kenari 17.9, rolenin ust kenari 19.7.
+                n += koy(fps, r, imle + w / 2, ky - 14, baci, kondu)
+                imle += w + 0.5
             for i, r in enumerate(kond):
                 n += koy(fps, r, bx + 6 + (i % 4) * 7,
                          ky + 8 + (i // 4) * 5, 0, kondu)
-    # T/R ROLESI VE SURUCUSU HER KANALIN KENDI SERIDINDE.
-    # Genel dolguya birakinca KT'ler seritler arasina, QT4 de bir
-    # role surucusunun (U73) uzerine dustu — ikisi de sabit sinifta
-    # oldugu icin ayirici kurtaramadi. Role bant bankasindan SONRA,
-    # cikisa giderken: alis/veris ayrimi filtreden sonra yapiliyor.
-    for k, ky in enumerate(C_KANAL_Y, start=1):
-        n += koy(fps, f"KT{k}", C_EN - 42, ky, 0, kondu)
-        n += koy(fps, f"QT{k}", C_EN - 42, ky + 13, 0, kondu)
+    # (KT{k}/QT{k} artik yukarida, giris zincirinin icinde. Burada
+    # C_EN-42'ye konuyorlardi; gerekcesi netliste uymuyordu.)
 
     # SAG KENAR: her kanalin RX cikisi kendi seridinin hizasinda,
     # TX girisi hemen altinda. J82..J85 = RX1..RX4 -> A karti,
@@ -690,10 +1119,43 @@ def yerlesim_C(fps, pn, kondu):
     # gecirmek yerine karti alt kenarda bir kontrol bandina topluyoruz.
     # Bobin hatlari bantlar arasindaki 40 mm'lik bosluklardan dikey
     # cikiyor ve ic katmanda, toprak duzlemi altinda ilerliyor.
-    for i in range(14):
-        n += koy(fps, f"U{70 + i}", 24 + i * 23, C_BOY - 30, 0, kondu)
+    # ROLE SURUCULERI KENDI KANALLARININ SERIDINDE.
+    #
+    # Once on dordu de alt kenarda TEK SIRADA duruyordu (y=205,
+    # x=24..323) ve roleler dort kanal seridinde. Olculdu: 28
+    # surucu-role ciftinin 27'si 60 mm'nin uzerinde, ortalama
+    # 144 mm, en uzugu 274 mm. Kilitlenen role bobinine verilen
+    # darbe o iz uzerinde zayifliyor; atmayan bir bant rolesi
+    # yanlis filtreyle verme demek. Ustelik o 56 uzun bobin hatti
+    # kartin dortte ucunu kat eden bir demet olusturup
+    # yonlendiriciyi tikiyordu.
+    #
+    # Simdi kanal basina dort surucu (gen_05_driver 16 x DRV8833),
+    # her biri surdugu iki rolenin TAM ARASINDA, seridin 20 mm
+    # altinda. Bobin hatti 20-25 mm'ye iniyor ve dort kanal
+    # birebir ayni geometriyi aliyor.
+    for k, ky in enumerate(C_KANAL_Y, start=1):
+        for j in range(4):
+            ref = f"U{70 + (k - 1) * 4 + j}"
+            # j=0,1,2 iki roleyi suruyor: ikisinin ortasi.
+            # j=3 tek role suruyor (7 tek sayi): onun hizasi.
+            bx = (C_BANT_X0 + (2 * j) * C_BANT_ADIM
+                  + (C_BANT_ADIM / 2 if j < 3 else 0))
+            n += koy(fps, ref, bx, ky + 20, 0, kondu)
+    # Kaydirmali yazmaclar alt kenarda kaliyor: seri veri yolu
+    # yavas (birkac MHz) ve uzunluga duyarsiz. Sira 16'dan 11'e
+    # indi cunku 4. kanalin suruculeri artik y=210'da.
     for i in range(7):
-        n += koy(fps, f"U{60 + i}", 30 + i * 46, C_BOY - 16, 0, kondu)
+        n += koy(fps, f"U{60 + i}", 30 + i * 46, C_BOY - 11, 0, kondu)
+    # +5V BUCK YAPISKAN GRUP. Once hicbir yere capalanmamisti ve
+    # genel dolguya kaliyordu: giris cevrimi 54 mm, cikis 48 mm.
+    # Yer secimi: SOL ALT KOSE, x=10 ekseninde DIKEY (aci=270,
+    # yukari dogru). Dort RF seridi y = 25/80/135/190'da; blok
+    # y=222'den y=206'ya uzaniyor, yani hepsinin altinda. Role
+    # suruculeri x=24'ten basliyor, blok x=6..14 arasinda kaliyor.
+    # Anahtarlamali dugum RF'in gectigi hicbir seride komsu degil.
+    n += regulator_blok(fps, pn, kondu, "U90", "L80", 10, 214, 270,
+                        cin=("C84", "C83"), cout=("C82", "C80"))
     return n
 
 
@@ -710,7 +1172,29 @@ def yerlesim_C(fps, pn, kondu):
 # barin uzerine cakilsinlar. Ustelik dort cihaz ayni bara ayni sirayla
 # bagli olmali: aralarindaki sicaklik farki bias farkina, o da IMD'ye
 # donusuyor.
-D_EN, D_BOY = 240, 185
+# KART 240 -> 260 mm GENIS.
+# LPF bobinlerine dogru ayak izleri verilince (T94 25.0, T68 18.6,
+# T50 13.8 mm) tek siranin ihtiyaci olculdu:
+#     4xT94 + 4xT68 + 4xT50 = 229.6 mm
+#   + bypass bandinin rolesi           14.0
+#   + bantlar arasi 6 x 1 mm            6.0
+#   ------------------------------------------
+#                                     249.6 mm
+# 240 mm'lik kartta kullanilabilir genislik ~236 mm; 14 mm eksik
+# kaliyordu ve bobinler kuplor blogunun uzerine tasiyordu.
+# Iki secenek vardi: bantlari iki sira yapmak ya da karti genisletmek.
+# Iki sira, her bandin filtresini kendi rolesinin ustunde tutma
+# kuralini bozuyor (sinyal roleden cikip filtreye, oradan ayni
+# roleye donuyor; sira degisince o yol yan bandin altindan geciyor).
+# 240 -> 260 yetmedi: sira 250'ye kadar geliyor ve kuplor/dedektor
+# blogu 220-242'de duruyordu. 275'te sira 4..250, kuplor 233..268,
+# arada 5 mm kaliyor.
+# Iki siraya bolmeyi de olctum: genislik rahatlar (132 ve 117 mm) ama
+# ikinci sira 25 mm'lik T94'lerle birlikte 25 mm daha DUSEY yer
+# istiyor ve role/surucu/olcum siralari 185 mm'ye sigmiyor. Yani
+# problem genislik degil ALAN; en az bozan yon genislik.
+# 35 mm bakir, bozulan bir kat planindan ucuz.
+D_EN, D_BOY = 275, 185
 # Final cihazlar kartin UST KENARINDA, kulaklar disari. 26 mm iceride
 # durduruyordum: sogutucu bari kartin uzerinden gecmek zorunda kaliyor,
 # ustelik 26 mm bakir bosa gidiyor. Cihaz basina 58 W'i tasiyacak bar
@@ -745,8 +1229,13 @@ def yerlesim_D(fps, pn, kondu):
     n = 0
     # ---------- giris zinciri: sol kenardan iceri, duz hat
     n += koy(fps, "J10", 0.5, D_EKSEN, KENAR_ACI["sol"], kondu, kenar=True)
-    for r, x in (("U10", 26), ("U11", 52), ("T10", 78)):
+    for r, x in (("U10", 26), ("U11", 52)):
         n += koy(fps, r, x, D_EKSEN, 0, kondu)
+    # T10 ASAGIDA, SURUCU EKSENINDE KONUMLANIYOR (bkz. yerlesim_D
+    # icinde "SURUCU GIRIS TRAFOSU"). Burada giris zincirinin
+    # sirasindan cikarildi: x=78'de dururken iki kapi kolu 43.6 ve
+    # 95.5 mm oluyordu — itme-cekme bir kati besleyen trafo iki
+    # kolun TAM ORTASINDA olmak zorunda.
     # ---------- final: UST KENAR, tek sira, kulaklar yukari
     # Q10/Q11 sol kol, Q12/Q13 sag kol; cikis trafosu tam ortada.
     # TO-247 govdesi 16.5 mm. 16 mm adimla dizmistim, kulaklar
@@ -766,7 +1255,7 @@ def yerlesim_D(fps, pn, kondu):
         return q.x / MM, q.y / MM
 
     gx = [mrk(r)[0] for r in ("Q10", "Q11", "Q12", "Q13")]
-    n += koy(fps, "T11", (gx[1] + gx[2]) / 2, D_FINAL_Y + 26, 0, kondu)
+    n += koy(fps, "T31", (gx[1] + gx[2]) / 2, D_FINAL_Y + 26, 0, kondu)
     # ---------- surucu cifti HER BIRI KENDI KOLUNUN MERKEZINDE
     # Once ikisini de giris trafosunun yanina koymustum: Q20'den dort
     # kapiya mesafe 39..82 mm cikti. Itme-cekmede Q20 sol kolu, Q21
@@ -777,27 +1266,67 @@ def yerlesim_D(fps, pn, kondu):
     # Suruculer finallerin 16 mm altindaydi; T12 ve R213 ile
     # cakisiyorlardi. 44 mm asagi: final -> kapi direnci -> surucu ->
     # surucu trafosu sirasi acilir.
-    n += koy(fps, "Q20", (gx[0] + gx[1]) / 2, D_FINAL_Y + 44, 0, kondu)
-    n += koy(fps, "Q21", (gx[2] + gx[3]) / 2, D_FINAL_Y + 44, 0, kondu)
+    # SURUCU SIRASI 44 -> 54. Final girisi trafosu (T30) referans
+    # catismasindan geri gelince arada yer kalmadi: T30 ile T31
+    # ve T30 ile Q20/Q21 cakisti. Olculen kutulara gore final
+    # girisi ile surucu arasinda 15 mm bos band gerekiyor.
+    n += koy(fps, "Q20", (gx[0] + gx[1]) / 2, D_FINAL_Y + 54, 0, kondu)
+    n += koy(fps, "Q21", (gx[2] + gx[3]) / 2, D_FINAL_Y + 54, 0, kondu)
     # Konuldular; simdi ONLARIN gercek konumuna gore ince ayar.
     for s, (a, c) in (("Q20", ("Q10", "Q11")), ("Q21", ("Q12", "Q13"))):
         hedef = (mrk(a)[0] + mrk(c)[0]) / 2
         q = fps[s].GetPosition()
         fps[s].SetPosition(pcbnew.VECTOR2I(
             int(q.x + (hedef - q.x / MM) * MM), q.y))
-    q = fps["T11"].GetPosition()
+    q = fps["T31"].GetPosition()
     hedef = (mrk("Q11")[0] + mrk("Q12")[0]) / 2
-    fps["T11"].SetPosition(pcbnew.VECTOR2I(
+    fps["T31"].SetPosition(pcbnew.VECTOR2I(
         int(q.x + (hedef - q.x / MM) * MM), q.y))
     # ---------- LPF bankasi: cikis trafosunun altinda, tek sira
     # G2RL-2 govdesi 13.1 x 29.4 mm — YUKSEK. Suruculeri 16 mm asagi
     # koymustum, rolenin govdesinin icinde kaliyorlardi. 24 mm asagi
     # ve adim 27 mm: yedi role 20..182 arasina siginca sag taraf
     # kuplor ve detektorlere kaliyor.
+    # BANT GENISLIGI CEKIRDEGE GORE, SABIT 27 mm DEGIL.
+    # Butun bantlara 27 mm verip bobinleri 13 mm arayla diziyordum.
+    # Cekirdekler ayni degil: T50 13.8, T68 18.6, T94 25.0 mm. Alt
+    # bantlarin T94'leri 13 mm arayla ic ice giriyordu — kart basilir,
+    # parcalar takilmaz. On courtyard cakismasi hep bu sirada cikti.
+    # (Ustelik eski T50 ayak izinde F.CrtYd yoktu, yani cakisma
+    # denetimi bu parcalari hic gormuyordu; ayak izleri duzeltilince
+    # sorun gorunur oldu.)
+    # Toplam ihtiyac olculdu: 4xT94 + 4xT68 + 4xT50 = 229.6 mm,
+    # kartin kullanilabilir genisligi ~236 mm. Tek sira YETIYOR,
+    # yeter ki her bant kendi cekirdeginin genisligini alsin.
+    def bant_bobinleri(i):
+        return sorted(r for r, padlar in pn.items()
+                      if r.startswith("L")
+                      and any(a.startswith((f"LF{i}_", f"N{i}_"))
+                              for a in padlar.values()))
+
+    def cap(r):
+        """Parcanin courtyard genisligi (mm); yoksa kaba tahmin."""
+        try:
+            k = fps[r].GetCourtyard(pcbnew.F_CrtYd).BBox()
+            if k.GetWidth() > 0:
+                return k.GetWidth() / MM
+        except Exception:
+            pass
+        return 14.0
+
+    bant_x = {}
+    imlec = 4.0
     for i in range(1, 8):
-        bx = 20 + (i - 1) * 27
-        n += koy(fps, f"KL{i}", bx, 128, 0, kondu)
-        n += koy(fps, f"QL{i}", bx, 152, 0, kondu)
+        w = sum(cap(r) for r in bant_bobinleri(i) if r in fps)
+        # Bypass bandinin (bobinsiz) genisligi rolenin kendisi
+        # kadar: G2RL-2 govdesi 13.1 mm.
+        w = max(w, 14.0)
+        bant_x[i] = imlec + w / 2
+        imlec += w + 1.0          # bantlar arasi 1 mm
+    for i in range(1, 8):
+        bx = bant_x[i]
+        n += koy(fps, f"KL{i}", bx, 130, 0, kondu)
+        n += koy(fps, f"QL{i}", bx, 155, 0, kondu)
         # BANDIN FILTRESI KENDI SUTUNUNDA. Onceden LPF bobinlerini
         # genel dolguya birakmistim; T68/T94 toroidler role
         # govdelerinin icine dustu (10 adet pth_inside_courtyard).
@@ -814,16 +1343,38 @@ def yerlesim_D(fps, pn, kondu):
         kond = sorted(r for r in ic if r.startswith("C"))
         # Komsu bant bobinleri dik: tek bantlar 0, ciftler 90 derece.
         baci = 0 if i % 2 else 90
-        for j, r in enumerate(bobin):
-            n += koy(fps, r, bx - 6 + j * 13, 90, baci, kondu)
+        # Bobinler bandin icinde KENDI capina gore diziliyor: imlec
+        # her bobinin yarim capi kadar ilerliyor. Sabit 13 mm adim
+        # T94'te ic ice geciyordu.
+        bimlec = bx - (sum(cap(r) for r in bobin)
+                       + 0.5 * max(0, len(bobin) - 1)) / 2
+        for r in bobin:
+            w = cap(r)
+            # Bobinler arasi 0.5 mm: tam capa esit adimda
+            # courtyard'lar DEGIYOR ve cakisma sayiliyor.
+            # 96 -> 99. Surucu giris trafosu (T10) itme-cekmenin
+            # iki kolunun tam ortasina, yani bu eksene alindi ve
+            # T12 ile toroid sirasi arasinda 15.1 mm'lik trafoya
+            # 14.1 mm kaliyordu. Uc mm asagi: T10 alt kenari 89.05,
+            # toroid ust kenari 89.69. Filtre kondansatorleri de
+            # birlikte iniyor (asagida 111 -> 114).
+            n += koy(fps, r, bimlec + w / 2, 99, baci, kondu)
+            bimlec += w + 0.5
         for j, r in enumerate(kond):
-            n += koy(fps, r, bx - 8 + j * 8, 106, 90, kondu)
+            n += koy(fps, r, bx - 8 + j * 8, 114, 90, kondu)
     # ---------- kuplor ve detektorler: LPF cikisi
-    for r, (x, y) in (("T20", (222, 128)), ("T21", (222, 150)),
-                      ("U30", (200, 128)), ("U31", (200, 150)),
-                      ("C407", (210, 122)), ("C612", (210, 134)),
-                      ("C411", (210, 156)),
-                      ("K20", (222, 106))):
+    # Kart 20 mm genisleyince kuplor/dedektor blogu da 20 mm saga:
+    # LPF sirasi artik x=250'ye kadar geliyor.
+    # KUPLOR BLOGU DIKEY SUTUN, LPF SIRASININ SAGINDA.
+    # Yatay diziliyken (T20/T21 x=255, dedektorler x=233) LPF role
+    # sirasinin sag ucuyla cakisiyordu: KL7 x=240..253, KL6 218..231.
+    # Olculdu, tahmin degil. Sinyal zaten LPF'ten cikip saga
+    # gidiyor; blogu dikey sutuna almak akisi bozmuyor.
+    for r, (x, y) in (("K20", (266, 78)),
+                      ("T20", (266, 98)), ("T21", (266, 118)),
+                      ("U60", (266, 136)), ("U61", (266, 158)),
+                      ("C407", (254, 98)), ("C612", (254, 118)),
+                      ("C411", (254, 168))):
         n += koy(fps, r, x, y, 0, kondu)
     # ---------- KOL SONUMLEME DIRENCLERI KOLUN MERKEZINDE.
     # R213 ve R215 genel dolguya dusmustu: biri kolunun merkezinden
@@ -888,21 +1439,31 @@ def yerlesim_D(fps, pn, kondu):
     # govdesine giriyordu; surucu kati asagi indikten sonra trafo da
     # onunla birlikte inmeli.
     if "T12" in fps:
+        # T12 66'DAN 57'YE. Bastirma dirençleri (R200/R201) T30'un
+        # ikincilinin dibine tasininca burasi acildi ve surucu cikis
+        # trafosu drainlerin 2.5 mm altina geldi. Asil kazanc:
+        # asagida T10 icin eksen uzerinde yer aciliyor.
         q = fps["T12"].GetPosition()
-        fps["T12"].SetPosition(pcbnew.VECTOR2I(q.x, int((D_FINAL_Y + 58) * MM)))
+        fps["T12"].SetPosition(pcbnew.VECTOR2I(q.x, int((D_FINAL_Y + 57) * MM)))
     n += birincil_ortala("T12", "Q20", "Q21")
-    n += birincil_ortala("T11", "Q10", "Q13")
+    n += birincil_ortala("T31", "Q10", "Q13")
     # AYNA EKSENI TRAFO HIZALANDIKTAN SONRA. Once T11'in eski
     # konumundan aliyordum, sonra trafo kayinca eksen bayatliyor ve
     # aynalanan dirençler yanlis yere dusuyordu.
-    if "T11" in fps:
-        pn = [q for q in fps["T11"].Pads() if q.GetNumber() in ("1", "2")]
-        if pn:
-            eks = sum(q.GetPosition().x for q in pn) / len(pn) / MM
+    if "T31" in fps:
+        # DEGISKEN ADI `pn` DEGIL: o, fonksiyonun ped-ag SOZLUGU
+        # parametresi. Burada listeyle ustune yazilinca sonraki her
+        # kullanim (regulator_blok) 'list' object has no attribute
+        # 'get' ile patliyordu.
+        t31_ped = [q for q in fps["T31"].Pads() if q.GetNumber() in ("1", "2")]
+        if t31_ped:
+            eks = sum(q.GetPosition().x for q in t31_ped) / len(t31_ped) / MM
     kolA = ((fps["Q10"].GetPosition().x + fps["Q11"].GetPosition().x)
             / 2 / MM) if "Q10" in fps else None
     if kolA is not None:
-        n += ayna("R213", "R215", kolA, D_FINAL_Y + 32)
+        # R213/R215 -> R205/R207 (geri besleme 820R cifti; kuplaj
+        # kondansatorleri eklenince cnt() numaralari kaydi).
+        n += ayna("R205", "R207", kolA, D_FINAL_Y + 31)
         # SURUCU KAPI DIRENCLERI SURUCULERIN EKSENINDE.
         # T11'in ekseninde aynaliyordum; surucu kati kendi ekseni
         # etrafinda simetrik olmali (Q20/Q21 ortasi), final katinin
@@ -912,8 +1473,55 @@ def yerlesim_D(fps, pn, kondu):
             sur_eks = (fps["Q20"].GetPosition().x
                        + fps["Q21"].GetPosition().x) / 2 / MM
         eks_yedek, eks = eks, sur_eks
-        n += ayna("R106", "R108", sur_eks - 26, D_FINAL_Y + 52)
-        n += ayna("R107", "R109", sur_eks - 20, D_FINAL_Y + 52)
+        n += ayna("R106", "R108", sur_eks - 26, D_FINAL_Y + 62)
+        n += ayna("R107", "R109", sur_eks - 20, D_FINAL_Y + 62)
+        # FINALIN GIRIS TRAFOSU SURUCU ILE KAPILAR ARASINDA.
+        # T30 (BN43-202 3:1) referans catismasi yuzunden kartta hic
+        # yoktu; catisma cozulunce geri geldi ve genel dolguya dusup
+        # RS3'un ustune oturdu. Yeri belli: surucunun cikisi (DRV_OUT)
+        # buraya girer, GIN_A/GIN_B buradan dort kapiya dagilir, yani
+        # iki kolun tam ortasinda ve surucu ile finaller arasinda
+        # olmali. Cikis trafosu T31 D_FINAL_Y+26'da; bu ondan 10 mm
+        # asagida, surucu sirasinin (D_FINAL_Y+44) hemen ustunde.
+        n += koy(fps, "T30", sur_eks, D_FINAL_Y + 41.5, 90, kondu)
+        # BASTIRMA DIRENCLERI (1R) T30'UN IKINCILINDE, SIMETRIK.
+        # GIN_A/GIN_B'yi topraga baglayan bu iki direnc genel
+        # dolguda surucunun kapi bolgesine dusuyordu (y=66.5) ve
+        # R201'in toprak pedi Q21'in kapi izini kesiyordu: iki
+        # surucu kolundan biri elle cizilemiyor, oteki ciziliyordu
+        # — yani tam da onlemeye calistigimiz asimetri. Yerleri
+        # besledikleri sarginin dibi.
+        n += koy(fps, "R200", sur_eks - 10, D_FINAL_Y + 36, 0, kondu)
+        n += koy(fps, "R201", sur_eks + 10, D_FINAL_Y + 36, 0, kondu)
+        # SURUCU GIRIS TRAFOSU DA IKI KOLUN ORTASINDA.
+        # x=78'de (giris zincirinin sirasinda) duruyordu ve
+        # olculdu: T10 -> R106 43.6 mm, T10 -> R108 95.5 mm.
+        # 52 mm fark, itme-cekmenin iki kolunu farkli suruyor;
+        # cift harmonik bastirmasi dogrudan bu farkla sinirlaniyor.
+        # 90 derece cevriliyor ki ikincilin iki pedi eksenin iki
+        # yanina esit uzaklikta dussun. y = D_FINAL_Y+71: ustunde
+        # T12 (biter 64.5), altinda LPF toroid sirasi (baslar 86.7).
+        # y+71 denendi: T12 (biter 72.55) ile 1.1 mm cakisti.
+        # y+73.5 ile arada 1.4 mm var; alttaki LPF toroid sirasi
+        # 86.7'de basliyor, trafonun alt kenari 89.05 — orasi da
+        # 2.3 mm. Iki komsu arasindaki tek serit bu.
+        # T12'nin 0.3 mm altina yapisik: arada 1.4 mm birakinca
+        # genel dolgu oraya bir 0603 sikistirmaya calisti (R317)
+        # ve iki sabit parca arasinda kalip ayirici tarafindan
+        # cozulemedi. Bosluk parca sigmayacak kadar dar olmali.
+        n += koy(fps, "T10", sur_eks, D_FINAL_Y + 72.2, 90, kondu)
+        # SURUCU BOGUCUSU (L11) TRAFONUN ORTA UCUNUN DIBINDE.
+        # 12 V bu bobinden gecip T12'nin orta ucuna giriyor (o
+        # baglanti semada YOKTU, bkz. gen_01_driver). Genel dolgu
+        # onu T12 ile T10 arasindaki 1 mm'lik seride sikistiriyordu.
+        # Yeri: trafonun saginda, ayni sirada.
+        n += koy(fps, "L11", sur_eks + 16, D_FINAL_Y + 57, 0, kondu)
+        # FINAL BOGUCUSU (L20, +50V -> DRN_CT) DE ELLE.
+        # Genel dolguda cikis trafosunun (T31) courtyard'inin icine
+        # dusuyordu: uc PTH pedi trafonun govdesinin altinda kaldi.
+        # Bos bolge olculdu: sol kolun altinda, R213 (biter 42.9) ile
+        # Q20 (baslar 59.5) arasi. Trafonun orta ucundan 21 mm.
+        n += koy(fps, "L20", kolA, D_FINAL_Y + 43, 0, kondu)
         eks = eks_yedek
 
     # ---------- KAPI DIRENCLERI HER CIHAZIN KENDI KAPISINDA.
@@ -928,33 +1536,107 @@ def yerlesim_D(fps, pn, kondu):
         if q is None:
             continue
         gx = q.x / MM
-        n += koy(fps, f"R{202 + i * 2}", gx - 3, D_FINAL_Y + 9, 90, kondu)
-        n += koy(fps, f"R{203 + i * 2}", gx + 3, D_FINAL_Y + 9, 90, kondu)
+        # REFERANSLAR: R240..R243 = 10R bastirma, R244..R247 = 1k
+        # servo direnci, C230..C233 = kuplaj kondansatoru. Ucu de
+        # gen_02_final'de SABIT adli (cnt() ile uretilmiyor) —
+        # sayfaya parca eklendiginde bu yerlesim bozulmasin diye.
+        # Kuplaj kondansatoru da buraya ait: trafodan gelen RF
+        # once ondan, sonra 10R'den gecip kapiya giriyor.
+        # KOLUN ORTASI BOS KALMALI — DRAIN KORIDORU.
+        # Kol basina iki cihaz paralel ve drain izi (6.67 A, 2.2 mm)
+        # trafodan gelip TAM ORTALARINDA ikiye ayriliyor (elle_cek
+        # dengeli tee). Bu uc kucuk parca simetrik olarak "gx+3"e
+        # konunca sol cihazinki tam o eksene dusuyordu ve tee
+        # cizilemiyordu (olculdu: R244 x=120.5, eksen x=122).
+        # Cozum: her cihazin parcalari KENDI DIS TARAFINA. Kol
+        # icindeki iki cihaz birbirinin AYNASI oluyor, dort kapi
+        # hatti yine 14.5 mm ve orta koridor aciliyor.
+        dis = -1 if i % 2 == 0 else 1
+        n += koy(fps, f"C{230 + i}", gx + dis * 9, D_FINAL_Y + 9, 90, kondu)
+        n += koy(fps, f"R{240 + i}", gx + dis * 3, D_FINAL_Y + 9, 90, kondu)
+        # 1k servo direnci ikinci sirada: ayni sirada uc parca
+        # (kondansator + 10R + 1k) 3 mm adimla sigmiyor, ve INA240
+        # ayni x'te bir alt sirada duruyor. y+11.5'te iki sira
+        # arasinda 1.5 mm bosluk kaliyor.
+        # 1k servo direnci ikinci sirada. y+11 denendi: sag
+        # cihazlarin dirençleri INA240 sirasinin (y+15, yukseklik
+        # 5.5) ust kenarina 0.3 mm kaldi. y+9'da uc parca da ayni
+        # sirada ve INA240 ile arada 3 mm var.
+        n += koy(fps, f"R{244 + i}", gx + dis * 6, D_FINAL_Y + 9, 90, kondu)
 
-    # ---------- bias servolari kapilarin yaninda
-    # INA240'lar kapi direnclerinin uzerine dusuyordu; olcum kati
-    # RF hattinin altinda kendi seridinde.
-    # Olcum kati ALT-SOL koseye. x=60'ta girisin RF bogucusunun
-    # (L10) pedine oturuyorlardi; o serit zaten giris zincirinin.
-    # Buradaki bosluk LPF surucu sirasinin altinda.
-    for i in range(3):
-        n += koy(fps, f"U{32 + i}", 30 + i * 22, 164, 0, kondu)
+    # ---------- AKIM OLCUM YUKSELTECLERI SHUNT'LARININ DIBINDE
+    # Uc INA240 kartin alt-sol kosesinde, olcum seridinde duruyordu:
+    # kendi shunt'larindan 150 mm otede. INA240 shunt uzerindeki
+    # gerilimi olcuyor ve 0.01R'de 6.67 A sadece 66.7 mV yapiyor.
+    # O 66.7 mV'luk cift, 150 mm boyunca 6.67 A'in manyetik alaninin
+    # icinden gecerse okunan sey akim degil, akimin turevi olur.
+    # Ustelik sonuc "bozuk" degil MAKUL AMA YANLIS bir sayidir ve
+    # bias servosu ona bakiyor.
+    # Dogrusu KELVIN baglanti: yukseltec shunt'in yaninda, iki olcum
+    # izi shunt pedlerinden baslayip yapisik gidiyor. Shunt sirasi
+    # D_FINAL_Y+16'da, cihaz basina bir tane; yukseltec de ayni
+    # sirada, shunt'in 9 mm sagina.
+    # Dorduncusu (U31) referans catismasi yuzunden kartta yoktu;
+    # simdi dordu de var ve dordu de ayni geometride.
+    # Konum CIHAZDAN turetiliyor, shunt'tan degil: RS'ler bu
+    # fonksiyonun daha asagisinda yerlesiyor, buradan okunsa bayat
+    # koordinat gelirdi. Ikisi de ayni x'ten cikiyor, sonuc ayni.
+    for i in range(4):
+        if f"U{31 + i}" in fps and f"Q1{i}" in fps:
+            gx0 = fps[f"Q1{i}"].GetPosition().x / MM
+            # SAGA, HEPSI AYNI. Disari aynalamak denendi: ic
+            # cihazlarinki (U32, U33) kartin ortasina, yani cikis
+            # trafosunun (T31) govdesine dusuyor. Drain koridorunu
+            # acan sey zaten kapi parcalarinin aynalanmasi; INA240
+            # sirasi y=23'te ve tee dallari y<20'de kaliyor.
+            n += koy(fps, f"U{31 + i}", gx0 + 9, D_FINAL_Y + 15, 0, kondu)
     # kaydirmali yazmac ve yardimci FET'ler kendi siralarinda
     n += koy(fps, "U56", 150, 164, 0, kondu)
+    # LM358 bias integratorleri: genel dolguda T12/T30 uzerine
+    # dusuyorlardi. Olcum seridinde, besledikleri servo
+    # zincirinin oteki ucunda.
+    for i, r in enumerate(("U41", "U42")):
+        # y=145'te G2RL-2'nin govdesine giriyorlardi: role 13x29 mm,
+        # y=128'e konunca 113..143'u kapliyor. Olcum siras y=164.
+        n += koy(fps, r, 40 + i * 22, 164, 0, kondu)
     for i, r in enumerate(("Q31", "Q32")):
         n += koy(fps, r, 178 + i * 12, 164, 0, kondu)
+    # U41/U42 BU LISTEDEN CIKARILDI. Eskiden D kartinda U41 diye bir
+    # parca yoktu ve koy() sessizce False donuyordu. Dedektorler
+    # U30/U31'den U40/U41'e tasininca U41 birden var oldu ve buradaki
+    # satir onu kuplorun yanindan (200,150) alip kartin ortasina
+    # (100,80) tasidi — REV dedektoru olctugu kuplorden 70 mm oteye.
     for r, (x, y) in (("U20", (100, 56)), ("U21", (100, 68)),
-                      ("U41", (100, 80)), ("U42", (100, 92)),
                       # olcum katindaki iki entegre birbirinin ustune
                       # dusuyordu; sicaklik sensoru sogutucu tarafina
                       ("U57", (100, 164)), ("U55", (125, 164))):
         n += koy(fps, r, x, y, 0, kondu)
     # ---------- guc: SAG UST KOSE, RF hattindan en uzak
-    n += koy(fps, "J30", D_EN - 0.5, 12, KENAR_ACI["sag"], kondu, kenar=True)
-    for r, (x, y) in (("U50", (200, 26)), ("U51", (200, 46)),
-                      ("Q30", (200, 62)), ("C601", (222, 26)),
-                      ("C602", (222, 44))):
+    # J30 (50 V girisi) KOSE DELIGINDEN UZAK.
+    # y=12'de sag ust kose deligine (D_EN-5, 5) 2.17 mm
+    # kaliyordu; M3 civata basi 6.5 mm cap, yani pul klemense
+    # degiyordu. y=26 ile civata cevresinde 9 mm bos yaricap
+    # kaliyor. 50 V tasiyan bir klemenste bu asgari.
+    n += koy(fps, "J30", D_EN - 0.5, 26, KENAR_ACI["sag"], kondu,
+             kenar=True)
+    # GUC KOSESI, GIRISTEN CIKISA SIRALI:
+    #   J30 (kenar) -> Q30/U52 ideal diyot -> C601/C602 toplu enerji
+    #   -> U50 blogu (50->12 V) -> U51 blogu (12->5 V)
+    # Ideal diyot J30'un DIBINDE: 6.67 A tasiyan yolun korumasiz
+    # kismi ne kadar kisaysa o kadar iyi, ve MOSFET'in savagi
+    # dogrudan toplu kondansatorlere bakiyor.
+    for r, (x, y) in (("Q30", (252, 22)), ("U52", (252, 30)),
+                      ("C601", (232, 20)), ("C602", (232, 42))):
         n += koy(fps, r, x, y, 0, kondu)
+    # IKI REGULATOR YAPISKAN GRUP, SOLA UZANIYOR (aci=180).
+    # Olculen eski hali: U50 giris 12.2 / bobin 9.8 / cikis 10.3,
+    # U51 giris 185.0 / bobin 9.3 / cikis 15.5. 185 mm'lik bir giris
+    # cevrimi kartin bir ucundan otekine gidiyordu.
+    # Blok saga degil sola aciliyor: sagda J30 ve kart kenari var.
+    n += regulator_blok(fps, pn, kondu, "U50", "L50", 250, 58, 180,
+                        cin=("C662", "C663"), cout=("C665", "C664"))
+    n += regulator_blok(fps, pn, kondu, "U51", "L51", 250, 76, 180,
+                        cin=("C651", "C650"), cout=("C667", "C666"))
     # anten cikisi kuplorden hemen sonra, sag kenar
     # J40 KENAR MONTAJ DEGIL: klemens, govdesi de vidasi da kartin
     # uzerinde durur. kenar=True verince pedini kenara dayadi ve
@@ -988,15 +1670,26 @@ def yerlesim_D(fps, pn, kondu):
 # Konumu KESINLIKLE degismeyecek parcalar: ayna ciftleri, esit
 # uzunluk gruplari, sogutucuya bakan cihazlar.
 SIMETRIK = {
-    "D": ("Q10", "Q11", "Q12", "Q13", "Q20", "Q21", "T10", "T11", "T12",
-          "R202", "R203", "R204", "R205", "R206", "R207", "R208", "R209",
-          "R213", "R215", "R106", "R107", "R108", "R109",
+    "D": ("Q10", "Q11", "Q12", "Q13", "Q20", "Q21", "T10", "T31", "T12",
+          # Kapi zinciri: kuplaj kondansatoru + 10R + 1k, cihaz basina.
+          # (Eskiden R202..R209 idi; kuplaj kondansatorleri eklenince
+          # cnt() numaralari kaydi ve dort kapi hatti 14.5 mm'den
+          # 22.5/34.2/24.9 mm'ye dagildi. Artik sabit adli.)
+          "C230", "C231", "C232", "C233",
+          "R240", "R241", "R242", "R243",
+          "R244", "R245", "R246", "R247",
+          "R205", "R207", "R106", "R107", "R108", "R109",
           # Kaynak olcum dirençleri her cihazin ALTINDA olmali —
           # koridorun icinde ama oraya ait. Sabit degillerse koridor
           # bosaltici onlari kartin disina itiyor (uc pedin ust
           # kenari -3.41 mm cikti).
           "RS1", "RS2", "RS3", "RS4"),
-    "A": tuple(f"T{i}" for i in range(1, 5)) + ("U15", "Y10", "U20", "U21"),
+    # R220/R221 = ADC saat sonlandirmalari. Sabit degillerken
+    # koridor bosaltici onlari A'nin RX koridorundan (x 0-60,
+    # y 112-212) disari itiyordu: istenen 3.6 mm yerine 14.4 mm.
+    # Sonlandirma alicinin dibinde olmazsa gorevini yapmiyor.
+    "A": tuple(f"T{i}" for i in range(1, 5)) + ("U15", "Y10", "U20", "U21",
+                                                "R220", "R221"),
     "C": tuple(f"K{k}{b}" for k in range(1, 5) for b in range(1, 8))
          + tuple(f"KT{k}" for k in range(1, 5)),
 }
@@ -1052,14 +1745,55 @@ def uygula(kart):
     # Delikleri AYRICA listele: dordu de "REF**" oldugu icin fps
     # sozluginde tek anahtara cokuyorlar, uc tanesi kayboluyordu.
     delikler = [fp for fp in b.Footprints() if fp.GetReference() == "REF**"]
+    # KAPLAMALI DELIK ONCE. C kartinda deliklerden biri pedli ve
+    # GND'ye bagli (sase referansi, pcb_kur.dis_hat). O delik anten
+    # konnektorlerinin dibinde olmali: J1..J4 sol kenarda, ilki
+    # y=25'te, yani (5,5) kosesi. Sirayi dosya duzenine birakmak
+    # yerine PEDINDEN taniyoruz — dosya duzeni LoadBoard'un isi.
+    #
+    # PED VARLIGINA BAKMAK YETMIYOR: kaplamasiz delik de bir "ped"
+    # tasiyor (NPTH, numarasiz, agsiz). len(Pads()) ikisinde de 1,
+    # yani siralama etkisizdi ve delik kimligi dosya duzenine, yani
+    # UUID'lere kaliyordu. Olculdu: ayni girdiyle uc kosuda kaplamali
+    # delik bir kez H2, bir kez H3 oldu; kart konumlari ayni kalsa da
+    # iceri_al pedli deligi 0.15 mm iceri cektigi icin PARMAK IZI
+    # degisiyordu — yani C kartinin zinciri tekrarlanamiyordu ve
+    # uretilen SES bir sonraki kuruluma UYMUYORDU.
+    # Ayirt edici olan pedin NUMARASI: kaplamalinin "1", otekinin "".
+    delikler.sort(key=lambda fp: 0 if any(q.GetNumber()
+                                          for q in fp.Pads()) else 1)
     KART_OLCU[0], KART_OLCU[1] = en, boy
+    # MONTAJ DELIKLERI EN BASTA ADLANDIRILIR VE KONUR.
+    #
+    # Once bu is fonksiyonun SONUNDA yapiliyordu ve arada delikler
+    # hala "REF**" adiyla duruyordu. Asagidaki fps sozlugu referansa
+    # gore anahtarlaniyor: DORT delik TEK anahtara cokuyor ve sozlukte
+    # hangisinin kaldigi dosya duzenine, yani UUID'lere bagli oluyordu.
+    # ayikla() o tek deligi engel olarak gorup cevresini ona gore
+    # bosalttigi icin sonuc kosudan kosuya degisiyordu: A kartinda
+    # ust uste iki kosuda 7 kondansator (C623, C723, ...) farkli yere
+    # dustu. Yani zincir tekrarlanabilirligini burada kaybediyordu ve
+    # DSN parmak izi sinamasi bunu yakaliyordu.
+    #
+    # Delikler basta adlandirilinca fps'te H1..H4 olarak DORDU BIRDEN
+    # bulunuyor; ayikla hepsini engel sayiyor ve `kondu` icinde
+    # olduklari icin kimse onlari oynatamiyor.
+    kose = ((5, 5), (en - 5, 5), (5, boy - 5), (en - 5, boy - 5))
+    for i, fp in enumerate(delikler[:4]):
+        x, y = kose[i]
+        fp.SetPosition(pcbnew.VECTOR2I(int(x * MM), int(y * MM)))
+        fp.SetReference(f"H{i + 1}")
     # SIRALI: kart ici sira UUID'lere bagli ve her kurulumda
     # farkli; sirasiz dolasmak yerlesimi tekrarlanmaz yapiyor.
     fps = {fp.GetReference(): fp
            for fp in sorted(b.Footprints(),
                             key=lambda x: x.GetReference())}
     pn = padnetler(dizin, proj)
-    kondu = set()
+    kondu = {f"H{i + 1}" for i in range(len(delikler[:4]))}
+    # Kart basina temiz baslangic: uygula() ayni surecte birden cok
+    # kart icin cagrilabiliyor (./yap.sh A C D).
+    BLOK_SABIT.clear()
+    BLOK_KULLANILDI.clear()
     kritik = fn(fps, pn, kondu)
     kritik += adc_referans(fps, pn, kondu)
     kritik += ayristirma_topa(fps, pn, kondu)
@@ -1074,15 +1808,6 @@ def uygula(kart):
     # kendi varsaydigi olcuye (190x200) gore koyuyor; burada kenari
     # 235x225'e cizip delikleri birakinca biri PHY'nin uzerinde kaldi.
     # Ayrica referanssizdilar (REF**), DRC "Footprint REF**" diyordu.
-    kose = ((5, 5), (en - 5, 5), (5, boy - 5), (en - 5, boy - 5))
-    # ZATEN KURULU fps SOZLUGUNU KULLAN. b.Footprints() ayni surecte
-    # ikinci kez cagrilinca bozuk proxy donduruyor (GetFPID() yok).
-    # REFERANSTAN TANI. GetFPID() de bozuk proxy donduruyor; montaj
-    # delikleri zaten kartta referanssiz (REF**) olan tek parcalar.
-    for i, fp in enumerate(delikler[:4]):
-        x, y = kose[i]
-        fp.SetPosition(pcbnew.VECTOR2I(int(x * MM), int(y * MM)))
-        fp.SetReference(f"H{i + 1}")
     for a, bb, c, dd in ((0, 0, en, 0), (en, 0, en, boy),
                          (en, boy, 0, boy), (0, boy, 0, 0)):
         s = pcbnew.PCB_SHAPE(b)
@@ -1112,7 +1837,10 @@ def uygula(kart):
     # disari atti ve dort zincir 26.2 / 25.3 / 25.3 / 42.0 mm oldu.
     # Ref listesi tutmak yerine agdan turetiyoruz: elle_cek'in
     # korudugu bir aga dokunan parca, o simetrinin parcasidir.
-    sabitler = set(SIMETRIK.get(kart, ()))
+    # YAPISKAN GRUPLAR DA SABIT. Bir regulator blogunun icindeki
+    # kondansator ayirici tarafindan 3 mm oteye itilirse blok
+    # varlik sebebini kaybediyor.
+    sabitler = set(SIMETRIK.get(kart, ())) | set(BLOK_SABIT)
     try:
         import elle_cek
         kritik_ag = set(elle_cek.TABLOLAR.get(kart, {}))

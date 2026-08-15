@@ -1,0 +1,10 @@
+(version 1)
+
+# Kenar montaj konnektorleri. Pedleri kart kenarina DEGMEK zorunda:
+# SMA'nin ve kart-arasi baglantinin isi bu. Varsayilan kenar boslugu
+# kurali bunlari hata sayiyor, oysa tasarim boyle.
+# Muafiyet GRUBA bagli, bloke degil: kartin ORTASINDAKI gercek bir
+# kenar ihlali gorunur kalsin.
+(rule "kenar montaj pedleri"
+  (condition "A.memberOfGroup('kenar_montaj')")
+  (constraint edge_clearance (min 0mm)))

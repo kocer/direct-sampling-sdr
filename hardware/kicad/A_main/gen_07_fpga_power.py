@@ -13,6 +13,15 @@ FE = ("Package_BGA:BGA-256_14.0x14.0mm_Layout16x16_P0.8mm_"
 R, C = "Device:R", "Device:C"
 FR = "Resistor_SMD:R_0603_1608Metric"
 FC = "Capacitor_SMD:C_0603_1608Metric"
+# TOPLU KONDANSATOR 0603'E SIGMIYOR. 47uF 0603'te HICBIR gerilim
+# sinifinda uretilmiyor (0603'un tavani ~22uF @ 6.3 V). Kartta
+# cizilebiliyor ama siparis edilemiyor; hata ancak dizgi asamasinda
+# gorunur. 1206'da 47uF/6.3V ve 47uF/10V yaygin.
+# Not: X5R/X7R seramik sinifina yakin gerilimde kapasitesinin
+# yarisindan cogunu kaybediyor, o yuzden 3.3 V rayda 6.3 V degil
+# 10 V sinifi tercih edilmeli — deger dizesi paketle birlikte
+# BOM'da bunu soyluyor.
+FCB = "Capacitor_SMD:C_1206_3216Metric"
 FLASH = "Memory_Flash:W25Q128JVS"
 FSOIC = "Package_SO:SOIC-8_5.3x5.3mm_P1.27mm"
 HDR = "Connector_Generic:Conn_02x03_Odd_Even"
@@ -32,10 +41,14 @@ rc = [0]          # ayristirma kondansatoru sayaci
 
 def decap(x, y, rail, val="100nF"):
     """Bir ray-toprak kondansatoru. Ref'ler C100'den sayiyor ki
-    01_power'daki C1..C9 ile carpismasin."""
+    01_power'daki C1..C9 ile carpismasin.
+
+    Paket DEGERE gore: 22uF ustu 0603'e sigmiyor.
+    """
     rc[0] += 1
     ref = f"C{99 + rc[0]}"
-    s.sym(C, ref, val, x, y, fp=FC)
+    fp = FCB if val in ("47uF", "22uF", "100uF") else FC
+    s.sym(C, ref, val, x, y, fp=fp)
     s.pin_label(C, "1", x, y, 0, rail, "input")
     s.pin_power(C, "2", x, y, 0, "GND")
 
@@ -81,11 +94,20 @@ s.text("6 VCC (+1V1) · 2 VCCAUX (+2V5) · 13 VCCIO (9 x +3V3, 4 x +1V8)\\n"
        "Vianin endüktansı kondansatorun faydasini yiyorsa parca bosuna.",
        150, 176, 1.3)
 
-s.text("GUC SIRALAMASI (Lattice: VCC once, VCCIO en son)\\n"
-       "  U1 (+3V3) PG  ->  U2 (+1V1) EN        01_power'da zincirli\\n"
-       "  +1V1 kalkar  ->  +2V5 VCCAUX  ->  +1V8 / +3V3 VCCIO\\n"
-       "Sira bozulursa girisler govde diyodundan besleme cekiyor:\\n"
-       "yuksek akim, en kotu halde latch-up.", 20, 212, 1.35)
+s.text("GUC SIRALAMASI — VCCIO ONCE, CEKIRDEK SONRA\\n"
+       "  U1 (VIN -> +3V3) EN girise bagli, hep acik\\n"
+       "  U8 (+3V3 -> +2V5 VCCAUX)\\n"
+       "  U2 (+3V3 -> +1V1 VCC) EN = PG_3V3, 3.3 V oturunca kalkar\\n"
+       "  yani  +3V3 (VCCIO)  ->  +2V5 (VCCAUX)  ->  +1V1 (VCC)\\n\\n"
+       "Bu sayfada once 'VCC once, VCCIO en son' yaziyordu; YANLISTI.\\n"
+       "Lattice ECP5 Hardware Checklist / sysIO Usage Guide:\\n"
+       "'It is recommended that the I/O buffers be powered-up prior\\n"
+       " to the FPGA core fabric, which means VCCIO supplies should\\n"
+       " be powered before VCC and VCCAUX.'\\n"
+       "Ustelik tersi topolojik olarak imkansiz: +1V1 bucki girisini\\n"
+       "+3V3'ten aliyor, cekirdek rayi once kalkamaz.\\n"
+       "Kart bastan beri dogrusunu yapiyor — degistirilmesi gereken\\n"
+       "yazidir, devre degil.", 20, 212, 1.35)
 
 s.text("+2V5 rayi ilk guc agacinda YOKTU. ECP5 VCCAUX'suz calismiyor;\\n"
        "kart basilmis olsaydi tel cekilecekti. 01_power U8, ADP150-2.5,\\n"
@@ -99,6 +121,15 @@ CX, CY = 232, 110
 s.sym(E, "U10", "LFE5U-25F-7BG256I", CX, CY, fp=FE, unit=8)
 
 s.pin_label(E, "L6", CX, CY, 0, "+3V3", "input")
+
+# LED_RX BURAYA TASINDI — banka 2'deki K16'yi saat icin bosalttik.
+# K16 = PCLKT2_0, bankanin saat-yetenekli tek ball'i; sistem saati
+# (FPGA_CLK80) oraya girdi. LED'in saat pinine ihtiyaci yok.
+# Banka 8 konfigurasyon bankasi ve VCCIO'su flash ile ayni +3V3,
+# yani surus seviyesi degismiyor. Tek yan etki: yapilandirma
+# sirasinda bu bacak titrer ve LED bir an yanip soner — zararsiz,
+# hatta acilisin gorunur isareti.
+s.pin_label(E, "R6", CX, CY, 0, "LED_RX", "output", d=5.08)
 
 # --- SPI flash
 FX, FY = 352, 60
@@ -241,7 +272,10 @@ s.text("KULLANILMAYAN KONFIG BACAKLARI\\n"
        "TEST NOKTASI birakiliyor: mod degistirmek gerekirse kart\\n"
        "revizyonu degil, bir tel yeter.", 20, 262, 1.3)
 
-for pin in ["M7", "M8", "M9", "N7", "P7", "P8", "R6", "R7", "R8", "T6"]:
+# R6 ARTIK BOS DEGIL — LED_RX oraya tasindi (yukari bak), listeden
+# cikarildi. Kalmis olsaydi hem NC bayragi hem ag ayni bacakta
+# olurdu; ERC bunu no_connect_connected diye gordu.
+for pin in ["M7", "M8", "M9", "N7", "P7", "P8", "R7", "R8", "T6"]:
     s.nc(*s.P(E, pin, CX, CY))
 
 s.write(os.path.join(HERE, "07_fpga_power.kicad_sch"))

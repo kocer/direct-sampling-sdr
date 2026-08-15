@@ -21,7 +21,14 @@ MM = 1e6
 # 16.3/18.6 mm'ye kaydi. Bu kartta simetri bir suslemeye degil,
 # cift harmonik bastirmasina karsilik geliyor. Roleler de sabit:
 # LPF bankasinin sirasi bant sirasidir.
-SABIT = tuple("UJTYLQK")
+# H DE SABIT: MONTAJ DELIKLERI MEKANIK DATUM.
+# D kartinda H2 (255,5) olmasi gerekirken (255.94, 2.96)'ya kaymisti
+# — ayirici onu 50 V klemensinden (J30) itmis ve delik kartin
+# dikdortgeninden cikmisti. Sonuc: civata basi + pul (M3 icin ~6.5 mm
+# cap) klemense 2.17 mm kaliyordu. Sase montajinda metal standoff
+# kullanilir; montaj sirasindaki bir kayma 50 V'u saseye baglar.
+# Montaj deligi kacmaz, ETRAFINDAKI parca kacar.
+SABIT = tuple("UJTYLQKH")
 
 
 def elle_konulanlar(yol):
@@ -63,8 +70,51 @@ def cakismalar(fps):
     return out
 
 
-def ayir(b, tur=60, elle=()):
+def ayir(b, tur=60, elle=(), pay=2.0):
+    """Cakisan parcalari birbirinden it — KART SINIRI ICINDE KALARAK.
+
+    SINIR KISITI SONRADAN EKLENDI. Ayirici parcalari iterken kartin
+    kenarini hic gormuyordu; iceri_al() ondan ONCE calistigi icin de
+    kimse geri cekmiyordu. Olculdu: D kartinda R400'un (kuplorun 51R
+    sonlandirmasi) 2. pedi x=278.4'e, yani 275.1 mm'lik kartin 3.3 mm
+    DISINA cikti. Disari tasan bakir uretimde yok — parca
+    lehimlenemez ve DRC bunu "kart disi ped" diye ayri bir kural
+    olarak da aramaz.
+
+    Kisit PEDLERE gore: govde disari sarkabilir (kenar montaj
+    konnektorlerinde zaten oyle), pedler sarkamaz.
+    """
     elle = set(elle)
+    kutu_b = b.GetBoardEdgesBoundingBox()
+    sx0, sy0 = kutu_b.GetLeft() / MM + pay, kutu_b.GetTop() / MM + pay
+    sx1, sy1 = kutu_b.GetRight() / MM - pay, kutu_b.GetBottom() / MM - pay
+    kenar_mont = kenar_montajlar(b)
+
+    def sinirla(fp):
+        """Pedleri kart icine geri cek."""
+        if fp.GetReference() in kenar_mont:
+            return
+        pedler = [q.GetBoundingBox() for q in fp.Pads()]
+        if not pedler:
+            return
+        sol = min(k.GetLeft() for k in pedler) / MM
+        sag = max(k.GetRight() for k in pedler) / MM
+        ust = min(k.GetTop() for k in pedler) / MM
+        alt = max(k.GetBottom() for k in pedler) / MM
+        dx = dy = 0.0
+        if sol < sx0:
+            dx = sx0 - sol
+        elif sag > sx1:
+            dx = sx1 - sag
+        if ust < sy0:
+            dy = sy0 - ust
+        elif alt > sy1:
+            dy = sy1 - alt
+        if dx or dy:
+            q = fp.GetPosition()
+            fp.SetPosition(pcbnew.VECTOR2I(int(q.x + dx * MM),
+                                           int(q.y + dy * MM)))
+
     for _ in range(tur):
         fps = {f.GetReference(): f for f in b.Footprints()}
         cift = cakismalar(fps)
@@ -92,6 +142,7 @@ def ayir(b, tur=60, elle=()):
                 fps[ref].SetPosition(pcbnew.VECTOR2I(
                     int(q.x + s * dx / d * adim * MM),
                     int(q.y + s * dy / d * adim * MM)))
+                sinirla(fps[ref])
     return len(cift)
 
 
@@ -155,12 +206,19 @@ def iceri_al(b, pay=2.0):
         pedler = list(fp.Pads())
         if not pedler:
             continue
-        xs = [q.GetPosition().x / MM for q in pedler]
-        ys = [q.GetPosition().y / MM for q in pedler]
-        wx = max(q.GetSizeX() / MM for q in pedler) / 2
-        wy = max(q.GetSizeY() / MM for q in pedler) / 2
-        sol, sag = min(xs) - wx, max(xs) + wx
-        ust, alt = min(ys) - wy, max(ys) + wy
+        # DONMUS PED KUTUSU. GetSizeX/GetSizeY pedin kendi
+        # cercevesindeki olcu, donme uygulanmamis; ustelik butun
+        # pedlerin en buyugu hem x hem y icin kullaniliyordu.
+        # gercek_yerlesim.koy()'da ayni hata kenar montaj
+        # konnektorlerinin pedini 1.14 mm kartin disina cikarmisti.
+        # Burada su an hicbir parcayi etkilemiyor (genel dolgu zaten
+        # kenardan 8 mm iceride durduruyor) ama olcut yanlis olarak
+        # kalirsa kenara yakin yerlestirilen ilk parcada patlar.
+        kutular = [q.GetBoundingBox() for q in pedler]
+        sol = min(q.GetLeft() for q in kutular) / MM
+        sag = max(q.GetRight() for q in kutular) / MM
+        ust = min(q.GetTop() for q in kutular) / MM
+        alt = max(q.GetBottom() for q in kutular) / MM
         dx = dy = 0.0
         if sol < x0 + pay:
             dx = (x0 + pay) - sol
@@ -265,6 +323,48 @@ def kenar_grubu(b):
     return n
 
 
+KENAR_KURALI = """
+# Kenar montaj konnektorleri. Pedleri kart kenarina DEGMEK zorunda:
+# SMA'nin ve kart-arasi baglantinin isi bu. Varsayilan kenar boslugu
+# kurali bunlari hata sayiyor, oysa tasarim boyle.
+# Muafiyet GRUBA bagli, bloke degil: kartin ORTASINDAKI gercek bir
+# kenar ihlali gorunur kalsin.
+(rule "kenar montaj pedleri"
+  (condition "A.memberOfGroup('kenar_montaj')")
+  (constraint edge_clearance (min 0mm)))
+"""
+
+
+def kenar_kurali_yaz(yol):
+    """Grubu olusturan betik, grubu ANLAMLI KILAN kurali da yazsin.
+
+    NEDEN BURADA: kenar_montaj grubu uc kartta da kuruluyordu ama
+    .kicad_dru dosyasi yalnizca A kartinda vardi — elle yazilmis ve
+    oteki iki karta hic kopyalanmamis. Sonuc: D kartinda 10,
+    C kartinda benzeri sayida copper_edge_clearance ihlali, hepsi
+    kenar montaj konnektorlerinin pedlerinden ve hepsi YANLIS ALARM.
+    Gercek ihlaller o gurultunun icinde gorunmez oluyordu.
+
+    Grubu kuran yerin kurali da yazmasi, dorduncu bir kart eklendiginde
+    kimsenin hatirlamasini gerektirmiyor. Var olan kurallara
+    DOKUNMUYORUZ: A'nin kendi RF/LVDS/GUC kurallari duruyor, kural
+    zaten varsa dosya oldugu gibi birakiliyor.
+    """
+    import os
+    dru = os.path.splitext(os.path.abspath(yol))[0] + ".kicad_dru"
+    try:
+        mevcut = open(dru, encoding="utf-8").read()
+    except OSError:
+        mevcut = ""
+    if "kenar_montaj" in mevcut:
+        return False
+    if not mevcut.strip():
+        mevcut = "(version 1)\n"
+    open(dru, "w", encoding="utf-8").write(mevcut.rstrip() + "\n"
+                                           + KENAR_KURALI)
+    return True
+
+
 if __name__ == "__main__":
     yol = sys.argv[1]
     b = pcbnew.LoadBoard(yol)
@@ -274,7 +374,9 @@ if __name__ == "__main__":
     ic = iceri_al(b)
     kalan = ayir(b, elle=elle)
     grup = kenar_grubu(b)
+    kural = kenar_kurali_yaz(yol)
     b.Save(yol)
     print(f"{yol.split('/')[-1]}: {once} cakisma -> {kalan}, "
           f"{ic} iceri, {kor} koridordan cikarildi, "
-          f"{grup} kenar konnektoru gruplandi")
+          f"{grup} kenar konnektoru gruplandi"
+          + (", kenar kurali yazildi" if kural else ""))

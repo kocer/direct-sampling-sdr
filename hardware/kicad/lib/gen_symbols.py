@@ -269,6 +269,36 @@ def adt1_1wt():
         "1:1 RF trafo 75ohm 0.4-800MHz, tek-uc/diferansiyel", "ADT1-1WT+", P)
 
 
+def xfmr_ct():
+    """Birincili ORTA UCLU itme-cekme trafosu — 5 bacak.
+
+    ** NEDEN VAR: IKI KATIN DA BESLEMESI YOKTU. **
+    Device:Transformer_1P_1S dort bacakli ve orta ucu YOK. Itme-cekme
+    kati beslemesini birincilin ORTA UCUNDAN alir; semada o dugum
+    (D2_CT ve DRN_CT) ciziliydi, bogucusu ve baypas kondansatorleri
+    de vardi, ama trafoda BAGLANACAK BACAK OLMADIGI ICIN havada
+    kaliyordu. Netlistten olculdu:
+        D2_CT  = {L11.2, C110.1}      -> iki parca, trafoya gitmiyor
+        DRN_CT = {L20.2, C210..C212}  -> ayni durum
+    Yani surucu katinin 12 V'u ve FINAL KATININ 50 V'u cihazlarin
+    drainlerine hic ulasmiyordu. Kart basilsa iki kat da olu olurdu
+    ve hicbir DRC/ERC bunu gormez: iki ag da en az iki pedli, yani
+    "bagli" sayiliyor.
+
+    Bacaklar:  1,2 birincil uclari   5 birincil ORTA UC   3,4 ikincil
+    Ayak izi 5 pedli (lib/dogrudan-sdr.pretty/XFMR_Toroid_5P_Vertical).
+    Fiziksel karsiligi: iki turlu bifilar birincilin orta noktasindaki
+    tel eki — BN43-3312'de standart uygulama."""
+    P = [pin("1", "PRI_A", "passive", "L", 0, 1),
+         pin("5", "PRI_CT", "passive", "L", 1, 1),
+         pin("2", "PRI_B", "passive", "L", 2, 1),
+         pin("3", "SEC_A", "passive", "R", 0, 1),
+         pin("4", "SEC_B", "passive", "R", 1, 1)]
+    return build("XFMR_CT", "T", "dogrudan-sdr:XFMR_Toroid_5P_Vertical",
+        "Orta uclu birincilli itme-cekme trafosu, toroid/binokuler",
+        "XFMR_CT", P)
+
+
 def hr911130a():
     """HR911130A — Hanrun gigabit RJ45, dahili manyetik + iki LED.
     Veri sayfasi Rev.A s.1 (semadan okundu), 14 bacak.
@@ -297,7 +327,18 @@ def hr911130a():
          pin("11", "LEDG_A", "passive", "R", 0, 1),
          pin("12", "LEDG_K", "passive", "R", 1, 1),
          pin("14", "LEDY_A", "passive", "R", 2, 1),
-         pin("13", "LEDY_K", "passive", "R", 3, 1)]
+         pin("13", "LEDY_K", "passive", "R", 3, 1),
+         # KALKAN PEDLERI SEMBOLDE YOKTU. Ayak izinde SH1-SH4 var
+         # (iki 3.25 mm montaj kulagi + iki 1.63 mm tirnak) ama
+         # sembolde karsiliklari olmadigi icin netlist onlara ag
+         # atamiyordu: dort delik kartta AGSIZ bakir olarak duruyordu.
+         # Sonuc, kablo ekraninin gidecek yeri olmamasi — ekran
+         # konnektorun govdesinde bitiyor ve gurultu icin anten gibi
+         # calisiyor. Dordu de CHASSIS'e baglanacak.
+         pin("SH1", "SHIELD", "passive", "T", 0, 1),
+         pin("SH2", "SHIELD", "passive", "T", 1, 1),
+         pin("SH3", "SHIELD", "passive", "T", 2, 1),
+         pin("SH4", "SHIELD", "passive", "T", 3, 1)]
     return build("HR911130A", "J", "dogrudan-sdr:RJ45_Hanrun_HR911130A",
         "RJ45 dahili manyetik + LED, 1000Base-T, 14 bacak", "HR911130A", P)
 
@@ -576,7 +617,7 @@ if __name__ == "__main__":
                         break
                 j += 1
             keep = s[i:j] + "\n"
-    gens = [ad9251, ad9767, rtl8211f, pe4312, adp150, ablno, adt1_1wt,
+    gens = [ad9251, ad9767, rtl8211f, pe4312, adp150, ablno, adt1_1wt, xfmr_ct,
             hr911130a, w9825g6kh, adclk846, g6ku, g6k, g2rl, ina240, pga103, ad8318]
     body = "\n".join(g() for g in gens)
     open(path, "w", encoding="utf-8").write(

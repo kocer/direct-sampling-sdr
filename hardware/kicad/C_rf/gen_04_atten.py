@@ -49,7 +49,13 @@ def atten(ref, x, y, n):
     # guc ve toprak
     for p in ("6", "9"):
         s.pin_label(A, p, x, y, 0, "+3V3", "input", d=5.08)
-    for p in ("10", "11", "18", "Pad"):
+    # ACIK PED "21", "Pad" DEGIL.
+    # Sembol acik pedi "Pad" diye adlandiriyordu, ayak izi (QFN-20-1EP)
+    # "21" diyor. Ad tutmayinca GND hicbir yere gitmiyordu ve ped 21
+    # kartta agsiz kaliyordu — bes PE4312'nin hepsinde. Acik ped
+    # zayiflaticinin toprak referansi; bosta kalirsa zayiflatma
+    # degerleri tutmaz ve RF yolu kararsizlasir.
+    for p in ("10", "11", "18", "21"):
         s.pin_power(A, p, x, y, 0, "GND", d=5.08)
     s.pin_power(A, "12", x, y, 0, "GND", d=10.16)
     # ALTI C BACAGI 10k ILE YUKARI -> acilista 31.5 dB

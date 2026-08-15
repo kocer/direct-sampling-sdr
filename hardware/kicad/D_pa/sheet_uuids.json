@@ -1,9 +1,9 @@
 {
- "01_driver": "ee201ef9-08c4-463c-9370-841ecc306a39",
- "02_final": "696da4d0-fb71-4a0b-b72b-dc3a33aaa160",
- "03_bias": "5f76dc67-bb46-458f-a04c-8b0a55f09946",
- "04_detect": "85133f74-bf77-49eb-907f-bdf657360cd4",
- "05_lpf": "f5e6bdbc-d30c-4822-b177-560f591e333a",
- "06_power": "2f0646a4-796e-4ab9-909f-e47c91cecd98",
- "__root__": "bcb15b4f-21c9-43a5-aa13-183f5fedb7ee"
+ "01_driver": "4075e9c8-ff4c-4f41-9b22-73c1528b579a",
+ "02_final": "bdaabd57-94df-427c-a120-c023eaaf83ff",
+ "03_bias": "1115bf2f-97ff-4f58-9c74-55ad9aad0411",
+ "04_detect": "3ce97c4a-274c-49d7-a502-6f0100dc5f28",
+ "05_lpf": "2d2ac220-39ad-420b-ac1b-7ea6718cfd8a",
+ "06_power": "18c5c883-d57f-4b65-b99c-c9d7e87d34df",
+ "__root__": "53b5fc3c-4992-4155-9550-b9bf69c9d909"
 }

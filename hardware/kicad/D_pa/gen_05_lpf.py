@@ -14,7 +14,17 @@ UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
 K = "dogrudan-sdr:G2RL-2-12V"
 FK = "Relay_THT:Relay_DPDT_Omron_G2RL-2"
 L, C = "Device:L", "Device:C"
-FLT = "dogrudan-sdr:L_Toroid_T50_Vertical"
+# CEKIRDEK BASINA AYRI AYAK IZI.
+# Hepsi T50 ayak izini kullaniyordu (govde 12.7 mm) ama degerler
+# daha buyuk cekirdek soyluyor: T68 gercekte 17.5 mm, T94 23.9 mm —
+# neredeyse iki kati. 13-14 mm arayla dizilmis 23.9 mm'lik cekirdekler
+# fiziksel olarak ic ice giriyor; kart basilir, parcalar takilmaz.
+# Ustelik eski T50 ayak izinde F.CrtYd YOKTU, yani cakisma denetimi
+# bu parcalari HIC gormuyordu (GetCourtyard genisligi 0 donuyor ve
+# ayir.py o cifti atliyor). Uc ayak izi de artik courtyard'li.
+FLT = {"T50": "dogrudan-sdr:L_Toroid_T50_Vertical",
+       "T68": "dogrudan-sdr:L_Toroid_T68_Vertical",
+       "T94": "dogrudan-sdr:L_Toroid_T94_Vertical"}
 FCP = "Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm"
 R = "Device:R"
 FR = "Resistor_SMD:R_0603_1608Metric"
@@ -120,7 +130,8 @@ def bolum(bant, fc, x, y, idx):
             AL = {"T94-2": 8.4, "T68-2": 5.7, "T50-6": 4.0}[cek]
             Nt = _m.ceil(_m.sqrt(v / AL))
             nm = f"{cek} {Nt}s"
-            s.sym(L, cnt("L"), nm, fx + i * 22, y, rot=90, fp=FLT)
+            s.sym(L, cnt("L"), nm, fx + i * 22, y, rot=90,
+                  fp=FLT[cek.split("-")[0]])
             s.pin_label(L, "1", fx + i * 22, y, 90, node[ci], "passive")
             ci += 1
             s.pin_label(L, "2", fx + i * 22, y, 90, node[ci], "passive")

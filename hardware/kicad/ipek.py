@@ -35,14 +35,30 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 A_ETIKET = {
     "J20": "RX1 ANT", "J21": "RX2 ANT", "J22": "RX3 ANT", "J23": "RX4 ANT",
     "J30": "TX1", "J31": "TX2", "J32": "TX3", "J33": "TX4",
-    "J61": "10MHz REF", "J1": "12-50V IN", "J10": "JTAG",
+    # J1 "12-50V IN" DEGIL. A kartinin girisi 9-18 V:
+    # NETLIST.md §1 "VIN 9-18V", D1 = SMBJ20A (20 V standoff TVS),
+    # U1 = TPS62130 (mutlak azami 17 V giris), F1 = 2 A sigorta.
+    # Sistemde 50 V'luk baska bir kart (D) var ve ayni kutuda ayni
+    # tip kablo dolasiyor; "50V" yazan bir girise 50 V takilir ve
+    # U1 ile TVS aninda gider. Etiket sinirin kendisini soylemeli.
+    "J61": "10MHz REF", "J1": "12V IN  MAX 18V", "J10": "JTAG",
     "J40": "ETH0", "J41": "ETH1",
-    "J60": "GPS", "J62": "DEBUG UART", "J64": "SPARE",
+    # J62 ile J64 TERSTI. Karttan olculdu:
+    #   J62 = +3V3_CLK / VCXO_CS / VCXO_CLK / VCXO_DIN / VCXO_VC / GND
+    #         yani VCXO ayar DAC'inin SPI'i
+    #   J64 = +3V3 / DBG_RX / DBG_TX / GND  yani hata ayiklama UART'i
+    # Ters etiketle biri USB-seri cevirici takip VCXO'nun SPI
+    # hatlarini UART trafigiyle surer.
+    "J60": "GPS", "J62": "VCXO DAC", "J64": "DEBUG UART",
     "J63": "TO BOARD C", "J65": "TO BOARD C 2", "J66": "TO BOARD D",
     "D60": "STATUS", "D61": "RX", "D62": "TX", "D63": "DATA",
     "U10": "ECP5-25F", "U20": "ADC1", "U21": "ADC2", "U50": "SDRAM",
     "U15": "CLK BUF", "Y10": "VCXO",
-    "SW1": "RESET",
+    # SW1 pedi nPROGRAM. Basinca FPGA flash'tan YENIDEN
+    # YAPILANDIRILIYOR, sifirlanmiyor — ECP5'te harici reset pini
+    # yok, POR gateware icinde. "RESET" yazmak yanlis beklenti
+    # yaratiyor.
+    "SW1": "PROG",
 }
 C_ETIKET = {
     "J1": "ANT 1", "J2": "ANT 2", "J3": "ANT 3", "J4": "ANT 4",
@@ -57,25 +73,70 @@ D_ETIKET = {
     "J31": "TO BOARD A", "J32": "FROM BOARD C", "J40": "ANT OUT",
     "Q10": "FINAL 1", "Q11": "FINAL 2", "Q12": "FINAL 3",
     "Q13": "FINAL 4",
-    "T11": "OUTPUT XFMR", "T20": "FORWARD", "T21": "REFLECTED",
-    "U30": "DET FWD", "U31": "DET REV", "K20": "DPD RELAY",
+    # T31/U40/U41: eski adlari T11/U30/U31 idi. Referans
+    # catismasi yuzunden yeniden numaralandirildi (bkz.
+    # D_pa/gen_02_final.py basindaki aralik listesi).
+    "T30": "FINAL IN XFMR", "T31": "OUTPUT XFMR",
+    "T20": "FORWARD", "T21": "REFLECTED",
+    "U60": "DET FWD", "U61": "DET REV", "K20": "DPD RELAY",
+    "U41": "BIAS INT 1-2", "U42": "BIAS INT 3-4",
+    "U31": "ISENSE 1", "U32": "ISENSE 2",
+    "U33": "ISENSE 3", "U34": "ISENSE 4",
+    "L10": "DRV CHOKE", "L20": "FINAL CHOKE", "T10": "DRV IN XFMR",
+    # Ters polarite artik ideal diyot: Q30 anahtar, U52 denetleyici.
+    # Servis sirasinda "buradaki MOSFET niye isinmiyor" sorusunun
+    # cevabi kartin uzerinde dursun.
+    "Q30": "REV POLARITY", "U52": "IDEAL DIODE", "D31": "INPUT TVS",
+    "U50": "50V->12V", "U51": "12V->5V",
 }
 
-# Bant bankasi etiketleri: kesim frekansindan bant adina
-BANTLAR = ["160m", "80m", "40m", "30/20m", "17/15m", "12/10m", "6m"]
+# Bant bankasi etiketleri — SEMADAKI FILTRE TABLOSUYLA AYNI OLMALI.
+#
+# Eski liste ["160m","80m","40m","30/20m","17/15m","12/10m","6m"] idi
+# ve semayla TUTMUYORDU. D_pa/gen_05_lpf.py'deki gercek tablo alti
+# filtre + bir bypass:
+#     KL1 160m     fc  2.2 MHz
+#     KL2 80/60m   fc  6.0
+#     KL3 40/30m   fc 11.0
+#     KL4 20/17m   fc 19.0
+#     KL5 15/10m   fc 31.0
+#     KL6 6m       fc 56.0
+#     KL7 BYPASS   filtre yok, dogrudan gecis
+# Eski etiketlerle KL4'e "30/20m", KL5'e "17/15m", KL6'ya "12/10m"
+# yaziliyordu — hepsi bir kademe kaymis. En tehlikelisi KL7: uzerinde
+# "6m" yaziyordu, oysa orasi FILTRESIZ gecis. Operatorun 6m'de 100 W
+# vermesi, harmonikleri hic suzmeden antene basmasi demek.
+# C kartinin bant bankasi ayni yedi konumu paylasiyor.
+BANTLAR = ["160m", "80/60m", "40/30m", "20/17m", "15/10m", "6m",
+           "BYPASS"]
 
 # (metin, x, y, punto) — kart uzerinde sabit uyari/baslik
 A_YAZI = [
     ("DIRECT SAMPLING SDR - MAIN BOARD  REV A", 55, 4, 2.0),
-    ("!! 50V !!", 30, 20, 1.6),
+    # "!! 50V !!" BURADAN KALDIRILDI. A kartinda 50 V YOK; en yuksek
+    # gerilim 18 V giris. O uyari D kartina ait ve orada zaten var.
+    # Yanlis yerdeki bir uyari, dogru yerdekinin de inandiriciligini
+    # goturuyor.
+    ("INPUT 9-18V DC ONLY", 30, 20, 1.6),
+    # SASE BAGI NOTU. Sistemde tek sase referans noktasi var ve o C
+    # kartinda. Bu kartin delikleri kaplamasiz; RJ45 kalkani CHASSIS
+    # aginda ve topraga R692 (0R) ile TEK NOKTADAN bagli. Kartlari
+    # kasaya monte eden kisi bunu semadan degil karttan okumali:
+    # metal ayak takip ikinci bir toprak yolu acmak, olcerek
+    # bulunmasi en zor gurultu kaynagi.
+    ("HOLES UNPLATED - CHASSIS BOND = R692", 30, 25, 1.2),
 ]
 C_YAZI = [
     ("RF FILTER BANK - 4 CH x 7 BANDS  REV A", 85, 6, 2.2),
     ("!! 100W RF WHEN TRANSMITTING !!", 130, 232, 1.8),
+    # Kaplamali delik (5,5)'te — sistemin TEK sase referansi.
+    # Metal ayak buraya, oteki uc delige plastik ayak.
+    ("CHASSIS GND - THIS HOLE ONLY", 26, 12, 1.2),
 ]
 D_YAZI = [
     ("POWER AMPLIFIER - CLASS A 5..100W  REV A", 45, 4, 2.0),
     ("!! 50V - 100W RF - HEATSINK IS HOT !!", 50, 180, 1.8),
+    ("HOLES UNPLATED - CHASSIS BOND ON BOARD C", 60, 9, 1.2),
 ]
 
 KART = {
@@ -151,13 +212,89 @@ def yaz(b, metin, x, y, punto=1.0, aci=0, hiza=None):
 
 
 def ped_kutusu(fp):
+    """Ayak izinin ped sinirlari — DONMUS kutulardan.
+
+    GetSizeX/GetSizeY pedin kendi cercevesindeki olcu, donme
+    uygulanmamis. Donmus parcalarda kutu yanlis cikiyor ve etiket
+    pedin ustune dusuyordu.
+    """
     xs, ys = [], []
     for p in fp.Pads():
-        q = p.GetPosition()
-        w, h = p.GetSizeX() / 2, p.GetSizeY() / 2
-        xs += [(q.x - w) / MM, (q.x + w) / MM]
-        ys += [(q.y - h) / MM, (q.y + h) / MM]
+        k = p.GetBoundingBox()
+        xs += [k.GetLeft() / MM, k.GetRight() / MM]
+        ys += [k.GetTop() / MM, k.GetBottom() / MM]
     return (min(xs), min(ys), max(xs), max(ys)) if xs else None
+
+
+def tum_pedler(b):
+    """Karttaki BUTUN ped kutulari (mm) — carpisma sinamasi icin."""
+    out = []
+    for fp in b.Footprints():
+        for p in fp.Pads():
+            k = p.GetBoundingBox()
+            out.append((k.GetLeft() / MM, k.GetTop() / MM,
+                        k.GetRight() / MM, k.GetBottom() / MM))
+    return out
+
+
+def carpisiyor(kutu, pedler, pay=0.15):
+    """Bir yazi kutusu herhangi bir pedle ortusuyor mu.
+
+    NEDEN GEREKLI: etiket yerlestirme yalnizca KENDI parcasinin
+    pedlerine bakiyordu. Yogun kartta yazi komsu parcanin pedine
+    dusuyor ve ipek boyasi orada lehim islanmasini engelliyor —
+    A'da 86, C'de 103, D'de 51 silk_over_copper uyarisi buydu.
+    """
+    ax0, ay0, ax1, ay1 = kutu
+    for bx0, by0, bx1, by1 in pedler:
+        if (ax0 - pay < bx1 and ax1 + pay > bx0
+                and ay0 - pay < by1 and ay1 + pay > by0):
+            return True
+    return False
+
+
+def yazi_kutusu(t):
+    k = t.GetBoundingBox()
+    return (k.GetLeft() / MM, k.GetTop() / MM,
+            k.GetRight() / MM, k.GetBottom() / MM)
+
+
+def referanslari_temizle(b, pedler):
+    """Ped uzerine dusen referans yazilarini kaydir, olmazsa Fab'a al.
+
+    Referanslar KiCad tarafindan ayak izinin orijinine konuyor ve
+    yogun bolgelerde komsu pedlerin uzerine biniyor. Once kucuk
+    kaydirmalar deneniyor; hicbiri temiz degilse yazi ipekten alinip
+    Fab katmanina tasiniyor.
+
+    NEDEN FAB: ipek uzerindeki okunmaz bir referans iki kez zarar
+    veriyor — hem okunmuyor hem de altindaki pedin lehimlenmesini
+    bozuyor. Fab katmani montaj dokumaninda kaliyor, yani bilgi
+    kaybolmuyor, sadece bakirin uzerinden kalkiyor.
+    """
+    kaydirilan = fab = 0
+    for fp in sorted(b.Footprints(), key=lambda f: f.GetReference()):
+        t = fp.Reference()
+        if not t.IsVisible():
+            continue
+        ilk = t.GetPosition()
+        if not carpisiyor(yazi_kutusu(t), pedler):
+            continue
+        yerlesti = False
+        for dx, dy in ((0, -1.6), (0, 1.6), (-2.2, 0), (2.2, 0),
+                       (0, -2.8), (0, 2.8), (-3.4, 0), (3.4, 0)):
+            t.SetPosition(pcbnew.VECTOR2I(int(ilk.x + dx * MM),
+                                          int(ilk.y + dy * MM)))
+            if not carpisiyor(yazi_kutusu(t), pedler):
+                yerlesti = True
+                kaydirilan += 1
+                break
+        if not yerlesti:
+            t.SetPosition(ilk)
+            t.SetLayer(pcbnew.B_Fab if fp.GetLayer() == pcbnew.B_Cu
+                       else pcbnew.F_Fab)
+            fab += 1
+    return kaydirilan, fab
 
 
 def uygula(kart):
@@ -174,6 +311,7 @@ def uygula(kart):
     x1, y1 = kutu.GetRight() / MM, kutu.GetBottom() / MM
 
     fps = {f.GetReference(): f for f in b.Footprints()}
+    pedler = tum_pedler(b)
     n = 0
     for ref, ad in sorted(etiket.items()):
         fp = fps.get(ref)
@@ -199,12 +337,41 @@ def uygula(kart):
         else:
             x, y, aci = cx, py0 - 1.8, 0
         y = min(max(y, y0 + 2), y1 - 2)
-        yaz(b, ad, x, y, 1.0, aci, hiza)
+        t = yaz(b, ad, x, y, 1.0, aci, hiza)
+        # PEDIN USTUNE DUSTUYSE KAYDIR. Yukaridaki yon secimi sadece
+        # KENDI parcasinin pedlerine bakiyor; kenar konnektorlerinin
+        # etiketi komsu parcanin pedine dusuyordu (or. "RX1 ANT" ->
+        # J20 ped 1, "10MHz REF" -> J61 ped 1).
+        if carpisiyor(yazi_kutusu(t), pedler):
+            ilk = t.GetPosition()
+            for dx, dy in ((0, -2.2), (0, 2.2), (0, -3.6), (0, 3.6),
+                           (-3.0, 0), (3.0, 0), (0, -5.0), (0, 5.0)):
+                t.SetPosition(pcbnew.VECTOR2I(int(ilk.x + dx * MM),
+                                              int(ilk.y + dy * MM)))
+                if not carpisiyor(yazi_kutusu(t), pedler):
+                    break
         n += 1
 
     for metin, x, y, punto in yazilar:
-        yaz(b, metin, x, y, punto)
+        t = yaz(b, metin, x, y, punto)
+        # SABIT UYARI YAZILARI DA PEDE DUSEBILIYOR. Bunlar elle
+        # yazilmis koordinatlarda ve kart olculeri degistikce
+        # konnektorlerin uzerine kaydilar: C'nin "100W RF" uyarisi
+        # 10, D'nin "50V - HEATSINK IS HOT" uyarisi 11 pedin
+        # uzerindeydi. Uyari yazisi en cok okunmasi gereken sey;
+        # pedin uzerinde yariya bolunmus halde basilirsa gorevini
+        # yapmiyor, ustelik lehimi de bozuyor.
+        if carpisiyor(yazi_kutusu(t), pedler):
+            ilk = t.GetPosition()
+            for dy in (-3, 3, -6, 6, -9, 9, -12, 12, -16, 16):
+                t.SetPosition(pcbnew.VECTOR2I(ilk.x, int(ilk.y + dy * MM)))
+                kb = yazi_kutusu(t)
+                if (not carpisiyor(kb, pedler)
+                        and kb[1] > y0 + 1 and kb[3] < y1 - 1):
+                    break
         n += 1
+
+    kaydirilan, fab = referanslari_temizle(b, pedler)
 
     # C ve D'de bant bankasi etiketleri
     if kart == "C":
@@ -224,7 +391,8 @@ def uygula(kart):
                 n += 1
 
     b.Save(pcb)
-    print(f"{kart}: {silinen} eski etiket silindi, {n} etiket yazildi")
+    print(f"{kart}: {silinen} eski etiket silindi, {n} etiket yazildi, "
+          f"{kaydirilan} referans kaydirildi, {fab} referans Fab'a alindi")
 
 
 if __name__ == "__main__":

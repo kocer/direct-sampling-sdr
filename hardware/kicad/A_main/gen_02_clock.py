@@ -223,5 +223,47 @@ s.text("ADCLK846 eklemeli jitter (Tablo 1):\\n"
        "(LMK04828 sinifi) on kat pahali. UHF'te 66 dB SNR yine de\\n"
        "11 bit efektif demek; kabul.", 460, 50, 1.25)
 
+# ================================================================== FPGA saati
+# FPGA'YA HIC SAAT GIRMIYORDU.
+# ADCLK846'nin FPGA'ya ayrilan cikisi (pin 18/17 -> FPGA_PCLK_P/N)
+# 100R sonlandirmaya (R222) gidip BITIYORDU: agin uclari yalnizca
+# R222 ve U15'ti, U10 hic yoktu. NETLIST.md §2 niyeti yazmis ama
+# baglanti cizilmemis.
+#
+# VCXO_CLK saat sanilabilir, degil: adi yaniltici, o VCXO'nun
+# varaktorunu suren SPI DAC'inin SCK'si, yani bir FPGA CIKISI.
+#
+# FPGA'ya giren saat-yetenekli baska sinyaller vardi (ADC1_DCO,
+# ADC2_DCO, PHY_RXC, REF10_IN) ama hicbiri clk_sys degil. Yani
+# clk_sys uzerinde kosan her sey olu: PLL, ethernet, DDC arkasi,
+# paketleyici, kayit dosyasi, UART, DAC besleme.
+#
+# NEDEN ADC1_DCO'yu clk_sys yapmadik: o zaman FPGA'nin saati butun
+# saat agacina bagimli olurdu. Agacta bir sorun cikarsa FPGA komple
+# oluyor ve hicbir tanisi kalmiyor. Kart daha uretilmedi; dogru olan
+# izi cizmek, kalani yazilimla kurtarmaya calismak degil.
+#
+# Cozum DAC saatlerindekiyle AYNI desen: LVDS'i tek uclu 3.3 V
+# CMOS'a ceviren SN65LVDS2 (kartta zaten iki tane var, U16/U17).
+# R222 sonlandirma olarak yerinde kaliyor.
+s.text("FPGA SAATI — LVDS -> 3.3 V CMOS", 16, 400, 2.0)
+FX, FY = 60, 435
+s.sym(LV, "U18", "SN65LVDS2DBVR", FX, FY, fp=FLV)
+s.pin_label(LV, "3", FX, FY, 0, "FPGA_PCLK_P", "input", d=10.16)
+s.pin_label(LV, "4", FX, FY, 0, "FPGA_PCLK_N", "input", d=15.24)
+s.pin_label(LV, "5", FX, FY, 0, "FPGA_CLK80", "output", d=10.16)
+s.pin_label(LV, "1", FX, FY, 0, "+3V3", "input", d=15.24)
+s.pin_power(LV, "2", FX, FY, 0, "GND", d=7.62)
+s.sym(C, cnt("C"), "100nF", FX + 35, FY, rot=90, fp=FC)
+s.pin_label(C, "1", FX + 35, FY, 90, "+3V3", "passive")
+s.pin_power(C, "2", FX + 35, FY, 90, "GND")
+
+s.text("U18 cikisi FPGA_CLK80 -> U10 ball K16 (PCLKT2_0, banka 2,\\n"
+       "VCCIO +3V3). Gercek saat pini ve seviyesi birebir uyuyor.\\n"
+       "K16 bosalsin diye LED_RX banka 8'e (R6) tasindi.\\n\\n"
+       "U18 yerlesimde U15'e YAKIN durmali: aradaki LVDS cifti ne\\n"
+       "kadar kisaysa o kadar az ortak mod gurultusu topluyor.\\n"
+       "Sonlandirma R222 alicinin dibinde kaliyor.", 16, 455, 1.3)
+
 s.write(os.path.join(HERE, "02_clock.kicad_sch"))
 print("02_clock.kicad_sch yazildi")

@@ -30,7 +30,7 @@ s.text("G6KU TEK SARIMLI kilitlenen: bobine verilen gerilimin YONU konumu\\n"
        "belirliyor. Acik drenaj surucu (TPIC6B595) YETMEZ — akimi sadece\\n"
        "bir yonde cekebilir. H koprusu sart.\\n\\n"
        "Zincir: A kartindan 3 hat -> 8 x 74HC595 (64 lojik cikis)\\n"
-       "        56 lojik -> 14 x DRV8833 (her biri cift H koprusu)\\n"
+       "        56 lojik -> 16 x DRV8833 (kanal basina dort)\\n"
        "        28 H koprusu kanali -> 28 filtre rolesi\\n\\n"
        "74HC595 yetiyor cunku bobin akimini DRV8833 veriyor; yazmacin\\n"
        "surdugu sey sadece lojik giris. TPIC6B595 ($0.68) yerine\\n"
@@ -80,43 +80,81 @@ s.text("H KOPRULERI — 16 x DRV8833, her biri iki role", 460, 90, 1.8)
 ROLELER = [f"K{ch}{p}" for ch in range(1, 5) for p in range(1, 8)]
 assert len(ROLELER) == 28, len(ROLELER)
 
-for i in range(14):
-    x = 480 + (i % 4) * 90
-    y = 130 + (i // 4) * 75
-    ref = f"U{70 + i}"
-    s.sym(HB, ref, "DRV8833PWPR", x, y, fp=FHB)
-    ra, rb = ROLELER[i * 2], ROLELER[i * 2 + 1]
-    # A kanali -> ra, B kanali -> rb
-    s.pin_label(HB, "16", x, y, 0, f"Q{i * 4 + 0}", "input", d=7.62)   # AIN1
-    s.pin_label(HB, "15", x, y, 0, f"Q{i * 4 + 1}", "input", d=12.7)   # AIN2
-    s.pin_label(HB, "9", x, y, 0, f"Q{i * 4 + 2}", "input", d=17.78)   # BIN1
-    s.pin_label(HB, "10", x, y, 0, f"Q{i * 4 + 3}", "input", d=22.86)  # BIN2
-    s.pin_label(HB, "2", x, y, 0, f"{ra}_S", "output", d=7.62)         # AOUT1
-    s.pin_label(HB, "4", x, y, 0, f"{ra}_R", "output", d=12.7)         # AOUT2
-    s.pin_label(HB, "7", x, y, 0, f"{rb}_S", "output", d=17.78)        # BOUT1
-    s.pin_label(HB, "5", x, y, 0, f"{rb}_R", "output", d=22.86)        # BOUT2
-    s.pin_label(HB, "12", x, y, 0, "+5V", "input", d=5.08)             # VM
-    s.pin_label(HB, "1", x, y, 0, "+3V3", "input", d=27.94)            # ~SLEEP
-    s.pin_label(HB, "8", x, y, 0, "RLY_FAULT", "output", d=33.02)      # ~FAULT
+# ** 14 DEGIL 16 SURUCU — KANAL BASINA DORT. **
+#
+# 14 x 2 = 28 cikis 28 roleye TAM oturuyor ama kanal basina role
+# sayisi YEDI, yani TEK. Esleme kacinilmaz olarak kanal sinirini
+# asiyordu: U73 -> K17 (kanal 1) + K21 (kanal 2), U80 -> K37 + K41.
+# O iki surucu kartin iki ucundaki rolelere birden yakin olamaz.
+# Olculdu: 28 surucu-role ciftinin 27'si 60 mm'nin uzerinde,
+# ortalama 144 mm, en uzugu 274 mm (U73 -> K17). Kilitlenen role
+# bobinine verilen darbe o mesafede zayifliyor; bazen atmayan bir
+# bant filtresi rolesi = yanlis filtreyle verme.
+#
+# Kanal basina DORT surucu (8 cikis, 7 role, biri yedek):
+#   - her surucu kendi kanalinin seridinde kaliyor
+#   - dort kanal BIREBIR AYNI oluyor (bu kartin varlik sebebi)
+#   - bosta kalan cikis ileride bir bant eklenirse hazir
+# Bedeli iki DRV8833 (~$1). Sayfanin kendi basligi zaten
+# "8 x 74HC595 + 16 x DRV8833" diyordu; uygulama 7/14 kalmisti.
+#
+# KAYDIRMALI YAZMAC SAYISI DEGISMIYOR. Kullanilan H koprusu
+# sayisi yine 28, yani 56 lojik hat = 7 x 74HC595. Bos kalan
+# dordu de girisleri TOPRAGA bagli (kopru kapali).
+# ROLE -> Q ESLEMESI DE DEGISMIYOR: role r (kanal sirasinda
+# 0..27) yine Q(2r) ve Q(2r+1) ile suruluyor. Gateware'in bit
+# haritasina dokunulmuyor.
+for ch in range(1, 5):
+    for j in range(4):
+        i = (ch - 1) * 4 + j
+        x = 480 + (i % 4) * 90
+        y = 130 + (i // 4) * 75
+        ref = f"U{70 + i}"
+        s.sym(HB, ref, "DRV8833PWPR", x, y, fp=FHB)
+        # A yarisi tek numarali roleyi, B yarisi bir sonrakini surer
+        ra = f"K{ch}{2 * j + 1}"
+        rb = f"K{ch}{2 * j + 2}" if 2 * j + 2 <= 7 else None
+        ia = (ch - 1) * 7 + 2 * j          # kanal sirasinda role indisi
+        ib = ia + 1
+        s.pin_label(HB, "16", x, y, 0, f"Q{2 * ia + 0}", "input", d=7.62)
+        s.pin_label(HB, "15", x, y, 0, f"Q{2 * ia + 1}", "input", d=12.7)
+        if rb:
+            s.pin_label(HB, "9", x, y, 0, f"Q{2 * ib + 0}", "input", d=17.78)
+            s.pin_label(HB, "10", x, y, 0, f"Q{2 * ib + 1}", "input", d=22.86)
+            s.pin_label(HB, "7", x, y, 0, f"{rb}_S", "output", d=17.78)
+            s.pin_label(HB, "5", x, y, 0, f"{rb}_R", "output", d=22.86)
+        else:
+            # YEDEK YARIM KOPRU: girisleri topraga, cikislari bosta.
+            # Girisi havada birakmak CMOS'ta tanimsiz durum demek —
+            # kopru rastgele iletir ve bosuna akim ceker.
+            s.pin_power(HB, "9", x, y, 0, "GND", d=17.78)
+            s.pin_power(HB, "10", x, y, 0, "GND", d=22.86)
+            s.nc(*s.P(HB, "7", x, y))
+            s.nc(*s.P(HB, "5", x, y))
+        s.pin_label(HB, "2", x, y, 0, f"{ra}_S", "output", d=7.62)
+        s.pin_label(HB, "4", x, y, 0, f"{ra}_R", "output", d=12.7)
+        s.pin_label(HB, "12", x, y, 0, "+5V", "input", d=5.08)         # VM
+        s.pin_label(HB, "1", x, y, 0, "+3V3", "input", d=27.94)        # ~SLEEP
+        s.pin_label(HB, "8", x, y, 0, "RLY_FAULT", "output", d=33.02)  # ~FAULT
     # AISEN/BISEN dogrudan topraga DEGIL, 0R uzerinden. Iki sebep:
     # (1) ERC "cift yonlu pin guc cikisiyla baglanmis" diyor, cunku
     #     toprak agina PWR_FLAG konmus durumda;
     # (2) akim sinirlama istenirse buraya olcu direnci takilir,
     #     kart degismez. Simdilik 0R.
-    for j, pn in enumerate(("3", "6")):
-        sx, sy = x - 30, y + 30 + j * 12
-        s.sym(R, cnt("R"), "0R", sx, sy, rot=90, fp=FR)
-        s.pin_label(HB, pn, x, y, 0, f"{ref}_ISEN{j}", "passive",
-                    d=5.08 + j * 5.08)
-        s.pin_label(R, "1", sx, sy, 90, f"{ref}_ISEN{j}", "passive")
-        s.pin_power(R, "2", sx, sy, 90, "GND")
-    s.pin_power(HB, "13", x, y, 0, "GND", d=5.08)
-    s.pin_power(HB, "17", x, y, 0, "GND", d=10.16)
-    s.nc(*s.P(HB, "11", x, y))                                         # VCP
-    s.nc(*s.P(HB, "14", x, y))                                         # VINT
-    s.sym(C, cnt("C"), "100nF", x + 42, y, rot=90, fp=FC)
-    s.pin_label(C, "1", x + 42, y, 90, "+5V", "input")
-    s.pin_power(C, "2", x + 42, y, 90, "GND")
+        for k, pn in enumerate(("3", "6")):
+            sx, sy = x - 30, y + 30 + k * 12
+            s.sym(R, cnt("R"), "0R", sx, sy, rot=90, fp=FR)
+            s.pin_label(HB, pn, x, y, 0, f"{ref}_ISEN{k}", "passive",
+                        d=5.08 + k * 5.08)
+            s.pin_label(R, "1", sx, sy, 90, f"{ref}_ISEN{k}", "passive")
+            s.pin_power(R, "2", sx, sy, 90, "GND")
+        s.pin_power(HB, "13", x, y, 0, "GND", d=5.08)
+        s.pin_power(HB, "17", x, y, 0, "GND", d=10.16)
+        s.nc(*s.P(HB, "11", x, y))                                     # VCP
+        s.nc(*s.P(HB, "14", x, y))                                     # VINT
+        s.sym(C, cnt("C"), "100nF", x + 42, y, rot=90, fp=FC)
+        s.pin_label(C, "1", x + 42, y, 90, "+5V", "input")
+        s.pin_power(C, "2", x + 42, y, 90, "GND")
 
 s.sym(R, "R690", "10k", 460, 440, rot=90, fp=FR)
 s.pin_label(R, "1", 460, 440, 90, "+3V3", "input")

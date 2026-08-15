@@ -30,6 +30,7 @@ import re
 import sys
 
 import pcbnew
+import dsn_yaz
 
 MM = 1e6
 
@@ -181,8 +182,12 @@ def oku(pcb, ses, elle=None):
             x, y = float(v[2]), float(v[3])
             u = pcbnew.PCB_VIA(board)
             u.SetPosition(pcbnew.VECTOR2I(int(x * k), int(-y * k)))
-            u.SetWidth(int(0.6 * MM))
-            u.SetDrill(int(0.3 * MM))
+            # VIA OLCUSU DSN ILE AYNI OLMALI. Yonlendirici
+            # dsn_yaz.VIA_CAP capinda planliyor; burada daha buyugunu
+            # kurarsak planlanan boslugu yeriz. A kartinda BGA
+            # kacisi 500 um via + 127 um bosluga gore hesaplandi.
+            u.SetWidth(int(dsn_yaz.VIA_CAP / 1000 * MM))
+            u.SetDrill(int(dsn_yaz.VIA_DELIK / 1000 * MM))
             u.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu)
             u.SetNetCode(kod)
             board.Add(u)
@@ -194,13 +199,29 @@ def oku(pcb, ses, elle=None):
     # ONCE BAGLANTI HARITASI. BuildConnectivity() cagirmadan
     # ZONE_FILLER True donuyor ama dokumler BOS kaliyor: doldurucu
     # hangi pedin hangi aga ait oldugunu bilmiyor.
-    # DOKUM PEDLERE TAM BAGLANSIN, TERMAL ROLEYLE DEGIL.
-    # Varsayilan termal role dort ince kolla bagliyor; PA'nin 6.67 A
-    # donus akimi ve cihaz kulaklarindan gelen isi icin o kollar
-    # yetmiyor (19 starved_thermal). Termal role elle lehimlemeyi
-    # kolaylastirmak icin var; bu kartlar firinda dizilecek.
+    # SMD PEDE TAM BAKIR, DELIKLI PEDE TERMAL ROLE.
+    #
+    # Once hepsi FULL idi. SMD tarafinda dogru: varsayilan termal
+    # role dort ince kolla bagliyor ve PA'nin 6.67 A donus akimi
+    # ile cihaz kulaklarindan gelen isi icin o kollar yetmiyordu
+    # (19 starved_thermal).
+    #
+    # Ama gerekce "bu kartlar firinda dizilecek" idi ve DELIKLI
+    # parcalar icin bu DOGRU DEGIL — onlar elle lehimleniyor.
+    # Olculdu, GND'ye bagli delikli ped sayisi:
+    #     A  16   (7'si >= 1.5 mm)   XT60, JTAG, basliklar
+    #     C 220   (28'i >= 1.5 mm)   24 elle sarilan toroid, basliklar
+    #     D  50   (44'u >= 1.5 mm)   470uF elektrolitikler, trafo orta
+    #                                uclari, "sonraki PA" konnektoru
+    # C'deki toroidler elde sariliyor, firina hic girmiyorlar. Tam
+    # bakirla her biri 82000 mm2'lik dokume dogrudan bagli: havyayla
+    # o pedi lehim sicakligina getirmek cok guc, zorlayan pedi
+    # kaldiriyor.
+    #
+    # ZONE_CONNECTION_THT_THERMAL tam bunun icin: SMD'de FULL,
+    # delikli pedde termal role. Iki gereksinim de karsilaniyor.
     for z in board.Zones():
-        z.SetPadConnection(pcbnew.ZONE_CONNECTION_FULL)
+        z.SetPadConnection(pcbnew.ZONE_CONNECTION_THT_THERMAL)
     board.BuildConnectivity()
     doldurucu = pcbnew.ZONE_FILLER(board)
     doldurucu.Fill(board.Zones())

@@ -105,7 +105,9 @@
   "PHY2_TXD2": "P11",
   "PHY2_TXD3": "N11"
  },
- "SAAT": {},
+ "SAAT": {
+  "FPGA_CLK80": "K16"
+ },
  "SDRAM_B0": {
   "SD_A10": "A2",
   "SD_A11": "A6",

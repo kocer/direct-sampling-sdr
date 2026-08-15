@@ -67,7 +67,8 @@ s.pin_power(A, "7", 80, 165, 0, "GND", d=38.1)
 s.pin_power(A, "8", 80, 165, 0, "GND", d=43.18)
 for p in ("6", "9"):
     s.pin_label(A, p, 80, 165, 0, "+3V3", "input", d=5.08)
-for p in ("10", "11", "18", "Pad"):
+# ACIK PED "21", "Pad" DEGIL — bkz. C_rf/gen_04_atten.py
+for p in ("10", "11", "18", "21"):
     s.pin_power(A, p, 80, 165, 0, "GND", d=5.08)
 s.pin_power(A, "12", 80, 165, 0, "GND", d=10.16)
 # alti C bacagi yukari: acilista 31.5 dB, EN SAGIR
@@ -146,25 +147,70 @@ for i, kol in enumerate(("A", "B")):
 # parcada birlestirdi, biri netlistten tamamen dustu ve PA_OUT
 # beslenmeden kaldi. Referans cakismasi ERC'de gorunmuyor cunku
 # sayfalar ayri; ayni ada iki farkli parca koymak serbest.
-s.sym(T, "T12", "BN43-202 2:3", 500, 285, fp=FT)
-s.pin_label(T, "1", 500, 285, 0, "D2_DA", "input", d=10.16)
-s.pin_label(T, "2", 500, 285, 0, "D2_DB", "input", d=10.16)
-s.pin_label(T, "3", 500, 285, 0, "DRV_OUT", "output", d=10.16)
-s.pin_power(T, "4", 500, 285, 0, "GND", d=10.16)
+# ** ORTA UC BAGLI DEGILDI — SURUCU KATININ 12 V'U DA ULASMIYORDU. **
+# Ayni hata final katindakiyle ayni (bkz. gen_02_final T31):
+# D2_CT = {L11.2, C110.1}, yani bogucu ile kondansator birbirine
+# bagli, trafoya degil. Q20/Q21'in drainlerinde DC besleme yoktu.
+# Birincili orta uclu 5 bacakli trafo kullaniliyor.
+TCT = "dogrudan-sdr:XFMR_CT"
+FTCT = "dogrudan-sdr:XFMR_Toroid_5P_Vertical"
+s.sym(TCT, "T12", "BN43-202 2:3 CT", 500, 285, fp=FTCT)
+s.pin_label(TCT, "1", 500, 285, 0, "D2_DA", "input", d=10.16)
+s.pin_label(TCT, "2", 500, 285, 0, "D2_DB", "input", d=10.16)
+s.pin_label(TCT, "5", 500, 285, 0, "D2_CT", "input", d=15.24)
+s.pin_label(TCT, "3", 500, 285, 0, "DRV_OUT", "output", d=10.16)
+s.pin_power(TCT, "4", 500, 285, 0, "GND", d=10.16)
 s.sym(L, "L11", "10uH bogucu", 500, 250, rot=90, fp=FL)
 s.pin_label(L, "1", 500, 250, 90, "+12V", "input")
 s.pin_label(L, "2", 500, 250, 90, "D2_CT", "passive")
-s.sym(C, cnt("C"), "10uF", 528, 250, rot=90, fp=FC)
+# 12 V rayinda 10uF 0603'e sigmiyor: 0603'te 10uF en fazla
+# 16 V sinifinda ve DC bias kaybiyla 12 V'ta yarisindan azi
+# kaliyor. 1206 / 25 V.
+s.sym(C, cnt("C"), "10uF", 528, 250, rot=90,
+      fp="Capacitor_SMD:C_1206_3216Metric")
 s.pin_label(C, "1", 528, 250, 90, "D2_CT", "passive")
 s.pin_power(C, "2", 528, 250, 90, "GND")
 
 s.text("SURUCU 2 AB SINIFI, A degil. Bu kat 8 W veriyor; A sinifinda\\n"
        "27 W isi ederdi ve hicbir sey kazandirmazdi — doğrusalligi\\n"
        "belirleyen FINAL kat. Sabit bias, servo yok.\\n\\n"
-       "24 V besleme: 8 W icin 50 V gereksiz, ayri bir LDO/buck ile\\n"
-       "50 V'tan uretiliyor (06_power).\\n\\n"
+       "12 V besleme: 8 W icin 50 V gereksiz, LM5164 ile 50 V'tan\\n"
+       "uretiliyor (06_power). (Once burada '24 V' yaziyordu; 24 V\\n"
+       "rayi guc agacindan kalkti, metin bayat kalmisti.)\\n\\n"
        "IRF530N Ciss 920 pF — IRFP250N'in ucte biri, surulmesi kolay.",
        300, 330, 1.35)
+
+# ** Q20/Q21 SOGUTUCU GEREKTIRIYOR — OLCUM **
+#
+#   ray butcesi (06_power):  12 V x 1.0 A = 12 W giris
+#   bu katin cikisi                       =  8 W RF
+#   ISIYA DONEN                           =  4 W, cihaz basina 2 W
+#
+#   TO-220, sogutucusuz, dik montaj:  Rth(j-a) ~62 C/W
+#       dT = 2 W x 62 = 124 C
+#   25 C oda sicakliginda Tj = 149 C. AMA bu kart 233 W dagitan bir
+#   final katiyla ayni kutunun icinde: kutu ici 50-60 C. O zaman
+#       Tj = 174 .. 184 C
+#   IRF530N'in Tj(max) degeri 175 C. Yani cihaz sinirin TAM USTUNDE
+#   ya da otesinde calisiyor — omru saatlerle olculur.
+#
+#   COZUM (mekanik, semada degil): Q20/Q21 finallerin bagli oldugu
+#   AYNI bakir flansa vidalanacak. Kucuk bir kanatcik bile yetiyor:
+#       Rth(s-a) 20 C/W ile  dT = 2 x (1.5 + 0.5 + 20) = 44 C
+#       Tj = 55 + 44 = 99 C  — genis marj.
+#   Kartta ayak izi TO-220 dik; kulak zaten flansa bakiyor,
+#   yerlesimde final koridorunun kenarinda duruyorlar.
+#
+#   NOT: Q30 (ters polarite) ayni hastaliktaydi ve cok daha
+#   agirdi (5.2 W, 322 C). O ideal diyot + IRFB4110 ile cozuldu
+#   (06_power); burada cozum sogutucu, cunku kayip RF'in kendisi
+#   degil, katin isi butcesi.
+s.text("** Q20/Q21 SOGUTUCUSUZ CALISMAZ **\\n"
+       "12 W giris - 8 W RF = 4 W isi, cihaz basina 2 W.\\n"
+       "Sogutucusuz TO-220: Rth(j-a) 62 C/W -> 124 C artis.\\n"
+       "Kutu ici 55 C ile Tj ~180 C; IRF530N siniri 175 C.\\n"
+       "Ikisi de finallerin flansina vidalanacak: 20 C/W'lik bir\\n"
+       "kanatcikla Tj ~99 C'ye iniyor.", 300, 365, 1.35)
 
 s.write(os.path.join(HERE, "01_driver.kicad_sch"))
 print("01_driver.kicad_sch yazildi")

@@ -1,6 +1,22 @@
 #!/usr/bin/env python3
 """04_detect: yonlu kuplor, guc olcumu, SWR korumasi, DPD ornekleme.
-Kaynak: ../../PA_TASARIM.md §6 ve §6b."""
+Kaynak: ../../PA_TASARIM.md §6 ve §6b.
+
+REFERANS ARALIGI — BU DOSYA: J20 J40, K20, R160-R199, T20-T29, U60-U69.
+(U40-U49 SECILEMEZ: gen_03_bias.py'nin LM358 paketleri U41/U42.
+ Ilk duzeltmede dedektorleri oraya tasiyip ayni hatayi bir kez
+ daha yaptim — bu sefer LM358'in biri kayboldu. Aralik secmeden
+ once o araligin BOS oldugunu olcmek gerekiyor, varsaymak degil.)
+Dedektorler U30/U31 idi ve gen_03_bias.py'nin INA240'lari da U30+n
+uretiyordu: U31 CAKISTI. Kartta AD8318 kazandi, birinci cihazin akim
+olcum yukselteci (INA240) HIC OLUSMADI — Q10'un bias servosu geri
+beslemesiz kaldi. A sinifinda geri beslemesiz bias termal kacistir:
+cihaz isindikca akim artar, artan akim daha cok isitir.
+Ustelik kaybolan sembolun izi kaldi: AD8318 U31'in ped 8'i (GND)
+SRC1 agina baglandi, yani 0.01R shunt bir QFN'in toprak pini
+uzerinden kisa devre edilmis gorunuyordu. Iki ozdes dedektorden
+birinin baglantisinin otekinden farkli olmasi hatanin imzasiydi.
+Aralik listesi gen_02_final.py basinda."""
 import json, os
 from schlib import Sheet
 
@@ -48,30 +64,65 @@ s.text("Uc is birden yapiyor:\\n"
        "kalibreli 50 W verir.", 16, 22, 1.35)
 
 # ---------------------------------------------------------------- kuplor
-s.text("KUPLOR — ikili toroid, -30 dB", 16, 95, 1.8)
+s.text("KUPLOR — tandem match, akim + gerilim ornegi", 16, 95, 1.8)
+# T21'IN IKI PEDI DE ANT_OUT'TAYDI: BIRINCIL KISA DEVREYDI.
+#
+# Eski hali T20'nin kopyasiydi ama birincilinin iki ucu da ANT_OUT
+# etiketliydi. Kisa devre edilmis bir birincilin ikincilinde gerilim
+# olusmaz: REV_RAW HER ZAMAN SIFIR okur. Yani SWR korumasi hicbir
+# kosulda tetiklenmez — anten sokulu haldeyken 100 W verilir ve
+# final gider. Dogru okuyan bir olcum yerine SESSIZCE SIFIR okuyan
+# bir olcum, hic olculmemesinden daha tehlikeli: ustune koruma
+# mantigi kuruluyor.
+#
+# YERINE TANDEM MATCH (yonlu kuplor):
+#   T20  1 sarim hatta SERI          -> akim ornegi, i = I/32
+#   T21  32 sarim hat-TOPRAK arasi   -> gerilim ornegi, v = V/32
+# T20'nin 32 sarimli ikincili DOGRUDAN iki port arasinda; her portun
+# soguk ucu 51R uzerinden ORTAK dugume (CPL_COM) gidiyor ve o dugumu
+# T21'in tek sarimli ucu surukluyor. Cozum:
+#     V_FWD = v + 51 x i        V_REV = v - 51 x i
+# Yansiyan port 51 x I = V oldugunda, yani yuk 51 ohm iken sifira
+# iniyor. Sifir noktasi dedektor yukunden BAGIMSIZ: iki porta da
+# ayni yuk biniyor, ortak mod terimini oteliyor.
+#
+# ISARET/SARIM YONU: T21'in tek sarimli ucunun yonu FWD ile REV'i
+# takas eder. Devreye almada 50 ohm kukla yuke verilip REV'in
+# sifirlandigi dogrulanacak; ters cikarsa T21'in 1 sarim ucu ters
+# baglanacak. Semada ifade edilemeyen tek sey bu.
 s.sym(T, "T20", "FT50-43 1:32", 70, 140, fp=FT)
 s.pin_label(T, "1", 70, 140, 0, "PA_LPF_OUT", "input", d=10.16)
 s.pin_label(T, "2", 70, 140, 0, "ANT_OUT", "output", d=10.16)
 s.pin_label(T, "3", 70, 140, 0, "FWD_RAW", "output", d=10.16)
-s.pin_power(T, "4", 70, 140, 0, "GND", d=10.16)
+s.pin_label(T, "4", 70, 140, 0, "REV_RAW", "output", d=15.24)
 s.sym(T, "T21", "FT50-43 1:32", 70, 190, fp=FT)
-s.pin_label(T, "1", 70, 190, 0, "ANT_OUT", "input", d=10.16)
-s.pin_label(T, "2", 70, 190, 0, "ANT_OUT", "output", d=15.24)
-s.pin_label(T, "3", 70, 190, 0, "REV_RAW", "output", d=10.16)
-s.pin_power(T, "4", 70, 190, 0, "GND", d=10.16)
+s.pin_label(T, "1", 70, 190, 0, "CPL_COM", "passive", d=10.16)
+s.pin_power(T, "2", 70, 190, 0, "GND", d=15.24)
+s.pin_label(T, "3", 70, 190, 0, "ANT_OUT", "input", d=10.16)
+s.pin_power(T, "4", 70, 190, 0, "GND", d=15.24)
 
 for i, net in enumerate(("FWD_RAW", "REV_RAW")):
+    # 51R ARTIK TOPRAGA DEGIL CPL_COM'A. Iki sonlandirmanin soguk
+    # ucu ortak ve gerilim ornegi oradan giriyor; topraga baglanirsa
+    # gerilim ornegi devreden cikar ve iki port da ayni sayiyi
+    # gosterir (yonluluk sifir).
     s.sym(R, cnt("R"), "51R 1%", 125, 140 + i * 50, rot=90, fp=FRP)
     s.pin_label(R, "1", 125, 140 + i * 50, 90, net, "passive")
-    s.pin_power(R, "2", 125, 140 + i * 50, 90, "GND")
+    s.pin_label(R, "2", 125, 140 + i * 50, 90, "CPL_COM", "passive")
     s.sym(C, cnt("C"), "1nF", 150, 140 + i * 50, fp=FC)
     s.pin_label(C, "1", 150, 140 + i * 50, 0, net, "passive")
     s.pin_label(C, "2", 150, 140 + i * 50, 0, f"{net[:3]}_AC", "passive")
 
-s.text("FT50-43, birincil 1 sarim (duz gecen tel), ikincil 32 sarim.\\n"
-       "-30 dB kuplaj: 100 W'ta orneklenen 100 mW = +20 dBm.\\n"
-       "AD8318'in girisi -60..0 dBm; araya 20 dB zayiflatici gerekiyor,\\n"
-       "asagida.\\n\\n"
+s.text("FT50-43 x2. T20: birincil 1 sarim (duz gecen tel), ikincil 32.\\n"
+       "T21: 32 sarim hat-toprak arasi, 1 sarim CPL_COM'a.\\n\\n"
+       "Akim ornegi 51 x I/32, gerilim ornegi V/32. Toplam ileri\\n"
+       "porta, fark yansiyan porta gidiyor; 50 ohm yukte yansiyan\\n"
+       "port sifir. Bir onceki devrede REV yapisi geregi sifirdi —\\n"
+       "arasindaki fark, olcumun olup olmamasi.\\n\\n"
+       "Kuplaj eski (tek trafolu, hatali) devreye gore 6 dB daha\\n"
+       "yuksek: iki ornek toplaniyor. Dedektor girisindeki 61R9\\n"
+       "sont 19R1'e indirildi, boylece AD8318 100 W'ta yine ~0 dBm\\n"
+       "goruyor ve guc merdiveninin tamami araligin icinde kaliyor.\\n\\n"
        "YONLULUK sarimin duzgunlugune bagli: ikincil cekirdege ESIT\\n"
        "aralikli ve tam sarilmali. 20 dB yonluluk yeterli ve dikkatli\\n"
        "sarimla cikiyor; ozensiz sarimda 10 dB'ye duser ve SWR olcumu\\n"
@@ -82,15 +133,19 @@ s.text("FT50-43, birincil 1 sarim (duz gecen tel), ikincil 32 sarim.\\n"
 s.text("DETEKTORLER — AD8318 x2", 300, 95, 1.8)
 for i, (net, ad) in enumerate([("FWD", "ileri"), ("REV", "yansiyan")]):
     x, y = 380, 140 + i * 75
-    # 20 dB zayiflatici (pi)
-    s.sym(R, cnt("R"), "61R9", x - 75, y, rot=90, fp=FR)
+    # Zayiflatici sont bacagi. 61R9 -> 19R1: tandem kuplor iki ornegi
+    # topladigi icin port gerilimi 6 dB yukseldi, sont onu geri
+    # aliyor. Seri direnc DEGISMEDI — onu buyutmek AD8318'in giris
+    # kapasitesiyle bir kutup yapip 30 MHz'te kazanci dusururdu,
+    # yani bant kenarinda guc okumasi kayardi.
+    s.sym(R, cnt("R"), "19R1", x - 75, y, rot=90, fp=FR)
     s.pin_label(R, "1", x - 75, y, 90, f"{net}_AC", "passive")
     s.pin_power(R, "2", x - 75, y, 90, "GND")
     s.sym(R, cnt("R"), "247R", x - 55, y, rot=90, fp=FR)
     s.pin_label(R, "1", x - 55, y, 90, f"{net}_AC", "passive")
     s.pin_label(R, "2", x - 55, y, 90, f"{net}_DET", "passive")
 
-    s.sym(DET, f"U{30 + i}", "AD8318ACPZ", x, y, fp=FDET)
+    s.sym(DET, f"U{60 + i}", "AD8318ACPZ", x, y, fp=FDET)
     s.pin_label(DET, "14", x, y, 0, f"{net}_DET", "input", d=7.62)   # INHI
     s.pin_power(DET, "15", x, y, 0, "GND", d=12.7)                   # INLO
     s.pin_label(DET, "6", x, y, 0, f"{net}_LOG", "output", d=7.62)   # VOUT
@@ -150,9 +205,11 @@ s.text("SO-239 kasaya, karta kisa koaksiyel. 100 W'ta SMA da tasir\\n"
 
 s.text("VSET cikisa bagli = OLCUM modu (kontrol modu degil). Cikis\\n"
        "girise logaritmik: -25 mV/dB, 0 dBm'de ~0.5 V.\\n"
-       "Giris araligi -60..0 dBm, yani 60 dB. Kuplor -30 dB, araya\\n"
-       "20 dB zayiflatici: 100 W'ta detektor 0 dBm goruyor, 100 mW'ta\\n"
-       "-30 dBm. Butun guc merdiveni araligin icinde.\\n\\n"
+       "Giris araligi -60..0 dBm, yani 60 dB. Tandem kuplor + sont\\n"
+       "zayiflatici birlikte ~-50 dB: 100 W'ta detektor ~0 dBm\\n"
+       "goruyor, 100 mW'ta -30 dBm. Butun guc merdiveni araligin\\n"
+       "icinde. Kesin degeri devreye almada kukla yukle olculecek;\\n"
+       "log detektorun kalibrasyonu zaten olcumle yapiliyor.\\n\\n"
        "PINOUT VERI SAYFASINDAN (Rev.E Tablo 3) — ilk cizimde tahmin\\n"
        "etmis ve isaretlemistim; dokuz bacagin HICBIRI tutmadi.\\n"
        "Isaretlememis olsaydik kart basilacakti.\\n\\n"
