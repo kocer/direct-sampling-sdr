@@ -78,7 +78,12 @@ if true; then
       echo "HATA: yerlesim uygulanmadi"; exit 1
   fi
   echo "  $ozet"
-  python3 ayir.py $P.kicad_pcb   2>/dev/null | grep -a cakisma || true
+  # AYIR COKERSE ZINCIR DURSUN.
+  # "|| true" bir sozdizimi hatasini sessizce yuttu ve uc kart
+  # cakismalari HIC ayrilmadan kuruldu; belirtisi sadece ozet
+  # satirinin kaybolmasiydi. Ayni sinif hata nextpnr'da da vardi.
+  python3 ayir.py $P.kicad_pcb 2>&1 | grep -a cakisma
+  [ ${PIPESTATUS[0]} -eq 0 ] || { echo "HATA: ayir cokti"; exit 1; }
   # FIDUCIAL + TEST NOKTALARI — AYIR'DAN SONRA.
   # Once ayir'dan ONCE kosuyordu ve bedeli olculdu: test noktalari
   # cakisma uretiyor, ayir onlari cozerken AYIRMA KONDANSATORLERINI

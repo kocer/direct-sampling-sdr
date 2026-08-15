@@ -70,8 +70,19 @@ def cakismalar(fps):
     return out
 
 
-def ayir(b, tur=60, elle=(), pay=2.0):
-    """Cakisan parcalari birbirinden it — KART SINIRI ICINDE KALARAK.
+def ayir(b, tur=400, elle=(), pay=2.0):
+    """Cakisan parcalari it-kak ile ayir.
+
+    TUR SAYISI 60'TAN 400'E CIKARILDI. 1500 de denendi: A ve C'de
+    ayni sonucu verdi (5 ve 8), D'de on dakikayi asti. Yani algoritma
+    yakinsamiyor, kalan cakismalar tur sayisiyla cozulmuyor — 400
+    ayni sonucu cok daha ucuza veriyor. D kartina tuzak
+    kondansatorleri ve yedinci filtre bolumu eklenince 162 cakisma
+    olustu ve 60 turda 54'u cozulemedi. Kart doluluk orani %49, yani
+    yer VAR — yalnizca yineleme butcesi yetmiyordu. Yer olmasaydi
+    tur artirmak da cozmezdi; once onu olctum.
+
+    Cakisan parcalari birbirinden it — KART SINIRI ICINDE KALARAK.
 
     SINIR KISITI SONRADAN EKLENDI. Ayirici parcalari iterken kartin
     kenarini hic gormuyordu; iceri_al() ondan ONCE calistigi icin de

@@ -49,8 +49,40 @@ def e24(x):
 
 
 # kesim frekansi bandin ustunden %10 yukarida
-BANTLAR = [("160m", 2.2), ("80_60m", 6.0), ("40_30m", 11.0),
-           ("20_17m", 19.0), ("15_10m", 31.0), ("6m", 56.0)]
+# TUZAKLI (ELIPTIK) FILTRE — DUZ CHEBYSHEV YETMIYOR.
+#
+# Olculdu (lpf_sim.py, ngspice): duz 5 kutup Chebyshev ile ikinci
+# harmonik bastirmasi her bantta yasal sinirin ALTINDA kaliyordu.
+#     160m -25 dB, 80_60m -3, 40_30m -10, 20_17m -18,
+#     15_10m -14, 6m -30   (gereken: HF'te 43, 30 MHz ustu 60)
+#
+# 80_60m'de -3.4 dB, yani filtre ikinci harmonige neredeyse hic
+# dokunmuyor: kesim 5.37 MHz'i gecirmek icin 6.0 MHz'te, ama 3.5
+# MHz'in ikinci harmonigi 7.0 MHz — kesimin hemen ustu.
+#
+# Kutup sayisi kurtarmiyor: Chebyshev bastirma formuluyle hesaplandi,
+# 80_60m icin 9 kutup bile 32 dB veriyor.
+#
+# Cozum tuzak: her seri bobine PARALEL bir kondansator, iletim
+# sifirini tam harmonige oturtuyor. Amatör telsiz filtrelerinde
+# standart yontem. Olculen sonuc -58 ile -83 dB.
+#
+# 80 ve 60 m AYRILDI. Birlikteyken 3.5'in harmonigi (7.0) 5.37'lik
+# gecirme kenarina cok yakin ve tuzak bandin kendisini de bastiriyor.
+# Ayri pozisyonlarda ikisi de -80 dB'nin ustunde. Yedinci role
+# pozisyonu bypass'ti; artik 60 m orada. Vericide filtresiz yayin
+# zaten hicbir durumda mesru degil.
+#
+# (ad, kesim MHz, 1. tuzak MHz, 2. tuzak MHz)
+BANTLAR = [
+    ("160m",    2.3,   3.6,   5.4),
+    ("80m",     4.3,   7.0,  10.5),
+    ("60m",     6.2,  10.70, 16.05),
+    ("40_30m", 14.1,  14.0,  21.0),
+    ("20_17m", 22.4,  28.0,  42.0),
+    ("15_10m", 39.7,  42.0,  63.0),
+    ("6m",     58.8, 100.0, 150.0),
+]
 
 
 def sentez(fc_mhz):
@@ -96,13 +128,15 @@ s.text("A sinifi bile harmonik uretir. 100 W'ta ikinci harmonik -30 dBc\\n"
        "  role         GUC rolesi, sinyal rolesi degil", 16, 22, 1.4)
 
 
-def bolum(bant, fc, x, y, idx):
+def bolum(bant, fc, tuzak1, tuzak2, x, y, idx, son=False):
     ad = bant
     vals = sentez(fc)
     net_in = f"LPF_B{idx}_IN"
     net_out = f"LPF_B{idx}_OUT"
-    nxt_in = f"LPF_B{idx + 1}_IN"
-    nxt_out = f"LPF_B{idx + 1}_OUT"
+    # SON BOLUM ZINCIRI KAPATIYOR. Yedinci pozisyon eskiden bypass'ti
+    # ve zinciri PA_LPF_OUT'a baglıyordu; simdi orada 60 m filtresi var.
+    nxt_in = "PA_LPF_OUT" if son else f"LPF_B{idx + 1}_IN"
+    nxt_out = "PA_LPF_OUT" if son else f"LPF_B{idx + 1}_OUT"
 
     s.sym(K, f"KL{idx}", "G2RL-2 DC12", x, y, fp=FK)
     s.pin_label(K, "11", x, y, 0, net_in, "passive", d=7.62)
@@ -133,21 +167,25 @@ def bolum(bant, fc, x, y, idx):
             s.sym(L, cnt("L"), nm, fx + i * 22, y, rot=90,
                   fp=FLT[cek.split("-")[0]])
             s.pin_label(L, "1", fx + i * 22, y, 90, node[ci], "passive")
+            a_dugum = node[ci]
             ci += 1
             s.pin_label(L, "2", fx + i * 22, y, 90, node[ci], "passive")
+            # TUZAK: bobine PARALEL kondansator, iletim sifiri harmonikte.
+            ft = (tuzak1 if a_dugum == node[0] else tuzak2) * 1e6
+            Ct = 1.0 / ((2 * _m.pi * ft) ** 2 * (v * 1e-9)) * 1e12
+            s.sym(C, cnt("C"), f"{e24(Ct):g}pF", fx + i * 22 + 11, y - 18,
+                  rot=90, fp=FCP)
+            s.pin_label(C, "1", fx + i * 22 + 11, y - 18, 90, a_dugum,
+                        "passive")
+            s.pin_label(C, "2", fx + i * 22 + 11, y - 18, 90, node[ci],
+                        "passive")
 
 
-for i, (ad, fc) in enumerate(BANTLAR):
-    bolum(ad, fc, 55 + (i % 2) * 340, 120 + (i // 2) * 70, i + 1)
+for i, (ad, fc, t1, t2) in enumerate(BANTLAR):
+    bolum(ad, fc, t1, t2, 55 + (i % 2) * 340, 120 + (i // 2) * 70, i + 1,
+          son=(i == len(BANTLAR) - 1))
 
-# bypass (7. pozisyon) — filtre yok, dogrudan gecis
-s.sym(K, "KL7", "G2RL-2 DC12", 55, 330, fp=FK)
-s.pin_label(K, "11", 55, 330, 0, "LPF_B7_IN", "passive", d=7.62)
-s.pin_label(K, "21", 55, 330, 0, "LPF_B7_OUT", "passive", d=12.7)
-for p in ("12", "22", "14", "24"):
-    s.pin_label(K, p, 55, 330, 0, "PA_LPF_OUT", "passive", d=7.62)
-s.pin_label(K, "A1", 55, 330, 0, "+12V", "input", d=17.78)
-s.pin_label(K, "A2", 55, 330, 0, "KL7_LO", "passive", d=22.86)
+# Yedinci pozisyon artik 60 m filtresi; bypass kaldirildi.
 
 s.text("DEGERLER — 5. derece Chebyshev 0.1 dB, C-L-C-L-C\\n"
        "g = 1.1468 / 1.3712 / 1.9750 / 1.3712 / 1.1468\\n"
