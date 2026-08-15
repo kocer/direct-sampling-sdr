@@ -18,13 +18,50 @@ s = Sheet("03_filter", "Filtre bankasi", UU["03_filter"],
           "7 pozisyon x 4 kanal, G6KU kilitlenen role", paper="A1")
 
 # filtre_hesap.py ciktisi. (ad, L nH, Crez pF, Ckuplaj pF, Cuc pF, bobin tipi)
+# YENI TOPOLOJI: MERDIVEN BANT GECIREN, TEPEDEN KUPLAJLI DEGIL.
+#
+# Eskisi uc rezonatorlu tepeden kuplajliydi ve OLCULDU (filtre_sim.py,
+# ngspice): alti bandin da tepesi gecirmesi gereken bandin ALTINDAYDI
+# ve bandin kendisi 24-41 dB bastirilmisti. Alici her bantta sagirdi.
+#
+# Sebep: kuplaj kondansatorleri (Ck, Cu) rezonatore PARALEL binip
+# frekansi asagi cekiyor ve tasarim bunu telafi etmemis. 160m'de elle
+# dogrulandi: 430 + 270 + 62 = 762 pF, 16 uH ile 1.44 MHz — simulasyon
+# tepeyi tam orada buluyor, bant ise 1.8-2.0 MHz.
+#
+# Tepeden kuplajli yapi DAR bant icindir. Bu kartin pozisyonlari cok
+# bantli: 80+60 m icin 3.5-5.4 MHz, yani %44 oransal bant genisligi.
+# O genislikte dogru yapi merdiven:
+#
+#     F_A --+-- Ls --- Cs --+-- F_B
+#           |               |
+#         Lp||Cp          Lp||Cp
+#           |               |
+#          GND             GND
+#
+# Alcak geciren prototipten donusum, 3 kutup Chebyshev 0.1 dB.
+# Sentez ve dogrulama: filtre_tasarim.py (ngspice, bobin Q'su dahil,
+# degerler E12'ye oturtulmus halde dogrulanmis).
+#
+# OLCULEN SONUC (E12 degerleriyle, ekleme kaybi / en kotu bant kenari):
+#     160m    0.35 dB / -0.68 dB      eskisi: -34 dB
+#     80_60m  0.14    / -0.45         eskisi: -25
+#     40_30m  0.26    / -0.92         eskisi: -27
+#     20_17m  0.83    / -1.04         eskisi: -32
+#     15_10m  0.71    / -1.00         eskisi: -28
+#     6m      1.72    / -2.37         eskisi: -41
+#
+# Parca sayisi da dustu: bolum basina 3 bobin + 7 kondansator yerine
+# 3 bobin + 3 kondansator.
+#
+# (ad, Lp nH, Cp pF, Ls nH, Cs pF, bobin tipi)
 BANTLAR = [
-    ("160m",   16000, 430, 62,  270, "toroid"),
-    ("80_60m",  7500, 180, 82,  390, "smd"),
-    ("40_30m",  3900,  91, 33,  160, "smd"),
-    ("20_17m",  2000,  51, 13,   56, "smd"),
-    ("15_10m",  1300,  30, 10,   47, "smd"),
-    ("6m",       620,  15, 1.3, 5.6, "toroid"),
+    ("160m",   1000, 6800, 18000, 390, "toroid"),
+    ("80_60m", 1000, 1200,  3300, 390, "toroid"),
+    ("40_30m",  470,  680,  2200, 180, "toroid"),
+    ("20_17m",  220,  470,  1500,  68, "smd"),
+    ("15_10m",  150,  270,   680,  56, "smd"),
+    ("6m",       33,  270,   820,  12, "smd"),
 ]
 
 nr = [0]
@@ -46,7 +83,7 @@ def bolum(ch, bant, x, y, idx):
     COM1 girise, COM2 cikisa; N1B/N2B filtreye, N1A/N2A bir sonraki
     bolume (zincir) gidiyor.
     """
-    ad, Ln, Cr, Ck, Cu, tip = bant
+    ad, Lp, Cp, Ls, Cs, tip = bant
     net_in = f"RX{ch}_B{idx}_IN"
     net_out = f"RX{ch}_B{idx}_OUT"
     nxt_in = f"RX{ch}_B{idx + 1}_IN"
@@ -63,32 +100,35 @@ def bolum(ch, bant, x, y, idx):
     s.pin_label(K, "1", x, y, 0, f"K{ch}{idx}_S", "input", d=17.78)
     s.pin_label(K, "8", x, y, 0, f"K{ch}{idx}_R", "input", d=22.86)
 
-    # ---- uc rezonatorlu tepeden kuplajli bant geciren
+    # ---- merdiven bant geciren: sont LC / seri LC / sont LC
     fx = x + 55
     fl = FLT if tip == "toroid" else FL
-    # uc kondansatorleri
-    s.sym(C, cnt("C"), deger(Cu, "pF"), fx, y, rot=90, fp=FC)
-    s.pin_label(C, "1", fx, y, 90, f"F{ch}{idx}_A", "passive")
-    s.pin_label(C, "2", fx, y, 90, f"N{ch}{idx}_1", "passive")
-    s.sym(C, cnt("C"), deger(Cu, "pF"), fx + 100, y, rot=90, fp=FC)
-    s.pin_label(C, "1", fx + 100, y, 90, f"N{ch}{idx}_3", "passive")
-    s.pin_label(C, "2", fx + 100, y, 90, f"F{ch}{idx}_B", "passive")
-    # kuplaj kondansatorleri
-    for j in (1, 2):
-        s.sym(C, cnt("C"), deger(Ck, "pF"), fx + 25 + (j - 1) * 50, y, rot=90, fp=FC)
-        s.pin_label(C, "1", fx + 25 + (j - 1) * 50, y, 90, f"N{ch}{idx}_{j}", "passive")
-        s.pin_label(C, "2", fx + 25 + (j - 1) * 50, y, 90, f"N{ch}{idx}_{j + 1}", "passive")
-    # uc rezonator: L ve C paralel, topraga
-    for j in (1, 2, 3):
-        rx = fx + 12 + (j - 1) * 50
-        s.sym(L, cnt("L"), deger(Ln / 1000 if Ln >= 1000 else Ln,
-                                 "uH" if Ln >= 1000 else "nH"),
-              rx, y + 20, rot=90, fp=fl)
-        s.pin_label(L, "1", rx, y + 20, 90, f"N{ch}{idx}_{j}", "passive")
-        s.pin_power(L, "2", rx, y + 20, 90, "GND")
-        s.sym(C, cnt("C"), deger(Cr, "pF"), rx + 20, y + 20, rot=90, fp=FC)
-        s.pin_label(C, "1", rx + 20, y + 20, 90, f"N{ch}{idx}_{j}", "passive")
-        s.pin_power(C, "2", rx + 20, y + 20, 90, "GND")
+
+    def rezonator(px, dugum):
+        """Bir sont rezonator: Lp ve Cp paralel, topraga."""
+        s.sym(L, cnt("L"), deger(Lp / 1000 if Lp >= 1000 else Lp,
+                                 "uH" if Lp >= 1000 else "nH"),
+              px, y + 20, rot=90, fp=fl)
+        s.pin_label(L, "1", px, y + 20, 90, dugum, "passive")
+        s.pin_power(L, "2", px, y + 20, 90, "GND")
+        s.sym(C, cnt("C"), deger(Cp, "pF"), px + 20, y + 20, rot=90, fp=FC)
+        s.pin_label(C, "1", px + 20, y + 20, 90, dugum, "passive")
+        s.pin_power(C, "2", px + 20, y + 20, 90, "GND")
+
+    a = f"F{ch}{idx}_A"
+    b = f"F{ch}{idx}_B"
+    orta = f"N{ch}{idx}_S"
+    rezonator(fx, a)
+    rezonator(fx + 90, b)
+    # seri kol: Ls ve Cs seri, iki dugum arasinda
+    s.sym(L, cnt("L"), deger(Ls / 1000 if Ls >= 1000 else Ls,
+                             "uH" if Ls >= 1000 else "nH"),
+          fx + 45, y, rot=0, fp=fl)
+    s.pin_label(L, "1", fx + 45, y, 0, a, "passive")
+    s.pin_label(L, "2", fx + 45, y, 0, orta, "passive")
+    s.sym(C, cnt("C"), deger(Cs, "pF"), fx + 65, y, rot=0, fp=FC)
+    s.pin_label(C, "1", fx + 65, y, 0, orta, "passive")
+    s.pin_label(C, "2", fx + 65, y, 0, b, "passive")
 
 
 s.text("BANT FILTRESI BANKASI — 7 pozisyon x 4 kanal", 16, 14, 2.2)

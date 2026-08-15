@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "d4e10310-46de-48ef-ba90-ef178d2f8d0d")
+	(uuid "65f9a5cf-d4e4-4a4a-8842-172571411ddf")
 	(paper "A3")
 	(title_block
 		(title "dogrudan_sdr_C — dogrudan orneklemeli HF/VHF/UHF transceiver")
@@ -27,7 +27,7 @@
 		(fill
 			(color 0 0 0 0)
 		)
-		(uuid "7c6d1da8-72fc-4eed-a866-10a6efdc482d")
+		(uuid "3f556ea3-58e5-49ba-a304-da4f1cc9bf11")
 		(property "Sheetname" "Zayiflaticilar"
 			(at 150 69.3 0)
 			(show_name no)
@@ -52,100 +52,8 @@
 		)
 		(instances
 			(project "dogrudan_sdr_C"
-				(path "/d4e10310-46de-48ef-ba90-ef178d2f8d0d"
+				(path "/65f9a5cf-d4e4-4a4a-8842-172571411ddf"
 					(page "5")
-				)
-			)
-		)
-	)
-	(sheet
-		(at 150 110)
-		(size 90 26)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0)
-		)
-		(uuid "7eb7a4e8-acb7-4eb2-a745-4eb09895ca02")
-		(property "Sheetname" "Kart arasi"
-			(at 150 109.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "06_iface.kicad_sch"
-			(at 150 136.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "dogrudan_sdr_C"
-				(path "/d4e10310-46de-48ef-ba90-ef178d2f8d0d"
-					(page "7")
-				)
-			)
-		)
-	)
-	(sheet
-		(at 30 70)
-		(size 90 26)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0)
-		)
-		(uuid "ba6f66ee-04d4-4ae8-886d-d5f295c73971")
-		(property "Sheetname" "Filtre bankasi"
-			(at 30 69.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "03_filter.kicad_sch"
-			(at 30 96.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "dogrudan_sdr_C"
-				(path "/d4e10310-46de-48ef-ba90-ef178d2f8d0d"
-					(page "4")
 				)
 			)
 		)
@@ -165,7 +73,7 @@
 		(fill
 			(color 0 0 0 0)
 		)
-		(uuid "bf2b33fd-2a30-4aa2-8cf8-2f0c33f169ca")
+		(uuid "532f8150-6075-42ad-8823-be40d611f789")
 		(property "Sheetname" "Koruma + T/R"
 			(at 150 29.3 0)
 			(show_name no)
@@ -190,54 +98,8 @@
 		)
 		(instances
 			(project "dogrudan_sdr_C"
-				(path "/d4e10310-46de-48ef-ba90-ef178d2f8d0d"
+				(path "/65f9a5cf-d4e4-4a4a-8842-172571411ddf"
 					(page "3")
-				)
-			)
-		)
-	)
-	(sheet
-		(at 30 110)
-		(size 90 26)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0)
-		)
-		(uuid "edb1de75-c422-45c9-ae40-009c99786d9d")
-		(property "Sheetname" "Role surucu"
-			(at 30 109.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "05_driver.kicad_sch"
-			(at 30 136.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "dogrudan_sdr_C"
-				(path "/d4e10310-46de-48ef-ba90-ef178d2f8d0d"
-					(page "6")
 				)
 			)
 		)
@@ -257,7 +119,7 @@
 		(fill
 			(color 0 0 0 0)
 		)
-		(uuid "fd415aa1-50dd-4474-a507-ea0cefc03406")
+		(uuid "7af0f1ee-4f6b-4aaf-ac3f-d5da3ce80a6f")
 		(property "Sheetname" "Guc"
 			(at 30 29.3 0)
 			(show_name no)
@@ -282,8 +144,146 @@
 		)
 		(instances
 			(project "dogrudan_sdr_C"
-				(path "/d4e10310-46de-48ef-ba90-ef178d2f8d0d"
+				(path "/65f9a5cf-d4e4-4a4a-8842-172571411ddf"
 					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 30 110)
+		(size 90 26)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "b54b574a-8464-4191-8b8c-c58649bd88f2")
+		(property "Sheetname" "Role surucu"
+			(at 30 109.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "05_driver.kicad_sch"
+			(at 30 136.9 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "dogrudan_sdr_C"
+				(path "/65f9a5cf-d4e4-4a4a-8842-172571411ddf"
+					(page "6")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 30 70)
+		(size 90 26)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "d8a6e96b-031d-4423-bb1c-b9dcb0d39cfe")
+		(property "Sheetname" "Filtre bankasi"
+			(at 30 69.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "03_filter.kicad_sch"
+			(at 30 96.9 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "dogrudan_sdr_C"
+				(path "/65f9a5cf-d4e4-4a4a-8842-172571411ddf"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 150 110)
+		(size 90 26)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "e85cb4ad-3924-4c23-af32-573820cc3a2f")
+		(property "Sheetname" "Kart arasi"
+			(at 150 109.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "06_iface.kicad_sch"
+			(at 150 136.9 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "dogrudan_sdr_C"
+				(path "/65f9a5cf-d4e4-4a4a-8842-172571411ddf"
+					(page "7")
 				)
 			)
 		)
