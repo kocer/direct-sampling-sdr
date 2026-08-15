@@ -164,12 +164,41 @@ limit. Above 100 MHz the clock jitter becomes the limit.
 | Intermodulation distortion | — | TARGET — not verified |
 | Efficiency | — | TARGET — not verified |
 | Drive level for 100 W | +22.4 dBm | calculated, `kazanc_butcesi.py` |
+| Required heatsink | ≤ 0.24 °C/W, forced air | calculated, `termal_hesap.py` |
+| Device mounting | AlN ceramic pad, insulated | required — see below |
+| Temperature rise inside device | 55 °C at 58.3 W | calculated, `termal_hesap.py` |
 | Driver chain maximum | +39.0 dBm | calculated, `kazanc_butcesi.py` |
 | Gate swing for full output | 0.42 V peak per arm | calculated, `kazanc_butcesi.py` |
 | Drain voltage swing for 100 W | 29.9 V peak (50 V supply) | calculated |
 | Bias servo crossover frequency | 25.7 Hz | simulated (ngspice), `bias_sim.py` |
 | Bias servo phase margin | 90° | simulated (ngspice), `bias_sim.py` |
 | Bias settling time to 5% | 106 ms | simulated (ngspice), `bias_sim.py` |
+
+**Cooling.** Class A gives the most linear operating point, but it makes
+heat. At 100 W output the DC input is 333 W. The difference, 233 W, is
+heat. Each device dissipates 58.3 W.
+
+Do not mount the devices directly on the heatsink. The tab of the
+TO-247 package is the drain. This is a push-pull stage, and the two arms
+have different drain voltages. Direct mounting short-circuits the output
+transformer primary. Use an insulated pad.
+
+The insulation costs temperature. With an AlN ceramic pad the device
+drops 55 °C internally, at 58.3 W. A heatsink cannot correct this drop.
+Even with a perfect heatsink, the junction is 55 °C above the heatsink
+surface.
+
+The first two thermal steps see the power of ONE device. The
+heatsink-to-air step sees the TOTAL power. Do not confuse these.
+
+For a 40 °C ambient and a 150 °C junction limit, the heatsink must be
+0.24 °C/W or better. Forced air is necessary. Natural convection cannot
+remove this power.
+
+A fan failure is a hazard. The board measures the flange temperature
+with a TMP235. It reduces power at 85 °C and cuts at 100 °C. This
+measures the correct quantity: not that the fan turns, but that the heat
+leaves.
 
 **Bias servo.** Each final device has its own closed-loop bias servo. A
 0.01 Ω resistor senses the source current. An INA240A1 amplifies it 20
