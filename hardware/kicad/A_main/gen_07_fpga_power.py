@@ -76,9 +76,28 @@ for num in sorted(n for n, nm in U1.items() if nm.startswith("VCCAUX")):
 
 # toplu ayristirma
 s.text("TOPLU AYRISTIRMA", 20, 152, 1.6)
+# +1V8 VE +1V8_D RAYLARINDA YIGIN KONDANSATORU YOKTU.
+#
+# pdn_sim.py ile olculdu. Ayirma kondansatorlerini SAYMAK yetmiyor;
+# onemli olan cipin rayda gordugu empedansin frekansa gore ne oldugu.
+# Iki ray da sadece 100nF'ler ve tek bir 1uF ile duruyordu:
+#
+#     regulatorun kapali cevrimi  ~100 kHz'e kadar tutuyor
+#     seramikler                  ~1 MHz'in ustunde tutuyor
+#     ARASI ACIKTA
+#
+# +1V8 icin tepe empedans 994 mohm cikti, hedef 360 mohm. Bu bulgu
+# gecici akim TAHMININDEN BAGIMSIZ: bir rayda yigin kondansatorunun
+# hic olmamasi tahmine gore degismiyor.
+#
+# +1V1 de sinirdaydi (228 mohm, hedef 183) — ust bantta empedansi
+# belirleyen sey montaj enduktansi / adet, o yuzden 100nF sayisi
+# artirildi (asagida).
 for i, (rail, val) in enumerate([("+1V1", "47uF"), ("+1V1", "10uF"),
                                  ("+1V1", "10uF"), ("+2V5", "10uF"),
-                                 ("+3V3", "47uF"), ("+3V3", "10uF")]):
+                                 ("+3V3", "47uF"), ("+3V3", "10uF"),
+                                 ("+1V8", "22uF"), ("+1V8", "10uF"),
+                                 ("+1V8_D", "10uF")]):
     decap(22 + i * 16, 172, rail, val)
 
 # ---- pin basina ayristirma, ARTIK CIZILI
@@ -86,10 +105,15 @@ for i, (rail, val) in enumerate([("+1V1", "47uF"), ("+1V1", "10uF"),
 # BOM ve dizgi dosyasinda bu parcalar HIC OLMUYOR — kart ayristirmasiz
 # geliyor. 0402, her besleme topunun altina.
 s.text("PIN BASINA 100nF — her besleme topu icin bir adet", 20, 176, 1.6)
-s.decaps("+1V1", 6, "100nF", 24, 190, 200)            # VCC x6
+# VCC topu basina bir tane YETMIYOR — ust bantta empedansi belirleyen
+# sey kondansatorun DEGERI degil, montaj enduktansinin adete bolunmus
+# hali. Alti adetle 196 MHz'te 228 mohm cikiyordu, hedef 183 mohm.
+# Ondorde cikarinca tepe hedefin altina iniyor. Sart: her birinin
+# viasi kisa ve dogrudan toprak duzlemine.
+s.decaps("+1V1", 14, "100nF", 24, 190, 200, per_row=7)   # VCC x6, PDN icin 14
 s.decaps("+2V5", 2, "100nF", 24, 212, 210)            # VCCAUX x2
 s.decaps("+3V3", 9, "100nF", 24, 234, 220, per_row=7)            # VCCIO banka 0/1/2/7/8
-s.decaps("+1V8", 4, "100nF", 24, 278, 240)            # VCCIO banka 3/6
+s.decaps("+1V8", 8, "100nF", 24, 278, 240)            # VCCIO banka 3/6
 s.text("6 VCC (+1V1) · 2 VCCAUX (+2V5) · 13 VCCIO (9 x +3V3, 4 x +1V8)\\n"
        "= 21 adet 0402. YERLESIM KURALI: kondansator topun ALTINDA,\\n"
        "viasi dogrudan toprak duzlemine, kondansatorden sonra degil.\\n"

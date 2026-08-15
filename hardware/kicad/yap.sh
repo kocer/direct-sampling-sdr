@@ -75,6 +75,36 @@ if true; then
   # uretilen yerlesim ve saatlerce koşan yonlendirme cope gider.
   python3 temel_denetim.py $K 2>/dev/null | grep -aE "=> KART|UYARI" || true
   python3 temel_denetim.py $K >/dev/null 2>&1 || { echo "HATA: sembol/ayak izi uyusmuyor"; exit 1; }
+
+  # ---- FIZIK KAPISI ----------------------------------------------
+  # Baglanti dogru olabilir ve devre yine calismayabilir. Bu kosular
+  # tam da o katmani olcuyor ve hepsi bu oturumda kart olduren birer
+  # hata buldu:
+  #
+  #   zincir_sim      15/10 m'de 6 m bandindan katlanan sinyal 24 dB
+  #                   altta kaliyordu — alici kendi vericimiz 6 m'de
+  #                   calisirken kor olurdu
+  #   tx_zincir_sim   15/10 m'de DAC imaji tasiyicidan 10 dB GUCLU;
+  #                   verici 100 W'i yanlis frekansa basardi
+  #   lpf_sim         harmonik bastirma yasal sinirin altindaydi
+  #   bias_sim        olcum kolu koparsa integrator gecidi rayina
+  #                   surup dort finali birden oldururdu
+  #   pdn_sim         +1V8 rayinda yigin kondansatoru hic yoktu
+  #   kazanc_butcesi  finallerin gercek surus istegi hic yaziliydi
+  #   termal_hesap    yalitimli montaj butcenin yarisini yiyor
+  #
+  # Kart bazli degil, tasarim bazli kosuyorlar — o yuzden sadece ilk
+  # kartta bir kez.
+  if [ "$K" = "A" ]; then
+    for sim in zincir_sim tx_zincir_sim lpf_sim bias_sim pdn_sim \
+               kazanc_butcesi termal_hesap; do
+      if python3 $sim.py >/dev/null 2>&1; then
+        echo "   $sim: gecti"
+      else
+        echo "HATA: $sim kaldi — python3 kicad/$sim.py ile bak"; exit 1
+      fi
+    done
+  fi
   ozet=$(python3 gercek_yerlesim.py $K 2>/dev/null | grep -a "kritik parca elle")
   if [ -z "$ozet" ]; then
       echo "HATA: yerlesim uygulanmadi"; exit 1
