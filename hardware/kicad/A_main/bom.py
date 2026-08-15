@@ -145,15 +145,16 @@ def main():
             w = csv.writer(fh)
             w.writerow(["Comment", "Designator", "Footprint", "LCSC"])
             for (val, fp), refs in sorted(grup.items()):
-                # CSV OZETLE AYNI ARAMA ZINCIRINI KULLANMALI.
-                # Burada yalniz LCSC ve PASIF tablolarina bakiliyordu;
-                # ekrandaki ozet ise ustune pasif_ara()'yi da
-                # cagiriyor. Sonuc: ozet "BASE" derken CSV ayni satira
-                # "?" yaziyordu. Uc kartta 68 satir boyle: siparise
-                # giden dosya, ekranda temiz gorunen bir BOM'dan
-                # sessizce daha kotu.
-                kod = (LCSC.get(val) or PASIF.get(val)
-                       or pasif_ara(val) or ("?",))[0]
+                # A KARTINDA pasif_ara() YOK — C ve D'de var.
+                # Duzeltmeyi uc bom.py'ye birden uygularken buraya da
+                # pasif_ara() cagrisi girmisti ve NameError veriyordu.
+                # Hata gorunmedi cunku uretim komutunda stderr
+                # /dev/null'a gidiyordu: CSV 78 satir yerine 31
+                # satirda kesildi ve dosya "uretildi" sayildi.
+                # Kesilmis bir BOM ile siparis, eksik parcayla dizgi
+                # demek. Bu kartin arama zinciri LCSC -> PASIF; ozet
+                # de aynisini kullaniyor, yani ikisi zaten tutarli.
+                kod = (LCSC.get(val) or PASIF.get(val) or ("?",))[0]
                 w.writerow([val, ",".join(sorted(refs)), fp, kod])
         print(f"\nyazildi: {path}")
 

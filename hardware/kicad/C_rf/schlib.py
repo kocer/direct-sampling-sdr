@@ -218,8 +218,17 @@ class Sheet:
         # 1'den baslarsa iki sayfada da #PWR01 olusuyor, KiCad bunu
         # cift referans sayip acilista "annotation errors" diyor.
         # Sayfa adinin basindaki iki hane (01_power -> 1) bloguu veriyor.
+        #
+        # BLOK 100 DEGIL 1000. Yuz'luk blokta sayfa basina yalnizca 99
+        # guc sembolu sigiyor ve TASINCA SESSIZCE komsu sayfanin
+        # blogunа giriliyor. C kartinda oldu: 05_driver'a onalti
+        # PWR_FLAG eklendi, sayac 600'u gecti ve #PWR611 hem
+        # 05_driver'daki bir PWR_FLAG hem 06_iface'deki bir GND oldu.
+        # ref_denetim yakaladi; ERC yakalamadi. Bin'lik blokta sayfa
+        # basina 999 sembol var — bu kartlarin en yogun sayfasi
+        # (05_driver) 180 civarinda, yani bes kat pay.
         try:
-            self._pwr = int(name[:2]) * 100
+            self._pwr = int(name[:2]) * 1000
         except ValueError:
             self._pwr = 0
 

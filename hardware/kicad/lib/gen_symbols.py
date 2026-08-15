@@ -106,7 +106,18 @@ def ad9251():
         P.append(pin(n,nm,t,"R",i+1,1))
     for i,n in enumerate(["49","50","53","54","59","60","63","64"]):
         P.append(pin(n,"AVDD","power_in","T",i,1))
-    P.append(pin("0","GND","power_in","B",0,1))     # exposed paddle
+    # ACIK PED "65", "0" DEGIL — VE BU URETEC BIR TUZAKTI.
+    # Sema tarafinda bu hata bir kez duzeltildi, ama duzeltme
+    # dogrudan lib/dogrudan-sdr.kicad_sym'e yazilmisti; URETEC eski
+    # kaldi. Yani gen_symbols.py'yi bir daha kosturan herkes
+    # duzeltmeyi SESSIZCE geri aliyordu (olculdu: yeniden uretim
+    # sonrasi build.sh "KeyError: '65'" ile durdu — bu sefer gurultu
+    # cikardi, ama ped numarasi yanlis bir sembol uretilseydi
+    # hicbir sey demezdi).
+    # KiCad ayak izi (QFN-64-1EP) acik pede "65" diyor; sembolde
+    # "0" yazarsa ped agsiz kaliyor ve ADC'nin toprak referansi
+    # havada kaliyor.
+    P.append(pin("65","GND","power_in","B",0,1))     # exposed paddle
     # --- birim 2: KANAL A dijital
     for i in range(14):
         num = ["27","29","30","31","32","33","34","35","36","38","39","40","41","42"][i]
@@ -130,7 +141,13 @@ def ad9251():
     for i,n in enumerate(["4","5","25","26"]):
         P.append(pin(n,"NC","no_connect","R",i+1,4))
     return build("AD9251","U",
-        "Package_DFN_QFN:QFN-64-1EP_9x9mm_P0.5mm_EP3.8x3.8mm_ThermalVias",
+        # SEMBOLUN VARSAYILAN AYAK IZI GERCEK KULLANIMLA AYNI OLMALI.
+        # Burada EP 3.8 + ThermalVias yaziyordu, gen_03_adc.py ise
+        # EP 4.7 (via'siz) kullaniyor. Sema ornegi varsayilani
+        # eziyor, yani kart DOGRU; ama kutuphaneden bu sembolu alan
+        # bir sonraki kisi yanlis pedi miras aliyor. AD9251 veri
+        # sayfasi CP-64-4: 9x9 mm LFCSP, acik ped nominal 4.7 mm.
+        "Package_DFN_QFN:QFN-64-1EP_9x9mm_P0.5mm_EP4.7x4.7mm",
         "Dual 14-bit 80 MSPS ADC, 1.8V, LFCSP-64","AD9251BCPZ-80",P)
 
 
@@ -234,7 +251,11 @@ def pe4312():
     for i,(n,nm) in enumerate(at): P.append(pin(n,nm,"input","R",i,1))
     P.append(pin("12","VSS_EXT/GND","input","R",7,1))
     for i,n in enumerate(["6","9"]): P.append(pin(n,"VDD","power_in","T",i,1))
-    for i,n in enumerate(["10","11","18","Pad"]):
+    # ACIK PED "21", "Pad" DEGIL — AD9251'inkiyle AYNI TUZAK.
+    # KiCad ayak izi (QFN-20-1EP / TQFN-20-1EP) acik pede "21" diyor.
+    # "Pad" yazildiginda bes PE4312'nin hepsinde ped 21 agsiz kaliyor
+    # ve zayiflaticinin toprak referansi havada kaliyor.
+    for i,n in enumerate(["10","11","18","21"]):
         P.append(pin(n,"GND","power_in","B",i,1))
     return build("PE4312","U",
         "Package_DFN_QFN:TQFN-20-1EP_4x4mm_P0.5mm_EP2.1x2.1mm",

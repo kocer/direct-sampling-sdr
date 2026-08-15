@@ -10,7 +10,7 @@ UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
 X = "dogrudan-sdr:ABLNO-V"
 FX = "dogrudan-sdr:Oscillator_Abracon_ABLNO_4pad_14.3x8.7mm"
 B = "dogrudan-sdr:ADCLK846"
-FB = # TERMAL VIA'LAR KALDIRILDI — OLCULDU, GEREKMIYOR VE ZARARLI.
+# TERMAL VIA'LAR KALDIRILDI — OLCULDU, GEREKMIYOR VE ZARARLI.
 # KiCad'in "_ThermalVias" surumu acik pedin icine DELIKLI (PTH) via
 # koyuyor. Olculen sonuc: bu via'lar ile komsu sinyal pedi arasindaki
 # bosluk 0.283 mm. Yonlendirici DSN sinif kurallarinda guc aglarini
@@ -24,7 +24,7 @@ FB = # TERMAL VIA'LAR KALDIRILDI — OLCULDU, GEREKMIYOR VE ZARARLI.
 # Dokumun ulasamadigi yere kisa toprak sapi gerekirse onu
 # yonlendirmeden SONRA dikis.py ekliyor — sabit izgarali footprint
 # via'sindan daha esnek.
-"Package_DFN_QFN:HVQFN-24-1EP_4x4mm_P0.5mm_EP2.5x2.5mm"
+FB = "Package_DFN_QFN:HVQFN-24-1EP_4x4mm_P0.5mm_EP2.5x2.5mm"
 LV = "Interface:SN65LVDS2DBV"
 FLV = "Package_TO_SOT_SMD:SOT-23-5"
 R, C, L = "Device:R", "Device:C", "Device:L"

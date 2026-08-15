@@ -55,7 +55,11 @@ kos_pnr() {
       grep -E "^ERROR" sentez/pnr.log | head -5 | sed 's/^/   /'
       return 1
   fi
-  grep -E "Max frequency for clock" sentez/pnr.log | tail -4
+  # TAIL -4 BIR SAATI GIZLIYORDU. Ethernet alisi eklenince saat sayisi
+  # dorde degil BESE cikti (clk_eth, adc1_dco, adc2_dco, rgmii_rxc,
+  # clk_sys) ve son dordu almak clk_eth'i listeden dusurdu — yani
+  # 125 MHz'lik VERIS saati raporda hic gorunmuyordu.
+  grep -E "Max frequency for clock" sentez/pnr.log | tail -8
 }
 
 if [ "${1:-}" = "--ara" ]; then
@@ -102,7 +106,11 @@ if tail -4 sentez/pnr.log | grep -q FAIL; then
 fi
 
 echo "== pay"
-grep -E "Max frequency for clock" sentez/pnr.log | tail -4 | \
+# TAIL -4 BIR SAATI GIZLIYORDU. Ethernet alisi eklenince saat sayisi
+  # dorde degil BESE cikti (clk_eth, adc1_dco, adc2_dco, rgmii_rxc,
+  # clk_sys) ve son dordu almak clk_eth'i listeden dusurdu — yani
+  # 125 MHz'lik VERIS saati raporda hic gorunmuyordu.
+  grep -E "Max frequency for clock" sentez/pnr.log | tail -8 | \
   sed -E 's/.*glbnet.([a-z0-9_]+).*: ([0-9.]+) MHz .PASS at ([0-9.]+).*/   \1: \2 MHz (hedef \3)/'
 
 echo "== bitstream"

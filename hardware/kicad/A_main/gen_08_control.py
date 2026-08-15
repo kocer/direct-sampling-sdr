@@ -10,8 +10,12 @@ UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
 E = "dogrudan-sdr:ECP5-BGA256"
 FE = ("Package_BGA:BGA-256_14.0x14.0mm_Layout16x16_P0.8mm_"
       "Ball0.45mm_Pad0.32mm_NSMD")
-A = "dogrudan-sdr:PE4312"
-FA = "Package_DFN_QFN:QFN-20-1EP_4x4mm_P0.5mm_EP2.6x2.6mm_ThermalVias"
+# PE4312 SEMBOLU VE AYAK IZI BURADAN KALKTI — OLU TANIM.
+# A kartinda PE4312 YOK; zayiflaticilar C ve D kartlarinda. Bu
+# sayfa yalnizca onlara giden seri yolu (ATT_DATA/ATT_CLK/LE)
+# tasiyor. Tanim kullanilmiyordu ama "hangi ayak izi nerede"
+# taramasinda yanlis cevap veriyordu: guncel olmayan bir ayak izi
+# adi, guncel gorunen bir dosyada.
 R, C = "Device:R", "Device:C"
 LED = "Device:LED"
 FR = "Resistor_SMD:R_0603_1608Metric"

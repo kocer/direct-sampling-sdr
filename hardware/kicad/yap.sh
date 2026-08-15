@@ -66,6 +66,12 @@ if true; then
       echo "HATA: yerlesim uygulanmadi"; exit 1
   fi
   echo "  $ozet"
+  # FIDUCIAL + TEST NOKTALARI — YERLESIMDEN SONRA, AYIR'DAN ONCE.
+  # pcb_kur karti netlistten yeniden kuruyor, yani bu parcalar her
+  # kosuda yeniden eklenmeli; onceki kosunun ekledikleri dosya
+  # duzeyinde siliniyor. Ayir'dan once cunku kalan bir cakismayi o
+  # temizliyor. Fiducial zaten varsa dokunmuyor.
+  python3 montaj_isaret.py $K 2>/dev/null | grep -aE "eklendi|bulunamadi" || true
   python3 ayir.py $P.kicad_pcb   2>/dev/null | grep -a cakisma || true
   python3 ipek.py $K             >/dev/null 2>&1
   python3 elle_cek.py $P.kicad_pcb 2>/dev/null | grep -aE "^   " || true
