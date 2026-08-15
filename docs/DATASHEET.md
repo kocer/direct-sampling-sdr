@@ -163,6 +163,10 @@ limit. Above 100 MHz the clock jitter becomes the limit.
 | Output filter insertion loss | 0.45 dB to 1.44 dB | simulated (ngspice), `lpf_sim.py` |
 | Intermodulation distortion | — | TARGET — not verified |
 | Efficiency | — | TARGET — not verified |
+| Drive level for 100 W | +22.4 dBm | calculated, `kazanc_butcesi.py` |
+| Driver chain maximum | +39.0 dBm | calculated, `kazanc_butcesi.py` |
+| Gate swing for full output | 0.42 V peak per arm | calculated, `kazanc_butcesi.py` |
+| Drain voltage swing for 100 W | 29.9 V peak (50 V supply) | calculated |
 | Bias servo crossover frequency | 25.7 Hz | simulated (ngspice), `bias_sim.py` |
 | Bias servo phase margin | 90° | simulated (ngspice), `bias_sim.py` |
 | Bias settling time to 5% | 106 ms | simulated (ngspice), `bias_sim.py` |

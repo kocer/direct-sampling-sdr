@@ -58,13 +58,26 @@ def cnt(p):
     return f"{p}{99 + nr[0]}"
 
 
-s.text("SURUCU KATLARI — +0.5 dBm'den +39 dBm'e", 16, 14, 2.2)
+s.text("SURUCU KATLARI — finaller +22.4 dBm istiyor", 16, 14, 2.2)
 s.text("AD9767 cikisi              +0.5 dBm\\n"
-       "PE4312 zayiflatici        -1.5 .. -15 dB   ince seviye ayari\\n"
+       "PE4312 zayiflatici         0 .. -31.5 dB   seviye ayari\\n"
        "PGA-103+                  +22 dB\\n"
        "IRF530N cifti             +18 dB\\n"
        "                          ---------\\n"
-       "final girisine            +39 dBm (8 W)\\n\\n"
+       "zincirin azamisi          +39 dBm\\n"
+       "FINALLERIN ISTEDIGI       +22.4 dBm      <-- calisma noktasi\\n"
+       "zayiflaticinin isi         16.6 dB\\n\\n"
+       "BURADA ONCE 'final girisine +39 dBm (8 W)' YAZIYORDU ve bu\\n"
+       "finallerin 8 W surus yedigi gibi okunuyordu. Yemiyor:\\n"
+       "kazanc_butcesi.py cihazdan hesapliyor — kol basina gecit\\n"
+       "dugumu 1 ohm bastirma direnci, gereken gecit salinimi 0.42 V\\n"
+       "tepe (kol basina 3.34 A tepe / gm 8 S), harcanan gercek guc\\n"
+       "kol basina 87 mW, iki kol 174 mW = +22.4 dBm.\\n\\n"
+       "16.6 dB'lik fark KUSUR DEGIL, ayar araligi. Ama sarti var:\\n"
+       "zayiflaticinin acilis varsayilani AZAMI ZAYIFLATMA olmak\\n"
+       "zorunda. 0 dB varsayilani kati 17 dB asiri surer, A sinifi\\n"
+       "kat kirpar, ve harmonik filtresi kendisinin bastirmasi\\n"
+       "gereken seyi ureten bir kata baglanmis olur.\\n\\n"
        "ZAYIFLATICI DAC'IN ONUNDE DEGIL, BURADA. DAC tam olcege yakin\\n"
        "calisirsa SFDR'i en iyi; seviyeyi sayisal kismak bit kaybettirir.\\n"
        "Analog tarafta kismak DAC'i tam olcekte tutuyor.", 16, 22, 1.35)
