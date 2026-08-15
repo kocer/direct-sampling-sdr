@@ -607,6 +607,29 @@ def ac_kalanlara_kondansator(fps, pn, kondu, sinir_mm=5.0, kart=None):
     """
     import math
     tasinan = 0
+    # SADECE KUCUK DEGERLI KONDANSATOR AYIRMA SAYILIR.
+    #
+    # Once her kondansatoru sayiyordum. Olculdu: A'da U11'in 5.5 mm
+    # yakininda 10 uF, 16.3 mm'de 47 uF var — ikisi de TOPLU
+    # kondansator. En yakin 100 nF ise 17.0 mm'de. Bu gecis "yakinda
+    # kondansator var" deyip gecti, oysa 10 uF'nin ESR ve ESL'i
+    # yuksek frekansta ayirma yapmiyor; besleme bacaginin ihtiyaci
+    # olan seyi vermiyor.
+    #
+    # Sinir 1 uF: X7R 0402/0603'te 100 nF ve 1 uF ayirma, 10 uF ve
+    # ustu toplu. sema_denetim ayni ayrimi yapiyor (AYIRMA_UST).
+    def _kucuk(ref):
+        v = fps[ref].GetValue().strip().lower().replace(" ", "")
+        m = re.match(r"([\d.]+)\s*([pnu\u00b5m]?)f?", v)
+        if not m:
+            return False
+        try:
+            x = float(m.group(1))
+        except ValueError:
+            return False
+        carp = {"p": 1e-6, "n": 1e-3, "u": 1.0, "\u00b5": 1.0, "m": 1e3, "": 1.0}
+        return x * carp.get(m.group(2), 1.0) <= 1.0        # uF
+
     # ray -> kondansator listesi
     ray_kond = {}
     for ref in sorted(fps):
@@ -617,7 +640,7 @@ def ac_kalanlara_kondansator(fps, pn, kondu, sinir_mm=5.0, kart=None):
         if "GND" not in aglar:
             continue
         ray = next((a for a in aglar if a != "GND"), None)
-        if ray and ray.startswith("+"):
+        if ray and ray.startswith("+") and _kucuk(ref):
             ray_kond.setdefault(ray, []).append(ref)
 
     def yakin_sayisi(ic_ref, ray, disla=None):
@@ -676,7 +699,41 @@ def ac_kalanlara_kondansator(fps, pn, kondu, sinir_mm=5.0, kart=None):
                 continue
             adaylar.sort()
             _, sec = adaylar[0]
-            koy(fps, sec, hp.x / MM + 2.4, hp.y / MM + 2.4, 0, kondu)
+            # BOS YER ARA, SABIT OFSET KOYMA.
+            # Once bacagin +2.4/+2.4 kosesine koyuyordum. O nokta
+            # doluysa parca uzerine biniyor ve ayir.py sonradan onu
+            # uzaga itiyor — yani kondansator yine bacagindan
+            # uzaklasiyor. Olculdu: bu yuzden D'de uc INA240 ve
+            # A'da flash bellek kondansatorsuz kaliyordu.
+            # Bacagin cevresinde halka halka bos nokta ariyoruz;
+            # bulunamazsa dokunmuyoruz (kotu bir yer, hic yerden iyi
+            # degil).
+            import math as _m
+            w, h = olcu(fps[sec])
+            yer = None
+            for yaricap in (2.0, 2.8, 3.6, 4.6, 5.6):
+                for k2 in range(12):
+                    ac = 2 * _m.pi * k2 / 12.0
+                    cx = hp.x / MM + yaricap * _m.cos(ac)
+                    cy = hp.y / MM + yaricap * _m.sin(ac)
+                    cakisti = False
+                    for r2, f2 in fps.items():
+                        if r2 == sec:
+                            continue
+                        o2 = f2.GetPosition()
+                        w2, h2 = olcu(f2)
+                        if abs(o2.x / MM - cx) < (w + w2) / 2 and \
+                           abs(o2.y / MM - cy) < (h + h2) / 2:
+                            cakisti = True
+                            break
+                    if not cakisti:
+                        yer = (cx, cy)
+                        break
+                if yer:
+                    break
+            if yer is None:
+                continue
+            koy(fps, sec, yer[0], yer[1], 0, kondu)
             tasinan += 1
     return tasinan
 

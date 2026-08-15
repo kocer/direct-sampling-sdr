@@ -66,13 +66,15 @@ if true; then
       echo "HATA: yerlesim uygulanmadi"; exit 1
   fi
   echo "  $ozet"
-  # FIDUCIAL + TEST NOKTALARI — YERLESIMDEN SONRA, AYIR'DAN ONCE.
-  # pcb_kur karti netlistten yeniden kuruyor, yani bu parcalar her
-  # kosuda yeniden eklenmeli; onceki kosunun ekledikleri dosya
-  # duzeyinde siliniyor. Ayir'dan once cunku kalan bir cakismayi o
-  # temizliyor. Fiducial zaten varsa dokunmuyor.
-  python3 montaj_isaret.py $K 2>/dev/null | grep -aE "eklendi|bulunamadi" || true
   python3 ayir.py $P.kicad_pcb   2>/dev/null | grep -a cakisma || true
+  # FIDUCIAL + TEST NOKTALARI — AYIR'DAN SONRA.
+  # Once ayir'dan ONCE kosuyordu ve bedeli olculdu: test noktalari
+  # cakisma uretiyor, ayir onlari cozerken AYIRMA KONDANSATORLERINI
+  # itiyor ve kondansatorler bacaklarindan uzaklasiyor. D kartinda
+  # uc INA240 ve A'da flash bellek boyle kondansatorsuz kaliyordu.
+  # Bu arac zaten kendi bos yer aramasini yapiyor, ayir'a ihtiyaci
+  # yok. pcb_kur karti yeniden kurdugu icin her kosuda cagriliyor.
+  python3 montaj_isaret.py $K 2>/dev/null | grep -aE "eklendi|bulunamadi" || true
   python3 ipek.py $K             >/dev/null 2>&1
   python3 elle_cek.py $P.kicad_pcb 2>/dev/null | grep -aE "^   " || true
   # AGSIZ PED DENETIMI — DSN'DEN ONCE, VE ZINCIRI DURDURUR.

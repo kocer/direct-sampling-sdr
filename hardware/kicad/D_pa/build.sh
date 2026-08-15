@@ -28,6 +28,13 @@ for f in *.kicad_sch; do
 done
 echo "   $(ls -1 *.kicad_sch | wc -l) dosya"
 
+# BOM'U ZINCIR URETSIN.
+# BOM_*.csv elle uretilmis dosyalardi ve build.sh onlara hic
+# dokunmuyordu. Semaya bes kondansator eklendikten sonra BOM
+# degismedi; ARDC paketine de o bayat hali girdi. Bir BOM'un
+# semayla tutmamasi, uretimde yanlis parca siparisi demek.
+echo "== BOM =="
+python3 bom.py csv 2>/dev/null | tail -1
 echo "== ERC =="
 kicad-cli sch erc dogrudan_sdr_D.kicad_sch -o /tmp/erc.rpt 2>&1 | grep -E "Found|violation" || true
 grep -oP '\[.*?\]:' /tmp/erc.rpt 2>/dev/null | sort | uniq -c | sort -rn | sed 's/^/   /' || true
