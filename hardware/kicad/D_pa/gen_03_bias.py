@@ -15,6 +15,8 @@ UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
 
 INA = "dogrudan-sdr:INA240A1"
 FINA = "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+QN = "Transistor_FET:Q_NMOS_GDS"
+FQN = "Package_TO_SOT_SMD:SOT-23"
 OPA = "Amplifier_Operational:LM358"
 FOPA = "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
 DAC = "Analog_DAC:MCP4922"
@@ -142,6 +144,43 @@ def servo(n, x, y):
     s.pin_label(C, "1", x + 118, y + 22, 90, f"IFB{n}", "passive")
     s.pin_label(C, "2", x + 118, y + 22, 90, f"VG{n}", "passive")
 
+    # ---------------------------------------------------------------
+    # BIAS KESMESI — TEK ARIZA YIKIM YOLUNU KAPATIYOR.
+    #
+    # bias_sim.py ile olculdu. Integrator "olculen akim hedefe esit
+    # olana kadar gecidi yukselt" diyor. Olcum kolu KOPARSA — direnc
+    # acilirsa, INA240 beslemesiz kalirsa, +5V rayi +12V'den sonra
+    # gelirse — olculen akim SIFIR gorunur, hata hicbir zaman
+    # kapanmaz ve integrator gecidi rayina surer:
+    #
+    #     gecit 10.4 V'a variyor, 285 ms
+    #     cihaz basina 57.6 A, 2878 W
+    #     IRFP250N surekli guc siniri 214 W
+    #
+    # Dort final birden gider. ZENER KELEPCE COZMUYOR: gm 8 S, yani
+    # esigin 1 V ustu zaten 8 A demek; guvenli bir kelepce gerilimi
+    # calisma noktasindan ayirt edilemeyecek kadar yakin olurdu.
+    #
+    # KART BU SARTI ZATEN GORUYOR ama yanlis seye basiyor: 06_power'da
+    # "Idq kurulan degerden %20 sapti -> bias servosu bozuk, kes"
+    # yaziyor ve FPGA bunu okuyor. Ne var ki PA_INHIBIT sadece
+    # SURUCUYU kesiyor (PGA-103+ beslemesi). A sinifi bir katta
+    # olduren sey surus degil, dinlenme akimidir; surusu kesmek bu
+    # arizada hicbir sey yapmiyor.
+    #
+    # DUZELTME: kesme, integrator KONDANSATORUNU kisa devre yapiyor.
+    # Sadece gecidi asagi cekmek YETMEZDI — integrator rayda dolu
+    # kalir ve ariza gecince gecit bir anda 10.5 V'a sicrardi, yani
+    # duzeltmenin kendisi bir tuzak olurdu. Kondansator kisa
+    # devreyken opamp VSET'i takip ediyor ve VG = 0.33 V'ta duruyor;
+    # esik 3.2 V, cihaz kapali.
+    #
+    # bias_sim ile dogrulandi: ariza sonrasi tepe akim 0.00 A.
+    s.sym(QN, f"QK{n}", "2N7002", x + 205, y + 0, fp=FQN)
+    s.pin_label(QN, "1", x + 205, y + 0, 0, "BIAS_KILL", "input", d=5.08)
+    s.pin_label(QN, "2", x + 205, y + 0, 0, f"VG{n}", "passive", d=10.16)
+    s.pin_label(QN, "3", x + 205, y + 0, 0, f"IFB{n}", "passive", d=15.24)
+
     # gecit surme: seri direnc + asagi cekme (guvenli varsayilan)
     s.sym(R, cnt("R"), "100R", x + 150, y, rot=90, fp=FR)
     s.pin_label(R, "1", x + 150, y, 90, f"VG{n}", "passive")
@@ -153,6 +192,33 @@ def servo(n, x, y):
 
 for i in range(4):
     servo(i + 1, 40, 265 + i * 40)
+
+# ------------------------------------------------- BIAS_KILL ureteci
+#
+# BIAS_KILL = PA_INHIBIT'in TERSI. PA_INHIBIT adina ragmen bir ETKIN
+# hattidir: yuksekken surucu etkin (06_power, Q31 ve 100k asagi cekme).
+# Bias kesmesinin PA_INHIBIT DUSUKKEN calismasi gerekiyor, o yuzden
+# arada bir eviren var.
+#
+# ENERJISIZ DURUM GUVENLI: +5V yokken BIAS_KILL sifir, kesme
+# MOSFET'leri kapali — ama o zaman gecitlerdeki 10k asagi cekme zaten
+# gecitleri toprakta tutuyor. Tehlikeli durum kartin ENERJILI ve
+# servonun bozuk oldugu durum, ve orada FPGA PA_INHIBIT'i dusuruyor.
+s.text("BIAS KESMESI", 340, 425, 1.8)
+s.sym(QN, "Q40", "2N7002", 380, 455, fp=FQN)
+s.pin_label(QN, "1", 380, 455, 0, "PA_INHIBIT", "input", d=7.62)
+s.pin_label(QN, "2", 380, 455, 0, "BIAS_KILL", "output", d=7.62)
+s.pin_power(QN, "3", 380, 455, 0, "GND", d=12.7)
+s.sym(R, "R470", "10k", 420, 455, rot=90, fp=FR)
+s.pin_label(R, "1", 420, 455, 90, "BIAS_KILL", "passive")
+s.pin_label(R, "2", 420, 455, 90, "+5V", "input")
+s.text("Kesme integrator KONDANSATORUNU kisa devre yapiyor, gecidi\n"
+       "asagi cekmiyor. Fark onemli: sadece gecidi ceksek integrator\n"
+       "rayda dolu kalir ve ariza gecince gecit 10.5 V'a sicrardi.\n\n"
+       "Kondansator kisali opamp VSET'i takip ediyor, VG = 0.33 V,\n"
+       "esik 3.2 V — cihaz kapali. bias_sim.py ile olculdu: arizasiz\n"
+       "halde 106 ms'te hedefe oturuyor, faz payi 90 derece; olcum\n"
+       "kolu koparsa kesmesiz 2878 W, kesmeyle 0 W.", 340, 475, 1.3)
 
 # ------------------------------------------------- LM358 besleme ayirma
 # +12V AYIRMA — YOKTU, VE EN YAKIN KONDANSATOR 227 mm OTEDEYDI.

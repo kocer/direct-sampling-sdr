@@ -163,6 +163,41 @@ limit. Above 100 MHz the clock jitter becomes the limit.
 | Output filter insertion loss | 0.45 dB to 1.44 dB | simulated (ngspice), `lpf_sim.py` |
 | Intermodulation distortion | — | TARGET — not verified |
 | Efficiency | — | TARGET — not verified |
+| Bias servo crossover frequency | 25.7 Hz | simulated (ngspice), `bias_sim.py` |
+| Bias servo phase margin | 90° | simulated (ngspice), `bias_sim.py` |
+| Bias settling time to 5% | 106 ms | simulated (ngspice), `bias_sim.py` |
+
+**Bias servo.** Each final device has its own closed-loop bias servo. A
+0.01 Ω resistor senses the source current. An INA240A1 amplifies it 20
+times. An LM358 integrator drives the gate. Separate servos are
+necessary: paralleled MOSFETs have different threshold voltages, and
+one device can take most of the current.
+
+The loop is stable. The crossover is at 25.7 Hz and the phase margin is
+90°. The bias reaches the set value in 106 ms.
+
+The measurement arm is a single point of failure. If it opens, the
+measured current reads zero. The integrator cannot then correct the
+error. It drives the gate to the supply rail. Simulation gives 10.4 V
+at the gate after 285 ms. That is 57.6 A and 2878 W in each device. The
+continuous limit of the IRFP250N is 214 W.
+
+A gate clamp does not solve this. The transconductance is 8 S, so 1 V
+above the threshold already gives 8 A. A safe clamp voltage would be
+too near the operating point.
+
+The board detects the condition already: the FPGA compares the measured
+current with the set value. But `PA_INHIBIT` removes only the driver
+supply. In a class-A stage the quiescent current does the damage, not
+the drive.
+
+The fix is `BIAS_KILL`. It short-circuits the integrator capacitor. The
+op-amp then follows the set voltage and the gate stays at 0.33 V. The
+threshold is 3.2 V, so the device stays off. A pull-down on the gate
+alone is not sufficient: the integrator would stay charged at the rail,
+and the gate would jump to 10.5 V when the fault clears.
+
+Simulation gives 0.00 A peak current after the fault with `BIAS_KILL`.
 
 #### 4.3.1 Transmit envelope
 

@@ -22,6 +22,7 @@ En az 500 V, C0G/mika. Uygun aileler: Cornell Dubilier CD15/CD19
 | 13pF | 1 | gumus mika / RF porselen |
 | 1500pF | 1 | gumus mika / RF porselen |
 | 150pF | 1 | gumus mika / RF porselen |
+| 15pF | 1 | gumus mika / RF porselen |
 | 1600pF | 2 | gumus mika / RF porselen |
 | 160pF | 3 | gumus mika / RF porselen |
 | 180pF | 1 | gumus mika / RF porselen |
