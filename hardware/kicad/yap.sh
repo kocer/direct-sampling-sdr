@@ -96,6 +96,13 @@ if true; then
   # Yerlesimin icinde, ayir'dan once kosuyordu ve ayir onlari
   # bacaklarindan uzaga itiyordu (olculdu: 4.7 mm -> 17.9 mm).
   python3 gercek_yerlesim.py --ayirma $K 2>/dev/null | grep -a cekildi || true
+  # AYIRMA GECISINDEN SONRA KISA BIR AYIRMA TURU DAHA.
+  # Kondansatorleri bacaklarina cekerken bos yer aramasi bazilarini
+  # buyuk parcalarin (LPF toroidleri) courtyard'ina sokuyor. Ikinci
+  # tur onlari birkac milimetre itiyor — ilk turdaki gibi yirmi
+  # milimetre otelemiyor, cunku artik cozulecek cakisma az.
+  python3 ayir.py $P.kicad_pcb 2>&1 | grep -a cakisma
+  [ ${PIPESTATUS[0]} -eq 0 ] || { echo "HATA: ikinci ayir cokti"; exit 1; }
   python3 ipek.py $K             >/dev/null 2>&1
   python3 elle_cek.py $P.kicad_pcb 2>/dev/null | grep -aE "^   " || true
   # AGSIZ PED DENETIMI — DSN'DEN ONCE, VE ZINCIRI DURDURUR.

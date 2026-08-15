@@ -1568,7 +1568,14 @@ def yerlesim_D(fps, pn, kondu):
     bant_x = {}
     imlec = 4.0
     for i in range(1, 8):
-        w = sum(cap(r) for r in bant_bobinleri(i) if r in fps)
+        # BANT GENISLIGI = EN GENIS CEKIRDEK, TOPLAM DEGIL.
+        # Bobinler artik yan yana degil DIKEY istifleniyor. Yan yana
+        # dizilince yedi bant 285.6 mm istiyordu (4xT94 + 4xT68 +
+        # 4xT50 alti bant icin 229.6'ydi, yedinci bant eklenince
+        # tasti) ve kartin kullanilabilir genisligi ~236 mm. D'de
+        # kalan 28 courtyard cakismasinin sebebi buydu — yer
+        # yetmiyordu, ayirici de yoktan yer uretemez.
+        w = max([cap(r) for r in bant_bobinleri(i) if r in fps] or [14.0])
         # Bypass bandinin (bobinsiz) genisligi rolenin kendisi
         # kadar: G2RL-2 govdesi 13.1 mm.
         w = max(w, 14.0)
@@ -1597,8 +1604,11 @@ def yerlesim_D(fps, pn, kondu):
         # Bobinler bandin icinde KENDI capina gore diziliyor: imlec
         # her bobinin yarim capi kadar ilerliyor. Sabit 13 mm adim
         # T94'te ic ice geciyordu.
-        bimlec = bx - (sum(cap(r) for r in bobin)
-                       + 0.5 * max(0, len(bobin) - 1)) / 2
+        # DIKEY ISTIF: imlec y ekseninde ilerliyor, x sabit (bx).
+        # Blok 99'da ortalanıyor; iki T94 (25 mm) 50.5 mm tutuyor,
+        # yani 73.7..124.2 arasi. Role 130'da, yani degmiyorlar.
+        yuk = sum(cap(r) for r in bobin) + 0.5 * max(0, len(bobin) - 1)
+        bimlec = 99 - yuk / 2
         for r in bobin:
             w = cap(r)
             # Bobinler arasi 0.5 mm: tam capa esit adimda
@@ -1609,7 +1619,7 @@ def yerlesim_D(fps, pn, kondu):
             # 14.1 mm kaliyordu. Uc mm asagi: T10 alt kenari 89.05,
             # toroid ust kenari 89.69. Filtre kondansatorleri de
             # birlikte iniyor (asagida 111 -> 114).
-            n += koy(fps, r, bimlec + w / 2, 99, baci, kondu)
+            n += koy(fps, r, bx, bimlec + w / 2, baci, kondu)
             bimlec += w + 0.5
         for j, r in enumerate(kond):
             n += koy(fps, r, bx - 8 + j * 8, 114, 90, kondu)

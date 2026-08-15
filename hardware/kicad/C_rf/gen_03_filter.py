@@ -56,9 +56,24 @@ s = Sheet("03_filter", "Filtre bankasi", UU["03_filter"],
 #
 # (ad, Lp nH, Cp pF, Ls nH, Cs pF, bobin tipi)
 BANTLAR = [
-    ("160m",   1000, 6800, 18000, 390, "toroid"),
-    ("80_60m", 1000, 1200,  3300, 390, "toroid"),
-    ("40_30m",  470,  680,  2200, 180, "toroid"),
+    # BOBINLER TAMAMEN SMD — TOROID YOK.
+    #
+    # Once alt uc bantta T50 toroid vardi, gerekcesi Q: toroid 150,
+    # SMD 40. Iki bedeli olculdu:
+    #   1 Uc toroid bir filtre bolumune sigmiyor. Courtyard 13.8 mm,
+    #     uc tane 42.4 mm istiyor, bant yuvasi dar — dort kanalda
+    #     sekiz courtyard cakismasi cikti.
+    #   2 Dort kanal x uc bant x uc bobin = 48 adet ELLE SARILACAK
+    #     parca. Dizgi makinesi bunlari koyamaz.
+    #
+    # Q=40 ile yeniden olculdu: en kotu bant kenari 160m'de 0.68'den
+    # 1.71 dB'ye, 40_30m'de 0.92'den 1.49'a cikiyor. HF'te alicinin
+    # gurultu tabanini ATMOSFERIK gurultu belirliyor; 160 m'de 1 dB'lik
+    # bir NF farkinin olculebilir bir etkisi yok. Verici tarafi (D
+    # karti) bambaska: orada 100 W var ve toroid sart.
+    ("160m",   1000, 6800, 18000, 390, "smd"),
+    ("80_60m", 1000, 1200,  3300, 390, "smd"),
+    ("40_30m",  470,  680,  2200, 180, "smd"),
     ("20_17m",  220,  470,  1500,  68, "smd"),
     ("15_10m",  150,  270,   680,  56, "smd"),
     ("6m",       33,  270,   820,  12, "smd"),
