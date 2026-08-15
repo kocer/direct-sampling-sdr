@@ -75,6 +75,10 @@ if true; then
   # Bu arac zaten kendi bos yer aramasini yapiyor, ayir'a ihtiyaci
   # yok. pcb_kur karti yeniden kurdugu icin her kosuda cagriliyor.
   python3 montaj_isaret.py $K 2>/dev/null | grep -aE "eklendi|bulunamadi" || true
+  # AYIRMA KONDANSATORLERI — AYIR'DAN SONRA.
+  # Yerlesimin icinde, ayir'dan once kosuyordu ve ayir onlari
+  # bacaklarindan uzaga itiyordu (olculdu: 4.7 mm -> 17.9 mm).
+  python3 gercek_yerlesim.py --ayirma $K 2>/dev/null | grep -a cekildi || true
   python3 ipek.py $K             >/dev/null 2>&1
   python3 elle_cek.py $P.kicad_pcb 2>/dev/null | grep -aE "^   " || true
   # AGSIZ PED DENETIMI — DSN'DEN ONCE, VE ZINCIRI DURDURUR.

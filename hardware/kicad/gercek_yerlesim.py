@@ -711,9 +711,18 @@ def ac_kalanlara_kondansator(fps, pn, kondu, sinir_mm=5.0, kart=None):
             import math as _m
             w, h = olcu(fps[sec])
             yer = None
-            for yaricap in (2.0, 2.8, 3.6, 4.6, 5.6):
-                for k2 in range(12):
-                    ac = 2 * _m.pi * k2 / 12.0
+            # ARAMA YARICAPI 5.6 mm'DE BITIYORDU VE VAZGECIYORDU.
+            # Olculdu: D'de +5V uzerindeki on bir kucuk kondansatorun
+            # sadece IKISI besledigi cipin 5 mm yakinindaydi; dokuzu
+            # bosta duruyordu. Sebep kondansator bulunamamasi degil,
+            # bacagin cevresinde BOS YER bulunamamasiydi — akim olcum
+            # yukselteclerinin oldugu serit kalabalik. Yaricap 12 mm'ye
+            # cikti ve aci adimi sikilasti: 8 mm'deki bir kondansator
+            # 20.7 mm'dekinden cok daha iyi, ve hicbir sey koymamak
+            # en kotu secenek.
+            for yaricap in (2.0, 2.8, 3.6, 4.6, 5.6, 7.0, 8.5, 10.0, 12.0):
+                for k2 in range(16):
+                    ac = 2 * _m.pi * k2 / 16.0
                     cx = hp.x / MM + yaricap * _m.cos(ac)
                     cy = hp.y / MM + yaricap * _m.sin(ac)
                     cakisti = False
@@ -2058,7 +2067,6 @@ def uygula(kart):
     # entegrenin bir konumu var.
     bos = kalanlar(fps, pn, kondu, en, boy)
     kritik += ayristirma_topa(fps, pn, kondu)
-    kritik += ac_kalanlara_kondansator(fps, pn, kondu, kart=kart)
     cak = ayikla(fps, kondu, en, boy)
     # KENAR CIZGILERI DOSYADAN SILINDI (yukarida, LoadBoard'dan once).
     # b.Remove() burada da surece cokuyordu — ve yap.sh'in hata
@@ -2132,6 +2140,37 @@ def uygula(kart):
           f"{cak} cakisma, {en}x{boy} mm")
 
 
+def ayirma_gecisi(kart):
+    """SADECE ayirma kondansatorlerini bacaklarina cek, karti kaydet.
+
+    NEDEN AYRI BIR ADIM. Bu gecis uygula() icinde, ayir.py'den ONCE
+    kosuyordu. Olculdu: kondansatoru bacagin 4.7 mm yanina koyuyordu,
+    sonra ayir cakismalari cozerken (C'de 191 -> 0) onu 17.9 mm oteye
+    itiyordu. Yani is dogru yapiliyor ve sonra bozuluyordu.
+
+    Bu hatayi bir kez daha ATLADIM cunku tani kosularim karti
+    degistiriyordu: gercek_yerlesim'i tek basina kosturup olcunce
+    4.7 mm goruyordum, tam zincirden sonra 17.9 mm. Olcum, tam
+    zincirin urettigi kart uzerinde yapilmali.
+
+    Simdi zincirde ayir'dan SONRA cagriliyor. Kendi bos yer aramasi
+    var, yani ayir'a ihtiyaci yok.
+    """
+    dizin, proj, en, boy, fn = KART[kart]
+    pcb = os.path.join(HERE, dizin, proj + ".kicad_pcb")
+    b = pcbnew.LoadBoard(pcb)
+    fps = {fp.GetReference(): fp for fp in b.Footprints()}
+    pn = padnetler(dizin, proj)
+    n = ac_kalanlara_kondansator(fps, pn, set(fps), kart=kart)
+    b.Save(pcb)
+    print("%s: %d ayirma kondansatoru bacagina cekildi" % (kart, n))
+    return n
+
+
 if __name__ == "__main__":
-    for k in (sys.argv[1:] or ["A"]):
-        uygula(k)
+    if sys.argv[1:2] == ["--ayirma"]:
+        for k in (sys.argv[2:] or ["A"]):
+            ayirma_gecisi(k)
+    else:
+        for k in (sys.argv[1:] or ["A"]):
+            uygula(k)
