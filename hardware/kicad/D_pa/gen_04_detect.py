@@ -182,9 +182,15 @@ for i, (net, ad) in enumerate([("FWD", "ileri"), ("REV", "yansiyan")]):
     s.sym(C, cnt("C"), "220pF", x - 20, y + 28, rot=90, fp=FC)
     s.pin_label(C, "1", x - 20, y + 28, 90, f"{net}_CLPF", "passive")
     s.pin_power(C, "2", x - 20, y + 28, 90, "GND")
-    s.sym(C, cnt("C"), "100nF", x + 42, y + 20, rot=90, fp=FC)
-    s.pin_label(C, "1", x + 42, y + 20, 90, "+5V", "input")
-    s.pin_power(C, "2", x + 42, y + 20, 90, "GND")
+    # BACAK BASINA BIR KONDANSATOR. AD8318'in UC besleme bacagi var
+    # (VPSI x2 = 3 ve 4, VPSO = 9) ve burada tek 100nF vardi. Pin 16
+    # de +5V'a bagli ama o ENBL, yani lojik girisi — besleme degil.
+    # Olculdu: D kartinda +5V rayinda 10 power_in bacagina 8
+    # kondansator dusuyordu.
+    for k in range(3):
+        s.sym(C, cnt("C"), "100nF", x + 42, y + 20 + k * 12, rot=90, fp=FC)
+        s.pin_label(C, "1", x + 42, y + 20 + k * 12, 90, "+5V", "input")
+        s.pin_power(C, "2", x + 42, y + 20 + k * 12, 90, "GND")
 
 # ---------------------------------------------------------------- anten
 s.text("ANTEN CIKISI", 16, 395, 1.8)

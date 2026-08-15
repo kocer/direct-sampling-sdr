@@ -146,7 +146,11 @@ s.sym(B, "U15", "ADCLK846BCPZ", 440, 230, fp=FB, unit=2)
 for i, p in enumerate(("4", "10", "13", "16", "19", "22")):
     s.pin_label(B, p, 440, 230, 0, "+1V8_CLK", "input", d=5.08)
 s.pin_power(B, "25", 440, 230, 0, "GND", d=5.08)
-for i, v in enumerate(("100nF", "100nF", "100nF", "10uF")):
+# BACAK BASINA BIR KONDANSATOR. ADCLK846'nin ALTI besleme bacagi
+# var (4, 10, 13, 16, 19, 22) ve burada dort kondansator vardi.
+# Olculdu: +1V8_CLK rayinda 6 power_in bacagina 5 kondansator
+# dusuyordu. Bir tane eklendi.
+for i, v in enumerate(("100nF", "100nF", "100nF", "100nF", "10uF")):
     s.sym(C, cnt("C"), v, 490 + i * 18, 230, rot=90, fp=FC)
     s.pin_label(C, "1", 490 + i * 18, 230, 90, "+1V8_CLK", "passive")
     s.pin_power(C, "2", 490 + i * 18, 230, 90, "GND")

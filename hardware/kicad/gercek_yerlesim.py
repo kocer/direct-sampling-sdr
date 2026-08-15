@@ -545,6 +545,142 @@ def ayristirma_topa(fps, pn, kondu):
     return n
 
 
+def guc_bacaklari(kart):
+    """Netlist'ten (ref, ped) -> pintype == power_in kumesi.
+
+    NEDEN GEREKLI. Bir entegrenin bir guc rayina bagli olmasi, o
+    bacagin BESLEME oldugu anlamina gelmiyor. C kartinda +3V3'e
+    yirmi yedi entegre bagli ama bunlarin on altisi DRV8833 ve
+    tek baglantilari ~SLEEP, yani lojik girisi. Ayni sekilde
+    74HC595'in ~SRCLR'i ve PE4312'nin P/S'i de raya cekilmis
+    lojik girisleri.
+
+    Bu ayrimi yapmadan olcunce C'de "42 besleme bacagina 15
+    kondansator" cikiyor ve kart 27 kondansator eksik gorunuyor.
+    Gercekte 15 besleme bacagi var ve 15 kondansator: yeterli.
+    Ayrim yapilmadan bu fonksiyon da 27 entegreyi 15 kondansatorle
+    doyurmaya calisip kondansatorleri ileri geri tasiyordu.
+
+    KiCad netlist'i pintype tasiyor; kaynak orasi.
+    """
+    import re
+    yol = "/tmp/pcb_dogrudan_sdr_%s.net" % kart
+    try:
+        s = open(yol, errors="ignore").read()
+    except OSError:
+        return None
+    # DUGUM BAZLI AYRISTIRMA. Tek bir regex ile denedim ve SIFIR
+    # sonuc verdi: pasif pinlerde node icinde uc alan var, entegre
+    # pinlerinde arada bir de (pinfunction "VCC") duruyor ve
+    # ardisik desen kiriliyor. Alanlari blok icinde ayri ayri
+    # ariyoruz.
+    out = set()
+    for blok in s.split("(node")[1:]:
+        blok = blok[:400]
+        r = re.search(r'\(ref "([^"]+)"\)', blok)
+        pn_ = re.search(r'\(pin "([^"]+)"\)', blok)
+        tp = re.search(r'\(pintype "([^"]+)"\)', blok)
+        if r and pn_ and tp and tp.group(1).startswith("power_in"):
+            out.add((r.group(1), pn_.group(1)))
+    return out or None
+
+
+def ac_kalanlara_kondansator(fps, pn, kondu, sinir_mm=5.0, kart=None):
+    """Yakininda kondansatoru olmayan her entegreye bir tane cek.
+
+    NEDEN AYRI BIR GECIS. ayristirma_topa raya bagli butun entegreler
+    arasinda dolasarak dagitiyor ve bu, cok bacakli parcalar icin
+    calisiyor. Ama az bacakli bir parca (bir LDO'nun tek cikis
+    bacagi gibi) havuzda tek sira aliyor ve kondansator sayisi
+    yetmeyince eli bos kaliyor.
+
+    Olculdu: A kartinda U4 ve U9 (ADP150) icin en yakin kondansator
+    31 ve 21 mm otedeydi. ADP150 veri sayfasi cikisa yakin 1 uF
+    istiyor; 31 mm oteki bir cikis kondansatoru regulatoru kararli
+    yapmaz. C kartinda dort PE4312'nin dordu de ayni durumdaydi.
+
+    Bu gecis en sonda kosuyor: her (entegre, guc rayi) cifti icin
+    sinir_mm icinde bir kondansator var mi diye bakiyor, yoksa o
+    raydaki EN YAKIN kondansatoru bacagin dibine tasiyor. Tasinan
+    kondansator baska bir entegrenin tek kondansatoru ise
+    dokunulmuyor — birini doyurup otekini ac birakmak kazanc degil.
+    """
+    import math
+    tasinan = 0
+    # ray -> kondansator listesi
+    ray_kond = {}
+    for ref in sorted(fps):
+        padlar = pn.get(ref, {})
+        if not ref.startswith("C") or len(padlar) != 2:
+            continue
+        aglar = set(padlar.values())
+        if "GND" not in aglar:
+            continue
+        ray = next((a for a in aglar if a != "GND"), None)
+        if ray and ray.startswith("+"):
+            ray_kond.setdefault(ray, []).append(ref)
+
+    def yakin_sayisi(ic_ref, ray, disla=None):
+        o = fps[ic_ref].GetPosition()
+        n = 0
+        for c in ray_kond.get(ray, ()):
+            if c == disla or c not in fps:
+                continue
+            q = fps[c].GetPosition()
+            if math.hypot(q.x - o.x, q.y - o.y) <= sinir_mm * MM:
+                n += 1
+        return n
+
+    gb = guc_bacaklari(kart) if kart else None
+    for ic in sorted(fps):
+        if not ic.startswith("U") or ic not in fps:
+            continue
+        if gb is not None:
+            # SADECE GERCEK BESLEME BACAGI OLAN RAYLAR
+            raylar = {v for k, v in pn.get(ic, {}).items()
+                      if v.startswith("+") and (ic, k) in gb}
+        else:
+            raylar = {v for v in pn.get(ic, {}).values() if v.startswith("+")}
+        for ray in sorted(raylar):
+            if not ray_kond.get(ray):
+                continue
+            if yakin_sayisi(ic, ray) > 0:
+                continue
+            # o entegrenin bu raydaki bacagi
+            hedef_pad = next((q for q in fps[ic].Pads()
+                              if q.GetNetname() == ray), None)
+            if hedef_pad is None:
+                continue
+            hp = hedef_pad.GetPosition()
+            # en yakin, VAZGECILEBILIR kondansator
+            adaylar = []
+            for c in ray_kond[ray]:
+                if c not in fps:
+                    continue
+                q = fps[c].GetPosition()
+                d = math.hypot(q.x - hp.x, q.y - hp.y)
+                # bu kondansator baska bir entegrenin TEK kondansatoru mu
+                vazgecilmez = False
+                for u2 in fps:
+                    if not u2.startswith("U") or u2 == ic:
+                        continue
+                    if ray not in pn.get(u2, {}).values():
+                        continue
+                    if yakin_sayisi(u2, ray) == 1 and \
+                       yakin_sayisi(u2, ray, disla=c) == 0:
+                        vazgecilmez = True
+                        break
+                if not vazgecilmez:
+                    adaylar.append((d, c))
+            if not adaylar:
+                continue
+            adaylar.sort()
+            _, sec = adaylar[0]
+            koy(fps, sec, hp.x / MM + 2.4, hp.y / MM + 2.4, 0, kondu)
+            tasinan += 1
+    return tasinan
+
+
 def adc_referans(fps, pn, kondu):
     """ADC referans agi: VREF / RBIAS / VCM — iki cipte OZDES yerlesim.
 
@@ -571,8 +707,31 @@ def adc_referans(fps, pn, kondu):
     return n
 
 
-def kalanlar(fps, pn, kondu, en, boy):
+def kalanlar(fps, pn, kondu, en, boy, sadece_ic=False):
     """Konmamislari: ayristirma besledigi bacaga, otekiler komsusuna.
+
+    SADECE_IC KIPI VE NEDEN VAR.
+    Zincir once yerlesim_X ile kritik parcalari koyuyor, sonra
+    ayristirma_topa ile ayirma kondansatorlerini dagitiyor, en sonda
+    burasi kaliyor. Sorun: ayristirma_topa havuzunu YERLESMIS
+    entegrelerden kuruyor. Acik kurali olmayan bir entegre (A'daki
+    ADP150'ler U4..U9, C'deki dort PE4312) o an daha yerlesmedigi
+    icin havuza hic girmiyor ve kondansator alamiyordu.
+
+    Sonra buraya dusuyorlardi, ve buradaki kural da yardimci
+    olmuyordu: kondansator, rayda EN COK BACAGI olan entegreye
+    gidiyor — +3V3'te bu FPGA. Yani artan butun kondansatorler
+    FPGA'ya gidiyor, kucuk entegrelere hicbir sey kalmiyordu.
+
+    Olculdu (bu iki hata birlikte): C kartinda entegre-ray ciftlerinin
+    %100'unde en yakin kondansator 5 mm'den uzakti, en kotusu 69 mm.
+    A'da %77, en kotusu 91 mm. 45 mm uzaktaki bir ayirma
+    kondansatorunun dongu enduktansi ~45 nH; 10 MHz'te |Z| ~ 2.8 ohm,
+    oysa miliohm gerekiyor. Kondansator semada gorunur, BOM'da vardir,
+    karta dizilir ve hicbir ise yaramaz.
+
+    Cozum iki asama: once BUTUN entegreler yerlessin (sadece_ic=True),
+    sonra ayristirma_topa hepsine dagitsin, en sonda kalan pasifler.
 
     Kritik parcalar yerine oturdu; buradan sonrasi ikincil. Ama yine de
     rastgele degil: her parca EN COK BAGLI oldugu, halihazirda konmus
@@ -596,6 +755,8 @@ def kalanlar(fps, pn, kondu, en, boy):
         for ref in sorted(fps):
             if ref in yerli:
                 continue
+            if sadece_ic and not ref.startswith("U"):
+                continue
             padlar = pn.get(ref, {})
             aglar = set(padlar.values())
             hedef = None
@@ -617,8 +778,28 @@ def kalanlar(fps, pn, kondu, en, boy):
                     ic = sorted(r for r in yerli if r.startswith("U")
                                 and ray in pn.get(r, {}).values())
                     if ic:
-                        en_iyi = max(ic, key=lambda r: sum(
-                            1 for v in pn[r].values() if v == ray))
+                        # EN COK BACAKLI DEGIL, EN AZ KONDANSATORLU.
+                        # Onceki kural rayda en cok bacagi olan
+                        # entegreyi seciyordu; +3V3'te bu FPGA, yani
+                        # artan her kondansator oraya gidiyordu ve
+                        # regulatorler ac kaliyordu. Simdi o rayda
+                        # halihazirda EN AZ kondansatoru olan entegre
+                        # seciliyor; esitlikte ada gore, yani sonuc
+                        # tekrarlanabilir.
+                        def _yakin_sayisi(r):
+                            o = fps[r].GetPosition()
+                            n = 0
+                            for c2 in yerli:
+                                if not c2.startswith("C"):
+                                    continue
+                                if ray not in pn.get(c2, {}).values():
+                                    continue
+                                p2 = fps[c2].GetPosition()
+                                if abs(p2.x - o.x) < 5 * MM and \
+                                   abs(p2.y - o.y) < 5 * MM:
+                                    n += 1
+                            return n
+                        en_iyi = min(ic, key=lambda r: (_yakin_sayisi(r), r))
                         for pad in fps[en_iyi].Pads():
                             if pad.GetNetname() == ray:
                                 p = pad.GetPosition()
@@ -635,8 +816,12 @@ def kalanlar(fps, pn, kondu, en, boy):
                 xs = [fps[r].GetPosition().x / MM for r in aday]
                 ys = [fps[r].GetPosition().y / MM for r in aday]
                 hedef = (sum(xs) / len(xs) + 3.5, sum(ys) / len(ys) + 3.5)
+            # KONDU'YA DA EKLE. Buradaki koy() cagrisi kondu'yu
+            # almiyordu, yani bu asamada yerlesen hicbir parca
+            # "yerlesmis" sayilmiyordu ve sonraki adimlar onlari
+            # gormuyordu.
             koy(fps, ref, min(max(hedef[0], 8), en - 8),
-                min(max(hedef[1], 8), boy - 8))
+                min(max(hedef[1], 8), boy - 8), kondu=kondu)
             yerli.add(ref)
             yeni += 1
         if not yeni:
@@ -1796,8 +1981,27 @@ def uygula(kart):
     BLOK_KULLANILDI.clear()
     kritik = fn(fps, pn, kondu)
     kritik += adc_referans(fps, pn, kondu)
-    kritik += ayristirma_topa(fps, pn, kondu)
+    # SIRA: ONCE HERKES YERLESSIN, SONRA KONDANSATORLER BACAGA.
+    #
+    # ayristirma_topa havuzunu YERLESMIS entegrelerden kuruyor.
+    # Once kalanlar'dan ONCE cagriliyordu, yani acik kurali olmayan
+    # entegreler (A'da ADP150'ler U4..U9, C'de dort PE4312) havuza
+    # hic girmiyordu. Olculdu: o entegrelerin hicbirinin 15 mm
+    # cevresinde ayirma kondansatoru yoktu; C'de entegre-ray
+    # ciftlerinin %100'u 5 mm'den uzakti, en kotusu 69 mm.
+    #
+    # Once "entegreleri onceden yerlestir" diye ayri bir asama
+    # denedim; ise yaramadi ve nedeni olcunce cikti: kalanlar
+    # icindeki koy() cagrisi kondu'yu ALMIYOR, yani oraya yerlesen
+    # hicbir parca kumeye girmiyor. Ustelik bir LDO'nun guc disi
+    # komsusu yok, yani tutunacak bir komsu da bulamiyor.
+    #
+    # Dogru sira bu: kalanlar herkesi koysun, sonra ayristirma_topa
+    # kondansatorleri besledikleri bacaga ceksin. O noktada her
+    # entegrenin bir konumu var.
     bos = kalanlar(fps, pn, kondu, en, boy)
+    kritik += ayristirma_topa(fps, pn, kondu)
+    kritik += ac_kalanlara_kondansator(fps, pn, kondu, kart=kart)
     cak = ayikla(fps, kondu, en, boy)
     # KENAR CIZGILERI DOSYADAN SILINDI (yukarida, LoadBoard'dan once).
     # b.Remove() burada da surece cokuyordu — ve yap.sh'in hata
