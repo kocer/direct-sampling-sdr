@@ -52,6 +52,14 @@ module ust (
     output wire        rgmii_tctl,
     output wire        rgmii_tclk,
 
+    // RGMII ALIS — host'tan kayit yazmalari.
+    // Saat PHY'den geliyor (rgmii_rxc) ve bizim clk_eth'imizle
+    // arasinda faz iliskisi YOK; alis mantigi kendi alaninda
+    // calisiyor, cikisi FIFO ile clk_sys'e geciyor.
+    input  wire [3:0]  rgmii_rd,
+    input  wire        rgmii_rctl,
+    input  wire        rgmii_rxc,
+
     // kontrol zinciri
     output wire        rly_ser,
     output wire        rly_srclk,
@@ -232,6 +240,10 @@ module ust (
     // kabul edilebilir ama bedava degilken neden odeyelim.
     // ---------------------------------------------------------------
     wire [7:0]  uart_al_bayt, uart_ver_bayt;
+    // Host bayt kaynagi (UART ya da ethernet) — SECIM ASAGIDA,
+    // bildirim burada: kullanildigi yer (host_arayuz) yukarida.
+    wire [7:0]  host_bayt;
+    wire        host_gecerli;
     wire        uart_al_gecerli, uart_ver_gonder, uart_ver_mesgul;
     wire [7:0]  kayit_adr;
     wire [31:0] kayit_veri;
@@ -250,7 +262,7 @@ module ust (
 
     host_arayuz u_host (
         .clk(clk_sys), .rst(rst),
-        .al_bayt(uart_al_bayt), .al_gecerli(uart_al_gecerli),
+        .al_bayt(host_bayt), .al_gecerli(host_gecerli),
         .ver_bayt(uart_ver_bayt), .ver_gonder(uart_ver_gonder),
         .ver_mesgul(uart_ver_mesgul),
         .kayit_adr(kayit_adr), .kayit_veri(kayit_veri),
@@ -555,6 +567,117 @@ module ust (
 
     ODDRX1F u_tclk (.SCLK(clk_eth), .RST(rst),
                     .D0(1'b1), .D1(1'b0), .Q(rgmii_tclk));
+
+    // ---------------------------------------------------------------
+    // ETHERNET ALIS — host -> FPGA kayit yolu
+    //
+    // Bu yola kadar host'un tek yolu UART'ti (115200 baud). Kayit
+    // yazmak icin yeterliydi ama ethernet zaten kartta ve tek yonlu
+    // kullanmak (yalniz veris) kablonun yarisini bosa harciyordu.
+    //
+    // UDP YUKU UART ILE AYNI CERCEVE BICIMINI TASIYOR
+    // (A5 adr d3 d2 d1 d0 xor), yani host_arayuz oldugu gibi
+    // yeniden kullaniliyor. Iki ayri cozumleyici yazmak iki kat
+    // bakim ve iki kat hata demekti.
+    // ---------------------------------------------------------------
+    wire [3:0] rd_yuk, rd_dus;
+    wire       rctl_yuk, rctl_dus;
+
+    genvar gr;
+    generate for (gr = 0; gr < 4; gr = gr + 1) begin : rgmii_rx
+        IDDRX1F u_rd (.SCLK(rgmii_rxc), .RST(rst), .D(rgmii_rd[gr]),
+                      .Q0(rd_yuk[gr]), .Q1(rd_dus[gr]));
+    end endgenerate
+
+    IDDRX1F u_rctl (.SCLK(rgmii_rxc), .RST(rst), .D(rgmii_rctl),
+                    .Q0(rctl_yuk), .Q1(rctl_dus));
+
+    wire [7:0] al_bayt_rx;
+    wire       al_gecerli_rx, al_son_rx, al_crc_rx;
+
+    rgmii_alis u_rgmii_al (
+        .clk(rgmii_rxc), .rst(rst),
+        .rd_yuk(rd_yuk), .rd_dus(rd_dus),
+        .rctl_yuk(rctl_yuk), .rctl_dus(rctl_dus),
+        .bayt(al_bayt_rx), .bayt_gecerli(al_gecerli_rx),
+        .cerceve_sonu(al_son_rx), .crc_dogru(al_crc_rx), .hata()
+    );
+
+    wire [7:0] yuk_bayt_rx;
+    wire       yuk_gecerli_rx;
+
+    udp_ayikla #(.PORT(16'd5001)) u_udp (
+        .clk(rgmii_rxc), .rst(rst),
+        .bayt(al_bayt_rx), .bayt_gecerli(al_gecerli_rx),
+        .cerceve_sonu(al_son_rx), .crc_dogru(al_crc_rx),
+        .yuk_bayt(yuk_bayt_rx), .yuk_gecerli(yuk_gecerli_rx)
+    );
+
+    // RXC -> clk_sys gecisi. Iki saat ayri kaynaklardan; tek
+    // senkronizatorle 125 MHz'lik bir bayt akisini 80 MHz'e sokmak
+    // tasma demekti.
+    // AD CAKISMASI: "eth_bayt" ZATEN KULLANILIYOR.
+    // Ilk yazdigimda alis FIFO'sunun cikisina da eth_bayt dedim;
+    // ornek yolundaki FIFO (u_fifo, satir ~514) o adi kullaniyor.
+    // Iki surucu tek tele bagli kaldi ve nextpnr "multiply driven"
+    // ile durdu. Onemli olan: SENTEZ (yosys) sadece uyari verdi ve
+    // devam etti — uyariya bakmasam bitstream uretilmis gorunurdu.
+    // Alis yolunun adlari artik "eth_al_" onekli.
+    wire [7:0] eth_al_bayt;
+    wire       eth_al_var;
+
+    // OKU VE OKU_GECERLI AYRI TELLER OLMAK ZORUNDA.
+    // Ikisini ayni tele baglamistim: biri FIFO'nun GIRISI, oteki
+    // CIKISI. yosys "multiple conflicting drivers" verdi ve iki ayri
+    // FIFO'nun blok RAM cikislari birbirine baglandi — yani kontrol
+    // yolu ile ornek yolu ayni tellere yaziyordu. Sentez yine de
+    // bitstream uretti; uyari okunmasa kartta "ethernet bazen
+    // sacmaliyor" diye gorunurdu.
+    //
+    // Dogrusu: gecerli olan her bayti ayni cevrimde tuket.
+    // host_arayuz cevrimde bir bayt aliyor, yani biriktirme yok.
+    fifo_gecis #(.GENISLIK(8), .DERINLIK(256)) u_eth_fifo (
+        .yaz_clk(rgmii_rxc), .yaz_rst(rst),
+        .yaz_veri(yuk_bayt_rx), .yaz(yuk_gecerli_rx), .yaz_hazir(),
+        .oku_clk(clk_sys), .oku_rst(rst),
+        .oku_veri(eth_al_bayt), .oku(eth_al_var), .oku_gecerli(eth_al_var_w),
+        .oku_doluluk()
+    );
+    wire eth_al_var_w;
+    assign eth_al_var = eth_al_var_w;
+
+    // KAYNAK SECIMI: ethernet varsa o, yoksa UART.
+    //
+    // Ikisi AYNI ANDA kullanilmiyor — host birini seciyor. Ayni anda
+    // yazilirsa baytlar birbirine karisir; host_arayuz'un XOR
+    // saglamasi cogunu yakalar ve zaman asimi ile hizalanir, yani
+    // sonuc "komut kayboldu" olur, "yanlis komut uygulandi" degil.
+    // Bir arbitre yazmak, olmayan bir kullanim icin karmasiklik
+    // olurdu.
+    // FIFO CIKISI YAZMACLANIYOR — YOKSA clk_sys 80 MHz'I TUTMUYOR.
+    //
+    // Olctum: blok RAM cikisi (eth_al_bayt) DOGRUDAN host_arayuz'un
+    // cozumleyicisine giriyordu ve kritik yol 12.84 ns cikti, butce
+    // 12.50. Yani ethernet alisini eklemek clk_sys'i 88.96'dan
+    // 77.86 MHz'e dusurdu — BRAM'in clk-to-q'su 5.83 ns ve ustune
+    // durum makinesinin butun LUT zinciri biniyordu.
+    //
+    // Araya bir yazmac koymak yolu ikiye boluyor. Bedeli bir cevrim
+    // gecikme; bu yol kayit yazmalari icin, ornek icin degil.
+    reg [7:0] eth_al_bayt_r;
+    reg       eth_al_var_r;
+    always @(posedge clk_sys) begin
+        if (rst) begin
+            eth_al_bayt_r <= 8'd0;
+            eth_al_var_r  <= 1'b0;
+        end else begin
+            eth_al_bayt_r <= eth_al_bayt;
+            eth_al_var_r  <= eth_al_var;
+        end
+    end
+
+    assign host_bayt    = eth_al_var_r ? eth_al_bayt_r : uart_al_bayt;
+    assign host_gecerli = eth_al_var_r | uart_al_gecerli;
 
     // ---------------------------------------------------------------
     // Veris zinciri

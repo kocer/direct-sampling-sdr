@@ -53,6 +53,10 @@ ESLEME = [
     ("dac2_iqsel",   "DAC2_IQSEL",    None),
     ("dac2_iqreset", "DAC2_IQRESET",  None),
     ("rgmii_td",     "PHY1_TXD{i}",   4),
+    # ALIS: saat PHY'den geliyor, RXC bir GIRIS saati.
+    ("rgmii_rd",     "PHY1_RXD{i}",  4),
+    ("rgmii_rctl",   "PHY1_RXCTL",   None),
+    ("rgmii_rxc",    "PHY1_RXC",     None),
     ("rgmii_tctl",   "PHY1_TXCTL",    None),
     ("rgmii_tclk",   "PHY1_TXC",      None),
     ("rly_ser",      "RLY_SER",       None),
@@ -104,6 +108,12 @@ FREKANS = {
     "clk_sys":  80.0,
     "adc1_dco": 80.0,
     "adc2_dco": 80.0,
+    # RGMII ALIS SAATI 125 MHz — KISIT YAZILMAZSA VARSAYILAN ALINIR.
+    # Ilk kosuda pnr "rgmii_rxc: 132.24 MHz (hedef 12.00)" dedi:
+    # kisit yoktu, nextpnr 12 MHz varsaydi ve yol "gecti". 12 MHz'e
+    # gore kapanan bir yol 125 MHz'te on kat pay eksigi demek, yani
+    # zamanlama raporu dogru gorunurken kart calismaz.
+    "rgmii_rxc": 125.0,
 }
 
 # RGMII cikislarinda hizli kenar: 1.8 V'ta 125 MHz DDR, yavas kenar

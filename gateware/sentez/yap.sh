@@ -41,8 +41,20 @@ yosys -q -p "read_verilog rtl/*.v; synth_ecp5 -top ust -json sentez/ust.json" \
   || { echo "SENTEZ KALDI"; exit 1; }
 
 kos_pnr() {
-  nextpnr-ecp5 $CIHAZ --package $PAKET --json sentez/ust.json \
-    --lpf sentez/ust.lpf --textcfg sentez/ust.cfg --seed "$1" 2>sentez/pnr.log >/dev/null
+  # NEXTPNR HATASI ZINCIRI DURDURMALI.
+  #
+  # Once cikis kodu hic bakilmiyordu. nextpnr "Net 'eth_bayt[0]' is
+  # multiply driven" deyip cikti, zincir devam etti, ecppack BIR
+  # ONCEKI ust.cfg'yi paketledi ve "== bitti, 311701 bayt" yazdi.
+  # Yani basarili gorunen bir yapi, saatler once uretilmis eski
+  # bitstream'di. Boyutun degismemesi tek ipucuydu.
+  if ! nextpnr-ecp5 $CIHAZ --package $PAKET --json sentez/ust.json \
+       --lpf sentez/ust.lpf --textcfg sentez/ust.cfg --seed "$1" \
+       2>sentez/pnr.log >/dev/null; then
+      echo "NEXTPNR HATASI:"
+      grep -E "^ERROR" sentez/pnr.log | head -5 | sed 's/^/   /'
+      return 1
+  fi
   grep -E "Max frequency for clock" sentez/pnr.log | tail -4
 }
 
@@ -60,7 +72,15 @@ if [ "${1:-}" = "--ara" ]; then
   done
 else
   echo "== yerlesim, tohum $TOHUM"
-  kos_pnr "$TOHUM" | sed 's/^/   /'
+  # BORU CIKIS KODUNU YUTUYOR. "kos_pnr | sed" yazinca kabuk sed'in
+  # kodunu doner, nextpnr'inkini degil — hata gorunur ama zincir
+  # devam eder ve ecppack ESKI ust.cfg'yi paketler.
+  if ! kos_pnr "$TOHUM" > /tmp/pnr_ozet.txt; then
+      sed 's/^/   /' /tmp/pnr_ozet.txt
+      echo "YERLESIM KALDI — bitstream URETILMEDI."
+      exit 1
+  fi
+  sed 's/^/   /' /tmp/pnr_ozet.txt
 fi
 
 # SADECE SON ZAMANLAMA RAPORUNA BAK.

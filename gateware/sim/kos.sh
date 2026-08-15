@@ -31,6 +31,8 @@ testler=(
   # yarim hiz hatasi tam da bu yuzden aylarca gorunmedi.
   "tb_duc_dort sim/tb_duc_dort.v rtl/duc_dort.v rtl/duc.v rtl/nco.v"
   "tb_dac_cog  sim/tb_dac_cog.v  rtl/dac_cogullu.v"
+  "tb_rgmii_al sim/tb_rgmii_alis.v rtl/rgmii_alis.v"
+  "tb_udp      sim/tb_udp.v      rtl/rgmii_alis.v rtl/udp_ayikla.v"
 )
 
 # ---------------------------------------------------------------
