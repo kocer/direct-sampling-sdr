@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """04_atten: PE4312 x4, ortak seri yol, ayri LE. Kaynak: ../NETLIST_C.md §4."""
 import json, os
 from schlib import Sheet

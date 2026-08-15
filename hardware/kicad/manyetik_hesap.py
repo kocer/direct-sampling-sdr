@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 """Elde sarilacak manyetiklerin sarim sayilari.
 
 Uc kartta satin alinamayan tek parca sinifi bu: guc trafolari, yonlu

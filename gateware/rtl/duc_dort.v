@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // Dort kanalli veris — huzme yonlendirmeli.
 //
 // Dort kanal AYNI taban bandi tasiyor, sadece tasiyicinin FAZI

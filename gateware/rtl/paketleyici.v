@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // Paketleyici — DDC cikisini ethernet cercevesine hazirlar.
 //
 // Dort kanalin I ve Q'sunu tek akista topluyor. Her paket bir

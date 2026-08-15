@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """02_clock: ABLNO-V 80 MHz VCXO + ADCLK846 1:6 LVDS dagitim.
 Kaynak: ../NETLIST.md §2, ADCLK846 Rev.C, AD9251 Rev.C."""
 import json, os
@@ -73,7 +75,7 @@ for i, v in enumerate(("100nF", "10uF")):
     s.pin_power(C, "2", 95 + i * 20, 45, 90, "GND")
 
 s.text("Besleme gurultusu DOGRUDAN faz gurultusune donusuyor.\\n"
-       "Kendi LDO'su (01_power U6) + ferrit boncuk + ayri toprak adasi.\\n"
+       "+3V3_CLK (01_power FB6) + ikinci ferrit + ayri toprak adasi.\\n"
        "Olculen: 90.3 fs @50 MHz, 80 MHz'de <100 fs bekleniyor.\\n"
        "Vc GPSDO'dan (08_control), DAC ile suruluyor.", 16, 95, 1.3)
 

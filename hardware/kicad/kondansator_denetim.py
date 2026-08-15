@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 """Kondansator degeri / paketi / gerilimi tutarli mi?
 
     python3 kondansator_denetim.py          # uc kart

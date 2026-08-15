@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 """ECP5 LFE5U-25F CABGA256 — saat yetenekli ayaklar ve banka haritasi.
 
 Kaynak: prjtrellis-db, ECP5/LFE5U-25F/iodb.json (YosysHQ, acik kaynak).

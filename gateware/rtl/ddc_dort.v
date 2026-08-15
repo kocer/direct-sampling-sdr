@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // Dort kanalli DDC — paylasimli telafi FIR ile.
 //
 // Kaynak butcesi olculdu, tahmin edilmedi:

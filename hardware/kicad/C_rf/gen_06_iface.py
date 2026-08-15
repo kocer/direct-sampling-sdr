@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """06_iface: kart arasi. Kaynak: ../NETLIST_C.md §7."""
 import json, os
 from schlib import Sheet

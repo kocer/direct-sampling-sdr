@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """04_dac: 2x AD9767, dort TX kanali. Kaynak: ../NETLIST.md §4."""
 import json, os
 from schlib import Sheet, unit_pins, yol_esle

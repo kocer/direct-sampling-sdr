@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // RGMII alis — PHY'den gelen cerceveyi bayta cevirir.
 //
 // rgmii_veris.v'nin aynasi. Orada bayti iki nibble'a bolup ODDR ile

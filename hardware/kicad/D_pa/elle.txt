@@ -1,7 +1,5 @@
 D2_GA_S
 D2_GB_S
-DRN_A
-DRN_B
 G10
 G11
 G12

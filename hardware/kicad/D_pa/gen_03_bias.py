@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """REFERANS ARALIGI — BU DOSYA: RS1-RS4, U20-U29 (DAC),
 U31-U39 (INA240 akim olcum), U41-U49 (LM358 integrator).
 Aralik listesinin tamami gen_02_final.py basinda.

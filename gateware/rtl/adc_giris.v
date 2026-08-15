@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // AD9251 arayuzu — cift kanalli, 14 bit, COGULLANMIS PARALEL CMOS.
 //
 // BU MODUL BIR KEZ YANLIS YAZILDI, KAYDI DURSUN.

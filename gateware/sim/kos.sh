@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 # Butun test tezgahlarini kostur.
 #
 #   ./sim/kos.sh

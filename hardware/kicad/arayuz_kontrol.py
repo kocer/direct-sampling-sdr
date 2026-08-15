@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """Kartlar arasi arayuz tutarliligini dogrular.
 
 Uc kart ayri projeler; KiCad birini digerine karsi kontrol etmiyor.

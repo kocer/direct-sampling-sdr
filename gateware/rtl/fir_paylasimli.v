@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // Paylasimli telafi FIR — sekiz yol, tek motor.
 //
 // NEDEN: kanal basina ayri FIR koyunca dort kanal 56 carpan istiyor,

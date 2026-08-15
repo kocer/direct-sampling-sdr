@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """06_ethernet: 2x RTL8211F + 2x HR911105A, banka 3. Kaynak: ../NETLIST.md §5."""
 import json, os
 from schlib import Sheet, unit_pins, yol_esle
@@ -19,9 +21,13 @@ P = "dogrudan-sdr:RTL8211F"
 # taniydi. Sembol 41 pinle DOGRUYDU (40 bacak + acik ped 41);
 # fazlalik ayak izindeydi.
 #
-# EP olcusu 3.6x3.6 secildi. Veri sayfasinin mekanik cizimi elde yok;
-# kucuk EP her zaman lehimlenir, buyugu bacaklara kopru atabilir —
-# yani belirsizlikte kucuk taraf guvenli olan. Termal via'li surum,
+# EP olcusu 3.6x3.6 secildi ve ARTIK DOGRULANDI.
+# Realtek RTL8211F(I)/RTL8211FD(I) veri sayfasi Rev 1.1, s.64,
+# "Mechanical Dimensions" tablosu (JEDEC MO-220): govde D/E 5.00 BSC,
+# adim e 0.40 BSC, acik ped D2/E2 = 3.45 / 3.70 / 3.95 mm
+# (asgari / nominal / azami). Ped 3.6 mm, yani nominalin altinda ama
+# asgarinin uzerinde — istenen taraf: kucuk ped her zaman lehimlenir,
+# buyugu bacaklara kopru atabilir. Termal via'li surum degil,
 # parca ~1 W harciyor.
 # TERMAL VIA'LAR KALDIRILDI — OLCULDU, GEREKMIYOR VE ZARARLI.
 # KiCad'in "_ThermalVias" surumu acik pedin icine DELIKLI (PTH) via

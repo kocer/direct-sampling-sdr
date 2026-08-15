@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // duc_dort testi — huzme yonlendirmenin ta kendisi olculuyor.
 //
 // Bu modulun tek isi dort kanalda AYNI genlikte, PROGRAMLANAN faz

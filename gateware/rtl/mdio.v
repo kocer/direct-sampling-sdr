@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // MDIO ana birimi — PHY yonetim arayuzu (IEEE 802.3 madde 22).
 //
 // NEDEN VAR. RTL8211F strap dirençleriyle acilip kendi kendine

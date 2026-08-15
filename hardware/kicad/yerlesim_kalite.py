@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 """Yerlesim kalitesini OLC — yonlendirmeye bakmadan once.
 
     python3 yerlesim_kalite.py          # uc kart

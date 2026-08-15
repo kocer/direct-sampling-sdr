@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """05_sdram: W9825G6KH-6I 32 MB, banka 7 + 0. Kaynak: ../NETLIST.md §4b."""
 import json, os
 from schlib import Sheet, unit_pins, yol_esle

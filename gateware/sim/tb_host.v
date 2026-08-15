@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // UART + host arayuzu testi — uctan uca.
 //
 // Gercek bir seri hat gibi surulyor: bayt bayt, tam bit sureleriyle.

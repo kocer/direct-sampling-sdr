@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """Gercek yerlesim: kritik parcalar ELLE, gerisi onlarin dibine.
 
     python3 gercek_yerlesim.py A
@@ -612,6 +614,97 @@ def guc_bacaklari(kart):
     return out or None
 
 
+def bos_yer_ara(fps, ref, hedef, koridorlar=()):
+    """`ref` parcasini `hedef` pedinin dibine sigdiracak en yakin bos nokta.
+
+    Iki gecis bunu kullaniyor: ayirma kondansatorlerini besleme
+    bacagina ceken gecis ve PE4312'nin seri veri direncini pin 3'e
+    ceken gecis. Ikisinin de sorusu ayni — "su pedin yaninda bu parca
+    icin yer var mi" — ve ayni tuzaklara dusuyorlar, o yuzden arama
+    TEK yerde duruyor.
+
+    hedef: pcbnew.VECTOR2I (ped konumu). Donen: (x_mm, y_mm) ya da None.
+    """
+    # BOS YER ARA, SABIT OFSET KOYMA.
+    # Once bacagin +2.4/+2.4 kosesine koyuyordum. O nokta
+    # doluysa parca uzerine biniyor ve ayir.py sonradan onu
+    # uzaga itiyor — yani kondansator yine bacagindan
+    # uzaklasiyor. Olculdu: bu yuzden D'de uc INA240 ve
+    # A'da flash bellek kondansatorsuz kaliyordu.
+    # Bacagin cevresinde halka halka bos nokta ariyoruz;
+    # bulunamazsa dokunmuyoruz (kotu bir yer, hic yerden iyi
+    # degil).
+    import math as _m
+    import ayir as _ayir
+    w, h = olcu(fps[ref])
+    yer = None
+    # ARAMA YARICAPI 5.6 mm'DE BITIYORDU VE VAZGECIYORDU.
+    # Olculdu: D'de +5V uzerindeki on bir kucuk kondansatorun
+    # sadece IKISI besledigi cipin 5 mm yakinindaydi; dokuzu
+    # bosta duruyordu. Sebep kondansator bulunamamasi degil,
+    # bacagin cevresinde BOS YER bulunamamasiydi — akim olcum
+    # yukselteclerinin oldugu serit kalabalik. Yaricap 12 mm'ye
+    # cikti ve aci adimi sikilasti: 8 mm'deki bir kondansator
+    # 20.7 mm'dekinden cok daha iyi, ve hicbir sey koymamak
+    # en kotu secenek.
+    for yaricap in (2.0, 2.8, 3.6, 4.6, 5.6, 7.0, 8.5, 10.0, 12.0,
+                    14.0):
+        for k2 in range(16):
+            ac = 2 * _m.pi * k2 / 16.0
+            cx = hedef.x / MM + yaricap * _m.cos(ac)
+            cy = hedef.y / MM + yaricap * _m.sin(ac)
+            # KORIDORUN ICINE KOYMA.
+            #
+            # ayir.koridor_bosalt simetrik izlerin gectigi
+            # kutulari bos tutuyor ve icine dusen her serbest
+            # parcayi 14 mm disari itiyor. Bu gecis o kurali
+            # bilmiyordu: D kartinda dort INA240 (U31..U34)
+            # koridorun tam ortasinda duruyor, gecis her
+            # birinin bacaginin 2.8 mm yanina bir 100 nF
+            # koyuyor ve ARDINDAN gelen ayir dordunu de disari
+            # atiyor — olculdu, 2.8 mm -> 21.4 mm. Iki adim
+            # birbirinin isini bozuyordu ve gorunen sonuc
+            # "kondansator yine uzakta" oluyordu.
+            #
+            # Cozum kondansatoru koridorda tutmak DEGIL: o
+            # koridor bos kalmazsa elle cekilen kapi ve drain
+            # izleri pedlerin ustunden geciyor (olculdu: D'de
+            # 12 kisa devre). Gecis simdi koridor disinda en
+            # yakin bos noktayi ariyor; U31 icin bu 12 mm.
+            # Ideal degil ama INA240 400 kHz bant genisligine
+            # sahip bir akim olcum yukseltecidir, 12 mm'lik
+            # iz endüktansi (~12 nH) onun icin sorun degil.
+            # Yaricap listesine 14 mm eklendi: sema_denetim
+            # 15 mm ariyor, yani bulunan yer denetimi de
+            # gecirsin.
+            if any(x0 <= cx <= x1 and y0 <= cy <= y1
+                   for x0, y0, x1, y1 in koridorlar):
+                continue
+            # CAKISMA OLCUSU AYIR ILE AYNI OLMALI.
+            #
+            # Once olcu() kullaniyordum (1.4 mm pay), ayir ise
+            # kendi kutu()'suyla bakiyor. Iki olcu ayrilinca
+            # sonuc su oldu: gecis kondansatoru bacagin 5.4 mm
+            # yanina koyuyor ve "bos" diyor, arkasindan gelen
+            # ayir orayi cakisik sayip parcayi 25.8 mm oteye
+            # tasiyordu. Iki mekanizma birbirinin isini bozuyor
+            # ve D'de U31 bu yuzden kondansatorsuz kaliyordu.
+            fps[ref].SetPosition(pcbnew.VECTOR2I(int(cx * MM),
+                                                 int(cy * MM)))
+            kk = _ayir.kutu(fps[ref])
+            cakisti = any(
+                kk.Intersects(_ayir.kutu(f2))
+                for r2, f2 in fps.items()
+                if r2 != ref and f2.GetLayer() == fps[ref].GetLayer()
+                and _ayir.kutu(f2).GetWidth() > 0)
+            if not cakisti:
+                yer = (cx, cy)
+                break
+        if yer:
+            break
+    return yer
+
+
 def ac_kalanlara_kondansator(fps, pn, kondu, sinir_mm=5.0, kart=None):
     import ayir as _ayir
     """Yakininda kondansatoru olmayan her entegreye bir tane cek.
@@ -671,8 +764,30 @@ def ac_kalanlara_kondansator(fps, pn, kondu, sinir_mm=5.0, kart=None):
         if ray and ray.startswith("+") and _kucuk(ref):
             ray_kond.setdefault(ray, []).append(ref)
 
+    def ray_pedi(ic_ref, ray):
+        """Entegrenin o raydaki besleme pedi. Yoksa govde merkezi."""
+        for q in fps[ic_ref].Pads():
+            if q.GetNetname() == ray:
+                return q.GetPosition()
+        return fps[ic_ref].GetPosition()
+
     def yakin_sayisi(ic_ref, ray, disla=None):
-        o = fps[ic_ref].GetPosition()
+        # OLCU NOKTASI BESLEME PEDI, GOVDE MERKEZI DEGIL.
+        #
+        # Bu gecis kondansatoru BACAGIN dibine koyuyor ama "bu cipin
+        # kondansatoru var mi" sorusunu GOVDE MERKEZINDEN olcuyordu.
+        # Iki nokta arasindaki fark bir SOIC-8'de 2.5 mm; sinir 5 mm
+        # olunca pedin 2.8 mm yanina konan kondansator merkezden
+        # 5.3 mm uzakta cikiyor ve gecis onu "bu cipe ait degil"
+        # sayiyor.
+        #
+        # Olculdu (D karti, U31 INA240): gecis C407'yi once U31'in
+        # pedinin 2.8 mm yanina koyuyor, sonra AYNI TURDA vazgecilmez
+        # sinamasi onu U31'e ait gormuyor ve kondansator U32'ye
+        # gidiyor. U31 kondansatorsuz kaliyor. Kavga sanildigi gibi
+        # ayir ile bu gecis arasinda degil, gecisin KENDI icinde:
+        # pede gore koyup merkeze gore olcuyordu.
+        o = ray_pedi(ic_ref, ray)
         n = 0
         for c in ray_kond.get(ray, ()):
             if c == disla or c not in fps:
@@ -683,6 +798,9 @@ def ac_kalanlara_kondansator(fps, pn, kondu, sinir_mm=5.0, kart=None):
         return n
 
     gb = guc_bacaklari(kart) if kart else None
+    # ayir'in bos tutmak zorunda oldugu koridorlar — asagida bos yer
+    # ararken bunlarin icine girilmiyor. Kaynak TEK: ayir.KORIDOR.
+    koridorlar = _ayir.KORIDOR.get(KART[kart][1], []) if kart else []
     for ic in sorted(fps):
         if not ic.startswith("U") or ic not in fps:
             continue
@@ -739,54 +857,7 @@ def ac_kalanlara_kondansator(fps, pn, kondu, sinir_mm=5.0, kart=None):
                 continue
             adaylar.sort()
             _, sec = adaylar[0]
-            # BOS YER ARA, SABIT OFSET KOYMA.
-            # Once bacagin +2.4/+2.4 kosesine koyuyordum. O nokta
-            # doluysa parca uzerine biniyor ve ayir.py sonradan onu
-            # uzaga itiyor — yani kondansator yine bacagindan
-            # uzaklasiyor. Olculdu: bu yuzden D'de uc INA240 ve
-            # A'da flash bellek kondansatorsuz kaliyordu.
-            # Bacagin cevresinde halka halka bos nokta ariyoruz;
-            # bulunamazsa dokunmuyoruz (kotu bir yer, hic yerden iyi
-            # degil).
-            import math as _m
-            w, h = olcu(fps[sec])
-            yer = None
-            # ARAMA YARICAPI 5.6 mm'DE BITIYORDU VE VAZGECIYORDU.
-            # Olculdu: D'de +5V uzerindeki on bir kucuk kondansatorun
-            # sadece IKISI besledigi cipin 5 mm yakinindaydi; dokuzu
-            # bosta duruyordu. Sebep kondansator bulunamamasi degil,
-            # bacagin cevresinde BOS YER bulunamamasiydi — akim olcum
-            # yukselteclerinin oldugu serit kalabalik. Yaricap 12 mm'ye
-            # cikti ve aci adimi sikilasti: 8 mm'deki bir kondansator
-            # 20.7 mm'dekinden cok daha iyi, ve hicbir sey koymamak
-            # en kotu secenek.
-            for yaricap in (2.0, 2.8, 3.6, 4.6, 5.6, 7.0, 8.5, 10.0, 12.0):
-                for k2 in range(16):
-                    ac = 2 * _m.pi * k2 / 16.0
-                    cx = hp.x / MM + yaricap * _m.cos(ac)
-                    cy = hp.y / MM + yaricap * _m.sin(ac)
-                    # CAKISMA OLCUSU AYIR ILE AYNI OLMALI.
-                    #
-                    # Once olcu() kullaniyordum (1.4 mm pay), ayir ise
-                    # kendi kutu()'suyla bakiyor. Iki olcu ayrilinca
-                    # sonuc su oldu: gecis kondansatoru bacagin 5.4 mm
-                    # yanina koyuyor ve "bos" diyor, arkasindan gelen
-                    # ayir orayi cakisik sayip parcayi 25.8 mm oteye
-                    # tasiyordu. Iki mekanizma birbirinin isini bozuyor
-                    # ve D'de U31 bu yuzden kondansatorsuz kaliyordu.
-                    fps[sec].SetPosition(pcbnew.VECTOR2I(int(cx * MM),
-                                                         int(cy * MM)))
-                    kk = _ayir.kutu(fps[sec])
-                    cakisti = any(
-                        kk.Intersects(_ayir.kutu(f2))
-                        for r2, f2 in fps.items()
-                        if r2 != sec and f2.GetLayer() == fps[sec].GetLayer()
-                        and _ayir.kutu(f2).GetWidth() > 0)
-                    if not cakisti:
-                        yer = (cx, cy)
-                        break
-                if yer:
-                    break
+            yer = bos_yer_ara(fps, sec, hp, koridorlar)
             if yer is None:
                 continue
             koy(fps, sec, yer[0], yer[1], 0, kondu)
@@ -2234,6 +2305,72 @@ def uygula(kart):
           f"{cak} cakisma, {en}x{boy} mm")
 
 
+def seri_direnc_bacaga(fps, pn, kondu, kart=None, sinir_mm=5.0):
+    """PE4312'nin seri veri direncini pin 3'un dibine cek.
+
+    NEDEN OZEL BIR GECIS. Bu direnc bir susleme degil, veri sayfasi
+    sarti: pSemi DOC-81482 s.5, "Resistors on pins 1 and 3" —
+    "A 10-kohm resistor on the inputs to pin 1 and 3 eliminates the
+    package resonance between the RF input pin and the two digital
+    inputs. The specified attenuation error versus frequency
+    performance depends upon this condition."
+
+    Direnc paketin ICINDEKI rezonansi sonumluyor; isini ancak
+    bacagin dibinde yapar. Kartin ote ucundaki bir direnc RF
+    bakimindan yok hukmundedir ve zayiflatma dogrulugu artik veri
+    sayfasindaki egri degildir.
+
+    OLCULDU (bu gecis yazilmadan once):
+
+        C   R400 -> U40 pin 3   160.1 mm
+            R409 -> U41 pin 3   132.2 mm
+            R418 -> U42 pin 3   122.3 mm
+            R427 -> U43 pin 3   113.8 mm
+        D   R99  -> U10 pin 3    79.7 mm
+
+    Zamanlamayi da bozuyordu. 10 kohm x hat kapasitesi: direnc cipin
+    dibindeyse yuk yalnizca pin + birkac mm iz, ~5 pF, zaman sabiti
+    50 ns. Gateware'in SPI saati 80 MHz / (2 x 8) = 5 MHz (spi_ana.v,
+    BOLEN=8), yani yarim periyot 100 ns ve veri sayfasi tSDSUP 10 ns
+    istiyor — 90 ns'de oturmasi gerekiyor. 5 pF ile 90 ns sonunda
+    3.3 x (1 - e^-1.8) = 2.75 V, VIH (0.7 x 3.3 = 2.31 V) uzerinde.
+    160 mm'lik bir izin kapasitesi ~16 pF; zaman sabiti 160 ns'ye
+    cikiyor ve ayni anda gerilim 1.44 V'ta kaliyor — esigin ALTINDA.
+    Yani uzak direnc yalnizca RF ozelligini degil, seri arayuzu de
+    bozuyor.
+    """
+    import math
+    import ayir as _ayir
+    if kart is None:
+        return 0
+    koridorlar = _ayir.KORIDOR.get(KART[kart][1], [])
+    tasinan = 0
+    for u in sorted(fps):
+        if "PE4312" not in fps[u].GetValue().upper():
+            continue
+        ped = next((q for q in fps[u].Pads() if q.GetNumber() == "3"), None)
+        if ped is None or not ped.GetNetname():
+            continue
+        ag = ped.GetNetname()
+        # o agdaki tek serbest direnc
+        adaylar = [r for r in sorted(fps)
+                   if r.startswith("R")
+                   and ag in {q.GetNetname() for q in fps[r].Pads()}]
+        if len(adaylar) != 1:
+            continue
+        r = adaylar[0]
+        q = fps[r].GetPosition()
+        if math.hypot(q.x - ped.GetPosition().x,
+                      q.y - ped.GetPosition().y) <= sinir_mm * MM:
+            continue
+        yer = bos_yer_ara(fps, r, ped.GetPosition(), koridorlar)
+        if yer is None:
+            continue
+        koy(fps, r, yer[0], yer[1], 0, kondu)
+        tasinan += 1
+    return tasinan
+
+
 def ayirma_gecisi(kart):
     """SADECE ayirma kondansatorlerini bacaklarina cek, karti kaydet.
 
@@ -2256,8 +2393,11 @@ def ayirma_gecisi(kart):
     fps = {fp.GetReference(): fp for fp in b.Footprints()}
     pn = padnetler(dizin, proj)
     n = ac_kalanlara_kondansator(fps, pn, set(fps), kart=kart)
+    m = seri_direnc_bacaga(fps, pn, set(fps), kart=kart)
     b.Save(pcb)
     print("%s: %d ayirma kondansatoru bacagina cekildi" % (kart, n))
+    if m:
+        print("%s: %d PE4312 seri direnci bacagina cekildi" % (kart, m))
     return n
 
 

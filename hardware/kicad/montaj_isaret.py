@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """Fiducial ve test noktalarini karta ekle.
 
     python3 montaj_isaret.py A      # tek kart

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // RGMII veris testi — cerceve yapisi ve CRC.
 //
 // Nibble akisini bayta geri cevirip cerceveyi cozuyoruz. Uc sey

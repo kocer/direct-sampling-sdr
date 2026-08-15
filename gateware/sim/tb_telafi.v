@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // Telafi filtresi testi — durtme cevabi ve doyurma.
 //
 // DURTME CEVABI: girise tek bir 1 verip cikisi izliyoruz. Cikan dizi

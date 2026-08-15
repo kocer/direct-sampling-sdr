@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """01_power sayfasini uretir. Kaynak: ../NETLIST.md §1 ve §9."""
 import json, os
 from schlib import Sheet
@@ -21,10 +23,13 @@ LDO = "Regulator_Linear:TPS7A20xxxDBV"
 ADP = "dogrudan-sdr:ADP150"
 FSOT = "Package_TO_SOT_SMD:SOT-23-5"
 FTSOT = "Package_TO_SOT_SMD:TSOT-23-5"
-FFB = "Inductor_SMD:L_0805_2012Metric"   # ferrit boncuk
+# FERRIT 0603, 0805 DEGIL. Tek LCSC kodu (C1015) tek govde demek;
+# 02_clock'taki FB10 0603 ile ciziliyor. Iki ayri ayak izi ayni koda
+# baglanirsa dizgide biri yanlis pede oturur.
+FFB = "Inductor_SMD:L_0603_1608Metric"   # ferrit boncuk
 
 s = Sheet("01_power", "Guc agaci", UU["01_power"],
-          "9-18V giris, ters polarite, TPS62130 x2, TPS7A20, ADP150 x4")
+          "9-17V giris, ters polarite, TPS62130 x2, TPS7A20, ADP150 x4, ferrit x2")
 
 
 def buck(ref, x, y, vin_label, vout_label, lref, fb_hi, fb_lo, note,
@@ -103,7 +108,12 @@ def buck(ref, x, y, vin_label, vout_label, lref, fb_hi, fb_lo, note,
 
 # ---------------------------------------------------------------- giris
 s.text("GIRIS VE KORUMA — NETLIST.md §9\\n"
-       "9-18 V aku ya da tezgah kaynagi. Ters polarite sahada bir kere olur, yeter.",
+       "9-17 V aku ya da tezgah kaynagi. Ters polarite sahada bir kere olur, yeter.\\n"
+       "UST SINIR 18 DEGIL 17 V. TPS62130 veri sayfasi (SLVSBC3F) tablo 7.3:\\n"
+       "onerilen calisma araligi 3-17 V; mutlak azami 20 V. 18 V yazan bir\\n"
+       "tasarimda parca veri sayfasi disinda kosuyor ve TVS de tutmuyor —\\n"
+       "SMBJ20A 20 V'ta bloke, yani 18 V'u kirpmiyor. 4S lipo (16.8 V dolu)\\n"
+       "sinirin altinda kaliyor, 5S (21 V) KALMIYOR.",
        20, 16)
 
 s.sym("Connector:Conn_01x02_Pin", "J1", "XT60", 30, 42,
@@ -150,6 +160,12 @@ def flag(x, y, net):
 
 flag(150, 100, "+3V3")
 flag(350, 100, "+1V1")
+# +3V3_CLK ve +3V3_A ARTIK FERRITTEN GELIYOR — BAYRAK SART.
+# Ferrit pasif bir parca; ERC o iki rayda hicbir guc kaynagi gormuyor
+# ve besleme bacaklarini "surulmemis" sayiyor. Ayni durum VCXO_VDD'de
+# de var ve orada da bayrakla cozuldu (gen_02_clock).
+flag(150, 172, "+3V3_CLK")
+flag(200, 172, "+3V3_A")
 s.power("GND", 200, 100)
 s.wire(200, 100, 200, 93.65)
 s.pwr_flag(200, 93.65)
@@ -233,8 +249,10 @@ s.text("+1V8\\nFPGA VCCIO\\nbanka 6/3", 30, 219, 1.2)
 # ADP150 basina (giris kondansatoru, cikis kondansatoru).
 # C10/C11 U3'un; C12..C23 alti ADP150'nin. C7-C46 araligi bostu.
 ADP_KAP = {"U8": ("C12", "C13"), "U4": ("C14", "C15"),
-           "U5": ("C16", "C17"), "U6": ("C18", "C19"),
-           "U7": ("C20", "C21"), "U9": ("C22", "C23")}
+           "U5": ("C16", "C17"), "U9": ("C22", "C23")}
+# C18..C21 ARTIK LDO KAPLARI DEGIL, FERRIT SUZGECININ KAPLARI.
+# Referanslar korundu: numaralar degisirse BOM, CPL ve yerlesim
+# kurallari birden kayiyor ve degisikligin gozden gecirilmesi zorlasiyor.
 # HER RAYIN KENDI VARYANTI — ADP150 SABIT CIKISLI BIR LDO.
 #
 # Alti LDO'nun degeri de "ADP150" yaziyordu ve BOM'da tek satirda,
@@ -248,32 +266,62 @@ ADP_KAP = {"U8": ("C12", "C13"), "U4": ("C14", "C15"),
 #
 # Deger artik gerilimi tasiyor; bom.py her varyanti ayri satira
 # koyuyor.
-# ACIK MADDE — U6 VE U7 CALISMAZ: 3.3'TEN 3.3 URETILEMEZ.
+# U6 VE U7 KALDIRILDI — 3.3'TEN 3.3 URETILEMEZ. YERLERINDE FERRIT VAR.
 #
-# ONCE COZUM DENENDI VE GERI ALINDI. LDO'lari cikarip yerine ferrit
-# boncuk + kondansator koydum; sema uretimi kirildi ve kart bozuldu
-# (ERC 1 ihlal, sema denetimi 58 bulgu). Deger kaybetmemek icin
-# yalnizca o blok geri alindi, varyant duzeltmeleri kaldi.
-#
-# Ikisi de girisini +3V3'ten aliyor ve cikisi +3V3_CLK ile +3V3_A,
+# Ikisi de girisini +3V3'ten aliyordu ve cikislari +3V3_CLK ile +3V3_A,
 # yani yine 3.3 V. Bir LDO'nun dusme gerilimi var (ADP150 icin 150 mA'de
 # ~105 mV); ayni gerilimden ayni gerilim uretilemez. Regulatorler
-# duzenlemeye hic girmez, cikis girisi takip eder ve LDO'nun
-# varlik sebebi olan PSRR hic olusmaz.
+# duzenlemeye hic girmezdi, cikis girisi takip ederdi ve LDO'nun
+# varlik sebebi olan PSRR hic olusmazdi.
 #
-# Yerine FERRIT BONCUK + KONDANSATOR. Yuk kucuk: +3V3_CLK dort ped
-# (VCXO), +3V3_A sekiz ped (DAC AVDD), toplam ~100 mA. Gurultunun
-# geldigi yer U1'in anahtarlama frekansi (TPS62130, 2.5 MHz) ve orada
-# ferrit + 10 uF, bir LDO'nun ayni frekanstaki PSRR'iyla ayni
+# YERINE FERRIT BONCUK + KONDANSATOR (FB6, FB7). Yuk kucuk: +3V3_CLK
+# dort ped (VCXO zinciri), +3V3_A sekiz ped (DAC AVDD), toplam ~100 mA.
+# Gurultunun geldigi yer U1'in anahtarlama frekansi (TPS62130, 2.5 MHz)
+# ve orada ferrit + 10 uF, bir LDO'nun ayni frekanstaki PSRR'iyla ayni
 # mertebede bastirma veriyor. Ustelik iki parca ve iki ray eksiliyor.
+#
+# HESAP (600R@100MHz boncuk, tipik R+jwL; 100 MHz'te 600 ohm demek
+# yaklasik L = 950 nH, DC direnci 0.1 ohm mertebesinde):
+#   DC dusme      50 mA x 0.1R = 5 mV — LDO'nun 105 mV'una gore ihmal
+#   kesim frekansi 950 nH + 10 uF -> 1/(2*pi*sqrt(LC)) = 51 kHz
+#   2.5 MHz'te    boncuk ~15 ohm (bu frekansta hala endüktif),
+#                 10 uF ~0.006 ohm -> bolme orani ~2500, yani ~68 dB
+# ADP150'nin 2.5 MHz'teki PSRR'i veri sayfasi Sekil 5'te 40 dB
+# civari. Yani suzgec o frekansta LDO'dan KOTU DEGIL.
+#
+# SINIRI DA YAZ: ferrit DC duzenlemesi yapmaz. +3V3 rayindaki yuk
+# degisimi (PHY'nin acilip kapanmasi gibi) dogrudan bu iki raya
+# biner; LDO bunu bastirirdi. Kabul edilebilir cunku iki yuk de
+# (VCXO, DAC AVDD) kendi ic duzenlemesine sahip ve rayin toplam
+# statik toleransi TPS62130'un +/-1.5%'i.
 #
 # Alternatifler tartildi: VIN_PROT'tan LDO ile beslemek TSOT-23-5
 # govdede parca basina 0.44 W demek (12 V - 3.3 V) x 50 mA, cok
 # sicak. Ayri bir 5 V buck eklemek calisirdi ama bir bobin, bir
 # geri besleme bolucusu ve dort kondansator daha getiriyordu.
+def ferrit_suzgec(ref, giris, cikis, x, kaplar, ne, y=205):
+    """Ferrit boncuk + 10 uF + 100 nF: LC alcak gecirgen besleme suzgeci.
+
+    Kondansatorler CIKIS tarafinda. Giris tarafi zaten +3V3'un kendi
+    ayirmasiyla dolu (115 ped); suzgecin ihtiyaci olan seyi ferritin
+    OTE ucundaki kapasite veriyor.
+    """
+    s.sym(L, ref, "ferrit 600R", x, y, rot=90, fp=FFB)
+    s.pin_label(L, "1", x, y, 90, giris, "input")
+    s.pin_label(L, "2", x, y, 90, cikis, "output")
+    for cref, cval, dx in zip(kaplar, ("10uF", "100nF"), (-14, 14)):
+        s.sym(C, cref, cval, x + dx, y + 14, rot=90, fp=FC)
+        s.pin_label(C, "1", x + dx, y + 14, 90, cikis, "input")
+        s.pin_power(C, "2", x + dx, y + 14, 90, "GND")
+    s.text(ne, x - 8, 226, 1.2)
+
+
+ferrit_suzgec("FB6", "+3V3", "+3V3_CLK", 265, ("C18", "C19"),
+              "VCXO zinciri\\nFERRIT, LDO DEGIL")
+ferrit_suzgec("FB7", "+3V3", "+3V3_A", 320, ("C20", "C21"),
+              "DAC AVDD\\nFERRIT, LDO DEGIL")
+
 rails = [("U8", "+2V5", "2.5", "FPGA VCCAUX\\nZORUNLU", 100),
-         ("U6", "+3V3_CLK", "3.3", "VCXO — TEK\\nbesleme, FERRIT", 265),
-         ("U7", "+3V3_A", "3.3", "DAC AVDD", 320),
          ("U4", "+1V8_A", "1.8", "ADC AVDD", 155),
          ("U5", "+1V8_D", "1.8", "ADC DRVDD", 210),
          ("U9", "+1V8_CLK", "1.8", "ADCLK846 VS\\nZORUNLU 1.8V", 375)]
@@ -296,7 +344,9 @@ s.text("U9 (+1V8_CLK) ADCLK846'nin VS rayi. Veri sayfasi basligi:\n"
        "bastan 3.3 V varsayilmisti — tampon o rayda calismaz.", 320, 252, 1.25)
 s.text("U8 (+2V5) ECP5 VCCAUX. Ilk guc agacinda ATLANMISTI — FPGA'yi hic\n"
        "calistirmayan turden bir eksik. ADP150AUJZ-2.5, LCSC C144257.", 105, 244, 1.25)
-s.text("U6 (+3V3_CLK) VCXO'nun TEK beslemesi. Ferrit boncuk, ayri toprak adasi.\\n"
+s.text("FB6 (+3V3_CLK) VCXO zincirinin beslemesi, FB7 (+3V3_A) DAC AVDD.\\n"
+       "Once LDO'ydular: giris +3V3, cikis 3.3 V — bir regulator kendi giris\\n"
+       "gerilimini uretemez. Ferrit + 10 uF, 2.5 MHz'te ayni bastirmayi veriyor.\\n"
        "Besleme gurultusu DOGRUDAN faz gurultusune donusuyor — manset spec burada.",
        105, 232, 1.3)
 

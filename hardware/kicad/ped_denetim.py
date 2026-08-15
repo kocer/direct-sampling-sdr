@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 """Agsiz bakir ped avcisi — sembol/ayak izi numara uyusmazligi.
 
     python3 ped_denetim.py            # uc kart

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """Bant filtrelerini yeniden sentezle ve ngspice ile dogrula.
 
     python3 filtre_tasarim.py
@@ -50,7 +52,14 @@ KAPSAM = {
     "15_10m": [(21.0, 21.45), (24.89, 24.99), (28.0, 29.7)],
     "6m":     [(50.0, 54.0)],
 }
-TIP = {"160m": "toroid", "80_60m": "toroid", "40_30m": "toroid",
+# ALTI BANDIN ALTISI DA SMD — TOROID KALMADI.
+# gen_03_filter.py'de alt uc bandin toroidleri kaldirildi (uc toroid
+# bir bant yuvasina sigmiyor ve dort kanalda 48 adet elle sarim
+# demek). Burasi guncellenmeyince arac o uc bandi hala Q=150 ile
+# olcuyordu, yani KARTTA OLMAYAN bir bobinle: 160 m'de bant kenari
+# 0.68 dB gorunuyordu, Q=40 ile gercek deger 1.71 dB. Dogrulama
+# araci tasarimdan geri kalinca yanlis tarafta hata yapiyor.
+TIP = {"160m": "smd", "80_60m": "smd", "40_30m": "smd",
        "20_17m": "smd", "15_10m": "smd", "6m": "smd"}
 Q = {"toroid": 150.0, "smd": 40.0}
 

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // adc_giris testi — AD9251 cogullanmis paralel CMOS.
 //
 // ADC'yi kenar bazinda taklit ediyoruz: DCO 80 MHz, veri yolu her

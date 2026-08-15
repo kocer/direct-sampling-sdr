@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // dac_cogullu testi — karsisina AD9767 cogullanmis mod modeli.
 //
 // Modul kendi kendini dogrulayamaz: "IQWRT darbeledim" demek, cipin

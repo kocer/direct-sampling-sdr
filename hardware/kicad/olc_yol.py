@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 """Veri yolu demetlerini olc: kesisme, uzunluk, uzunluk farki.
 
 KESISME NEDEN ONEMLI: iki hat sirasi iki ucta ters ise yollar

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 """Yerlesim kalitesi: ratsnest uzunlugu."""
 import math, re, sys, pcbnew
 ATLA = re.compile(r"^(GND|\+|VIN_PROT|CHASSIS|GND_HDR|GND_STRAP|GND_MODE)")

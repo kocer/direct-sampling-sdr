@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // DDC zinciri testi — NCO + karistirici + CIC birlikte.
 //
 // Bu testin sordugu soru sudur: anten girisine bilinen bir sinus

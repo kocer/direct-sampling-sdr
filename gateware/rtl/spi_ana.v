@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // SPI ana birimi — ADC, VCXO DAC, PA bias, PA ADC icin ortak.
 //
 // NEDEN VAR: AD9251 acilista COGULLANMAMIS modda geliyor. Kartta

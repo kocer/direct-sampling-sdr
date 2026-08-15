@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // udp_ayikla testi — rgmii_alis ile BIRLIKTE, gercek bir UDP paketi.
 //
 // Iki modulu ayri ayri test etmek buradaki asil riski kacirirdi:

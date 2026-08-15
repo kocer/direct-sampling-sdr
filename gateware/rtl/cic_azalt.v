@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // CIC azaltici — Hogenauer, N kademe, R oranli.
 //
 // NEDEN CIC: 80 MSPS'ten 48 kSPS'e inmek 1666 kat azaltma. Tek FIR

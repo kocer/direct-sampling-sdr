@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // MDIO testi — karsisina GERCEK bir PHY modeli konuyor.
 //
 // Modul kendi kendini dogrulayamaz. "64 kenar urettim" demek, PHY'nin

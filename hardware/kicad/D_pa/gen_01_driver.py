@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """01_driver: surucu katlari. Kaynak: ../../PA_TASARIM.md §1."""
 import json, os
 from schlib import Sheet

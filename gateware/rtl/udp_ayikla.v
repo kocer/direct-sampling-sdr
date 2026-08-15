@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // Ethernet/IPv4/UDP ayikla — yuku host_arayuz'e ver.
 //
 // Alis yolunun ikinci yarisi: rgmii_alis cerceveyi bayta cevirdi,

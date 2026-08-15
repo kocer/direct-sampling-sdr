@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // Kontrol zinciri — roleler, zayiflaticilar, bias DAC'lari.
 //
 // Uc ayri yol var ve ucu de bu modulden cikiyor:

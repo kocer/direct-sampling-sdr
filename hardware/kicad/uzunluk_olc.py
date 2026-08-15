@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 """Cekilmis yollarin GERCEK uzunlugu, demet demet.
 
     python3 uzunluk_olc.py A_main/dogrudan_sdr_A.kicad_pcb

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """Kalan cakismalari ayir — KRITIK PARCALARA DOKUNMADAN.
 
     python3 ayir.py A_main/dogrudan_sdr_A.kicad_pcb
@@ -358,8 +360,22 @@ def kenar_grubu(b):
     Burada, gercek_yerlesim.py'de degil: orada pcbnew proxy'leri
     bozuluyor (GetPosition() bile). Temiz surec sart.
     """
+    # ESKI GRUBU SILMEDEN ONCE UYELERINI CIKAR.
+    #
+    # b.Remove(g) grubu yok ediyor ama uyelerin "ait oldugum grup"
+    # isaretcisi kartta kaliyor ve o isaretci artik SERBEST BIRAKILMIS
+    # bellegi gosteriyor. Sonraki g.AddItem(fp) o eski grubu okumaya
+    # calisiyor ve surec cokuyor.
+    #
+    # Olculdu: zincirde ayir IKI KEZ kosuyor. Ilk kosu grubu kuruyor,
+    # ikinci kosu once onu siliyor ve AddItem'da segfault veriyor —
+    # D kartinda her seferinde. yap.sh'in "ikinci ayir cokti" dali
+    # dogru davraniyordu ama sebep gorunmuyordu, cunku cokme
+    # stderr'de ve grep'in gordugu satir hic yazilmiyordu.
     for g in list(b.Groups()):
         if g.GetName() == "kenar_montaj":
+            for it in list(g.GetItems()):
+                g.RemoveItem(it)
             b.Remove(g)
     kutu_b = b.GetBoardEdgesBoundingBox()
     en, boy = kutu_b.GetWidth() / MM, kutu_b.GetHeight() / MM

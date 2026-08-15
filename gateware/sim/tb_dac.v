@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // DAC arayuzu testi — ofset ikili donusumu ve WRT zamanlamasi.
 //
 // Iki sey olculuyor:

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // Kayit dosyasi — gateware'in butun ayarlari tek yerden.
 //
 // Ana bilgisayar UDP ile yaziyor, gateware buradan okuyor. Basit bir

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // fifo_gecis testi — saat alani gecisi.
 //
 // BU MODULUN TESTI YOKTU ve tam da sessiz bozulan cinsten: dusen ya

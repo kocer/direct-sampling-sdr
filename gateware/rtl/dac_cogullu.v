@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // AD9767 COGULLANMIS mod arayuzu — U31 icin.
 //
 // Kartta iki AD9767 var ve IKISI FARKLI MODDA:

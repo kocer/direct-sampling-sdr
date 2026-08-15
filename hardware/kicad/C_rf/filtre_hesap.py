@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """C karti bant filtresi bankasi — deger sentezi.
 
 Yedi pozisyon, dordu ayni: her kanalda ayni banka.

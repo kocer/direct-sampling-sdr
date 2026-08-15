@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "16370651-4b00-4001-a6b8-b792cfe2795e")
+	(uuid "8800628a-3ed7-435c-ba47-edd1f4d54d9c")
 	(paper "A3")
 	(title_block
 		(title "dogrudan_sdr_D — dogrudan orneklemeli HF/VHF/UHF transceiver")
@@ -10,100 +10,10 @@
 		(company "TEVITOL amator telsiz kulubu / TA4DTA")
 		(comment 1 "Lisans: CERN-OHL-S v2 (donanim) · GPL-3.0 (HDL) · CC-BY-SA 4.0 (dok)")
 		(comment 2 "Baglantilar PA_TASARIM.md sartnamesinden")
+		(comment 3 "Copyright (c) 2026 TA4DTA - lisans CERN-OHL-S-2.0")
+		(comment 4 "Donanim CERN-OHL-S-2.0 | HDL ve yazilim GPL-3.0-only | belgeler CC-BY-SA-4.0")
 	)
 	(lib_symbols)
-	(sheet
-		(at 150 70)
-		(size 90 26)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0)
-		)
-		(uuid "21d497e1-085b-4419-ae7e-228184c291be")
-		(property "Sheetname" "Kuplor + olcum"
-			(at 150 69.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "04_detect.kicad_sch"
-			(at 150 96.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "dogrudan_sdr_D"
-				(path "/16370651-4b00-4001-a6b8-b792cfe2795e"
-					(page "5")
-				)
-			)
-		)
-	)
-	(sheet
-		(at 30 110)
-		(size 90 26)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0)
-		)
-		(uuid "7523ce42-188a-4534-820a-5dd880543d01")
-		(property "Sheetname" "Cikis filtreleri"
-			(at 30 109.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "05_lpf.kicad_sch"
-			(at 30 136.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "dogrudan_sdr_D"
-				(path "/16370651-4b00-4001-a6b8-b792cfe2795e"
-					(page "6")
-				)
-			)
-		)
-	)
 	(sheet
 		(at 30 70)
 		(size 90 26)
@@ -119,7 +29,7 @@
 		(fill
 			(color 0 0 0 0)
 		)
-		(uuid "82157389-1296-4ae6-bce9-d7e547048ab7")
+		(uuid "4891d68c-1ae8-4f5e-892e-9d89e8430c20")
 		(property "Sheetname" "Bias servosu"
 			(at 30 69.3 0)
 			(show_name no)
@@ -144,54 +54,8 @@
 		)
 		(instances
 			(project "dogrudan_sdr_D"
-				(path "/16370651-4b00-4001-a6b8-b792cfe2795e"
+				(path "/8800628a-3ed7-435c-ba47-edd1f4d54d9c"
 					(page "4")
-				)
-			)
-		)
-	)
-	(sheet
-		(at 150 30)
-		(size 90 26)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0)
-		)
-		(uuid "8f0e7112-4c39-4697-b7c2-cd8c4978039f")
-		(property "Sheetname" "Final kat"
-			(at 150 29.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "02_final.kicad_sch"
-			(at 150 56.9 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "dogrudan_sdr_D"
-				(path "/16370651-4b00-4001-a6b8-b792cfe2795e"
-					(page "3")
 				)
 			)
 		)
@@ -211,7 +75,7 @@
 		(fill
 			(color 0 0 0 0)
 		)
-		(uuid "d13d1f24-25b4-44c7-a501-75e6e8a66471")
+		(uuid "6953626e-b286-4085-8bd3-8e178e1f37f3")
 		(property "Sheetname" "Guc ve koruma"
 			(at 150 109.3 0)
 			(show_name no)
@@ -236,8 +100,146 @@
 		)
 		(instances
 			(project "dogrudan_sdr_D"
-				(path "/16370651-4b00-4001-a6b8-b792cfe2795e"
+				(path "/8800628a-3ed7-435c-ba47-edd1f4d54d9c"
 					(page "7")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 150 70)
+		(size 90 26)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "69cf6d7f-e5ad-45aa-8834-ed06029e20cb")
+		(property "Sheetname" "Kuplor + olcum"
+			(at 150 69.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "04_detect.kicad_sch"
+			(at 150 96.9 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "dogrudan_sdr_D"
+				(path "/8800628a-3ed7-435c-ba47-edd1f4d54d9c"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 30 110)
+		(size 90 26)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "daacbcd8-2eb8-47a8-89f4-e05b027be370")
+		(property "Sheetname" "Cikis filtreleri"
+			(at 30 109.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "05_lpf.kicad_sch"
+			(at 30 136.9 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "dogrudan_sdr_D"
+				(path "/8800628a-3ed7-435c-ba47-edd1f4d54d9c"
+					(page "6")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 150 30)
+		(size 90 26)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "dc45e492-1121-4e29-b88a-7437c9ae8d95")
+		(property "Sheetname" "Final kat"
+			(at 150 29.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "02_final.kicad_sch"
+			(at 150 56.9 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "dogrudan_sdr_D"
+				(path "/8800628a-3ed7-435c-ba47-edd1f4d54d9c"
+					(page "3")
 				)
 			)
 		)
@@ -257,7 +259,7 @@
 		(fill
 			(color 0 0 0 0)
 		)
-		(uuid "ee520a0d-8e37-4b9c-a904-6c7b7e1bc541")
+		(uuid "e6a95cf1-be34-4c8c-9798-fb0be8b9a149")
 		(property "Sheetname" "Surucu katlari"
 			(at 30 29.3 0)
 			(show_name no)
@@ -282,7 +284,7 @@
 		)
 		(instances
 			(project "dogrudan_sdr_D"
-				(path "/16370651-4b00-4001-a6b8-b792cfe2795e"
+				(path "/8800628a-3ed7-435c-ba47-edd1f4d54d9c"
 					(page "2")
 				)
 			)

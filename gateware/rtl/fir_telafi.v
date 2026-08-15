@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // CIC telafi filtresi — sin(x)/x egimini duzeltir.
 //
 // CIC'in gecirme bandi duz degil:

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // Saat alani gecis FIFO'su — Gray sayacli.
 //
 // clk_sys (80 MHz, VCXO'dan) ile clk_eth (125 MHz, PHY'den) ayri

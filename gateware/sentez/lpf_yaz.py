@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 """LPF'i KARTTAN uret, elle yazma.
 
     python3 sentez/lpf_yaz.py            # sentez/ust.lpf yazar

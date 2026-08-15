@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """04_detect: yonlu kuplor, guc olcumu, SWR korumasi, DPD ornekleme.
 Kaynak: ../../PA_TASARIM.md §6 ve §6b.
 
@@ -24,6 +26,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
 
 DET = "dogrudan-sdr:AD8318"
+# AYAK IZI ADI NXP DIYOR AMA OLCU AD8318'IN KENDISINDEN — DOGRULANDI.
+# AD8318 veri sayfasi (Rev. B, Sekil 51, LFCSP_VQ 4x4, JEDEC
+# MO-220-VGGC): govde 4.00 BSC kare, adim 0.65 BSC, ACIK PED
+# 1.95 / 2.10 SQ / 2.25 mm (asgari / nominal / azami). Bu ayak izinin
+# 2.1 mm'si nominalin ta kendisi. Once "gercek olcu 2.25 olabilir,
+# 2.1 guvenli tarafta" diye acik madde yazilmisti; 2.25 aslinda
+# AZAMI degerdi, nominal degil.
 FDET = "Package_DFN_QFN:NXP_VQFN-16-1EP_4x4mm_P0.65mm_EP2.1x2.1mm"
 T = "Device:Transformer_1P_1S"
 # TRAFO AYAK IZI, BOBIN DEGIL. Once L_Toroid_T50_Vertical

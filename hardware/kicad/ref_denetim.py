@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 """Referans catismasi ve sessiz parca kaybi denetimi.
 
     python3 ref_denetim.py            # uc kart

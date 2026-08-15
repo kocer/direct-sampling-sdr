@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // AD9767 arayuzu — cift kanalli, 14 bit, paralel, CMOS.
 //
 // ADC'den farkli olarak DAC paralel ve saati BIZ veriyoruz. Iki port

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // UART alici + verici — hata ayiklama arayuzu.
 //
 // NEDEN VAR: kayit dosyasini yazacak HICBIR YOL YOKTU. ust.v'de

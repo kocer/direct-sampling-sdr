@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """
 Minik KiCad sema uretici.
 
@@ -15,7 +17,13 @@ Kullanim:
     s.power("GND", 100, 120)
     s.write(path)
 """
-import os, re, uuid
+import os, re, uuid, sys
+# Telif satiri TEK kaynaktan geliyor: kicad/telif.py. Sema dosyalari
+# her ./yap.sh kosusunda sifirdan yaziliyor, bu yuzden satir uretilmis
+# .kicad_sch'e elle degil, URETECIN CIKTISINA basiliyor.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from telif import SEMA_TELIF, SEMA_LISANS  # noqa: E402
+
 
 VER = 20260306          # KiCad 10.0.5 surumu
 LIBDIRS = ["/usr/share/kicad/symbols",
@@ -456,6 +464,8 @@ class Sheet:
     (company "{PROJ}")
     (comment 1 "{self.comment}")
     (comment 2 "Baglantilar: ../NETLIST.md")
+    (comment 3 "{SEMA_TELIF}")
+    (comment 4 "{SEMA_LISANS}")
   )
   (lib_symbols
 {libs}

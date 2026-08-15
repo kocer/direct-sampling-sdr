@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // Tek alis kanali — NCO, karistirici, CIC ve telafi bir arada.
 //
 // Dort tane kosacak. Bu dosyanin varlik sebebi kaynak butcesini

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 """Sembol pin ADI ile bagli oldugu AG'i karsilastir.
 
     python3 sema_denetim.py           # uc kart

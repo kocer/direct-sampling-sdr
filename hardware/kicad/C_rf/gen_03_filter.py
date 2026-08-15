@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """03_filter: 7 pozisyonlu bant filtresi bankasi x 4 kanal.
 Kaynak: ../NETLIST_C.md §2, degerler filtre_hesap.py'den."""
 import json, os
@@ -10,7 +12,42 @@ UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
 K = "dogrudan-sdr:G6KU-2F-Y"
 FK = "Relay_SMD:Relay_DPDT_Omron_G6K-2F-Y"
 L, C = "Device:L", "Device:C"
-FL = "Inductor_SMD:L_0805_2012Metric"
+# AYAK IZI DEGERE GORE — TEK BIR 0805 HEPSINE OLMUYOR.
+#
+# Butun bobinler 0805 pedindeydi. LCSC'de stokta olan gercek
+# parcalara bakildiginda (21 degerin 21'i var, kodlariyla birlikte
+# ardc/dogrulama.md'de) govdeler soyle:
+#
+#   33/150/220 nH   0603
+#   470/820 nH      0805
+#   1000 nH ve ustu 1210   (NLV32T, BRL3225, LQH32PN — hepsi 3.2x2.5)
+#
+# 1210'luk bir parca 0805 pedine (2.0x1.25 mm) OTURMAZ. Kartta 32
+# bobin bu durumdaydi: 16x 1uH, 4'er tane 1.5/2.2/3.3/18uH.
+# Lehimlenemezlerdi ve temel_denetim bunu yakalamaz — sembol ile
+# ayak izi kendi arasinda tutarli, yanlis olan SECILEN PARCA.
+# Ethernet PHY'sinde yenen hatanin aynisi (QFN-48 secilmisti, cip
+# WQFN-40'ti).
+#
+# 680 nH ayri bir durum: bulunan tek aday 0806 (2.0x1.6), o da
+# 0805'e oturmuyor. 1210'a alindi — o govdede secenek bol.
+FL_0603 = "Inductor_SMD:L_0603_1608Metric"
+FL_0805 = "Inductor_SMD:L_0805_2012Metric"
+FL_1210 = "Inductor_SMD:L_1210_3225Metric"
+
+
+def bobin_fp(nh):
+    """Bobin ayak izi — LCSC'de stokta olan gercek govdelere gore."""
+    if nh <= 250:
+        return FL_0603
+    if nh < 680:
+        return FL_0805
+    if nh < 1000:
+        return FL_1210          # 680 nH: tek aday 0806, 0805'e olmaz
+    return FL_1210
+
+
+FL = FL_0805
 FLT = "dogrudan-sdr:L_Toroid_T50_Vertical"
 FC = "Capacitor_SMD:C_0603_1608Metric"
 
@@ -117,13 +154,13 @@ def bolum(ch, bant, x, y, idx):
 
     # ---- merdiven bant geciren: sont LC / seri LC / sont LC
     fx = x + 55
-    fl = FLT if tip == "toroid" else FL
+    fl = FLT if tip == "toroid" else None   # her bobin kendi capina gore
 
     def rezonator(px, dugum):
         """Bir sont rezonator: Lp ve Cp paralel, topraga."""
         s.sym(L, cnt("L"), deger(Lp / 1000 if Lp >= 1000 else Lp,
                                  "uH" if Lp >= 1000 else "nH"),
-              px, y + 20, rot=90, fp=fl)
+              px, y + 20, rot=90, fp=(fl or bobin_fp(Lp)))
         s.pin_label(L, "1", px, y + 20, 90, dugum, "passive")
         s.pin_power(L, "2", px, y + 20, 90, "GND")
         s.sym(C, cnt("C"), deger(Cp, "pF"), px + 20, y + 20, rot=90, fp=FC)
@@ -138,7 +175,7 @@ def bolum(ch, bant, x, y, idx):
     # seri kol: Ls ve Cs seri, iki dugum arasinda
     s.sym(L, cnt("L"), deger(Ls / 1000 if Ls >= 1000 else Ls,
                              "uH" if Ls >= 1000 else "nH"),
-          fx + 45, y, rot=0, fp=fl)
+          fx + 45, y, rot=0, fp=(fl or bobin_fp(Ls)))
     s.pin_label(L, "1", fx + 45, y, 0, a, "passive")
     s.pin_label(L, "2", fx + 45, y, 0, orta, "passive")
     s.sym(C, cnt("C"), deger(Cs, "pF"), fx + 65, y, rot=0, fp=FC)

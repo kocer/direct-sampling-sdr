@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // Kontrol zinciri testi — 595 modeli ile ucdan uca.
 //
 // Zincirdeki 595'leri gercekten modelleyip cikislarina bakiyoruz.

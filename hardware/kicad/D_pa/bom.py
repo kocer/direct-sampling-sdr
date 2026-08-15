@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """D karti BOM'unu semadan uretir, LCSC kodlariyla eslestirir.
 
 Calistir:  python3 bom.py            ekrana ozet
@@ -39,8 +41,19 @@ LCSC = {
     "A kartindan TX1": ("C496550",  0.19, "extended"),
     "DPD -> C karti": ("C496550",   0.19, "extended"),
     "50V giris":      ("C395880",   0.30, "extended"),
+    # JLCPCB parca aramasindan okundu (Agu 2026); stok o gunku.
+    "IRFB4110PBF":    ("C2650",     1.95, "extended"),   # Infineon, TO-220
+    "LM74700QDBVRQ1": ("C2941042",  0.95, "extended"),   # TI, SOT-23-6
+    # SMBJ54A: Littelfuse stogu az (990). Ikinci kaynak MDD C123823
+    # (2126) ve Diodes C135083 (1812) — ucu de SMB/DO-214AA.
+    "SMBJ54A":        ("C151266",   0.20, "extended"),
     "A kartina":      ("EL", 0.15, "elde"),
     "C kartindan":    ("EL", 0.05, "elde"),
+    # 2.54 mm baslik — elde lehimleniyor, dizgiye verilmiyor.
+    "sonraki PA":     ("EL", 0.15, "elde"),
+    # SO-239 panel jakina giden vidali klemens; kartta lehimli
+    # terminal, dizgi disi.
+    "ANTEN -> panel SO-239": ("EL", 0.30, "elde"),
     "MCP3208T-CI/SL": ("C626764", 2.13, "extended"),
     "7:1 binokuler":  ("EL", 0.60, "elde"),
     "1:4 binokuler":  ("EL", 0.60, "elde"),
@@ -48,6 +61,26 @@ LCSC = {
     "1:2 cikis":      ("EL", 0.50, "elde"),
     "kuplor ileri":   ("EL", 0.50, "elde"),
     "kuplor yansiyan": ("EL", 0.50, "elde"),
+    # ELDE SARILAN MANYETIKLER — LCSC KODU YOK VE OLAMAZ.
+    # Bunlar Amidon toz demir/ferrit cekirdek + emaye tel; JLCPCB
+    # boyle bir parca satmiyor ve dizgiye de verilemez. Fiyatlar
+    # cekirdek basina, tel dahil degil. Sarim sayilari
+    # manyetik_hesap.py'den (ornek "T94-2 24s" = 24 sarim).
+    # Bunlari tabloya koymak "kodu yok" uyarisini susturmak icin
+    # DEGIL; uyari dogru ama yanlis yerde — bu parcalar siparis
+    # listesinde degil, sarma listesinde.
+    "T94-2 24s":      ("EL", 1.20, "elde"),
+    "T94-2 17s":      ("EL", 1.20, "elde"),
+    "T94-2 15s":      ("EL", 1.20, "elde"),
+    "T68-2 12s":      ("EL", 0.60, "elde"),
+    "T68-2 10s":      ("EL", 0.60, "elde"),
+    "T50-6 9s":       ("EL", 0.45, "elde"),
+    "T50-6 7s":       ("EL", 0.45, "elde"),
+    "FT50-43 1:32":   ("EL", 0.55, "elde"),
+    "BN43-202 2:1":   ("EL", 0.60, "elde"),
+    "BN43-202 2:3 CT": ("EL", 0.60, "elde"),
+    "BN43-202 3:1":   ("EL", 0.60, "elde"),
+    "BN43-3312 2:4 CT": ("EL", 0.90, "elde"),
 }
 # Pasifler: deger -> LCSC. Hepsi 0402/0603 temel kutuphane.
 PASIF = {
@@ -65,6 +98,8 @@ PASIF = {
     "26.7k": ("C25765", 0.002),  "10k 1%": ("C25744", 0.002),
     "2.2k 1%": ("C4190", 0.002), "1.92k 1%": ("C23025", 0.002),
     "1.5k":  ("C4310",  0.0008), "50R":   ("C22775", 0.002),
+    # 19R1: Panasonic ERJ3EKF19R1V, 0603 %1 (JLCPCB, Agu 2026)
+    "19R1":  ("C400656", 0.01),
     "0.01R 2W": ("C2907226", 0.05), "51R 1%": ("C22790", 0.003),
     "61R9":  ("C22811", 0.003),  "56R 1W": ("C22787", 0.02),
     "1uH bogucu": ("C1016", 0.02), "10uH bogucu": ("C1019", 0.03),

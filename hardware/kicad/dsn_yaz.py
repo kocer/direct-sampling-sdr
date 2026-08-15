@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """KiCad PCB -> Specctra DSN.
 
     python3 dsn_yaz.py A_main/dogrudan_sdr_A.kicad_pcb /tmp/A.dsn

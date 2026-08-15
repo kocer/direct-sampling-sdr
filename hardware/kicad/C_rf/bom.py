@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """C karti BOM'unu semadan uretir, LCSC kodlariyla eslestirir.
 
 Calistir:  python3 bom.py            ekrana ozet
@@ -27,6 +29,7 @@ LCSC = {
     "GDT 90V":        ("C2909520", 0.18, "extended"),
     "2.2uH":          ("C1017",    0.10, "extended"),
     "A kartina":      ("EL", 0.15, "elde"),
+    "D kartina":      ("EL", 0.10, "elde"),
     "A kartina #2":   ("EL", 0.05, "elde"),
     "SMA anten 1": ("C496550", 0.19, "extended"),
     "SMA anten 2": ("C496550", 0.19, "extended"),

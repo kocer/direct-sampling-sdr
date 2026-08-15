@@ -1,27 +1,32 @@
 Comment,Designator,Footprint,LCSC
 0.01R 2W,"RS1,RS2,RS3,RS4",Resistor_SMD:R_2512_6332Metric,C2907226
 0R,"R500,R501,R690",Resistor_SMD:R_0603_1608Metric,C21189
-1000pF,C517,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+1.1pF,C557,Capacitor_SMD:C_1206_3216Metric,BASE
+1.2pF,C561,Capacitor_SMD:C_1206_3216Metric,BASE
+1.6pF,"C534,C552",Capacitor_SMD:C_1206_3216Metric,BASE
+1000pF,C522,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 100R,"R304,R308,R312,R316",Resistor_SMD:R_0603_1608Metric,C25076
 100k,"R601,R606,R608",Resistor_SMD:R_0603_1608Metric,C25741
-100nF,"C10,C11,C110,C111,C12,C230,C231,C232,C233,C300,C301,C407,C408,C409,C413,C414,C415,C441,C442,C443,C444,C460,C461,C600,C609,C617,C651,C660,C665,C667,C690",Capacitor_SMD:C_0603_1608Metric,C1525
+100nF,"C10,C11,C111,C12,C230,C231,C232,C233,C300,C301,C407,C408,C409,C413,C414,C415,C441,C442,C443,C444,C460,C461,C600,C609,C617,C651,C660,C665,C667,C690",Capacitor_SMD:C_0603_1608Metric,C1525
 100nF,C662,Capacitor_SMD:C_0805_2012Metric,C1525
 100nF,C202,Capacitor_SMD:C_1206_3216Metric,C1525
 105k,R604,Resistor_SMD:R_0603_1608Metric,C25081
 10R,"R106,R108,R240,R241,R242,R243",Resistor_SMD:R_0603_1608Metric,C25190
 10k,"R100,R101,R102,R103,R104,R105,R107,R109,R302,R305,R306,R309,R310,R313,R314,R317,R603,R99",Resistor_SMD:R_0603_1608Metric,C25744
-10uF,"C204,C650",Capacitor_SMD:C_1206_3216Metric,C15850
+10uF,"C110,C204,C650",Capacitor_SMD:C_1206_3216Metric,C15850
 10uH bogucu,L11,Inductor_SMD:L_0805_2012Metric,C1019
 10uH bogucu,L20,dogrudan-sdr:L_Toroid_T50_Vertical,C1019
-110pF,C545,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-120pF,C516,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+110pF,C558,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+120pF,C520,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+12pF,C530,Capacitor_SMD:C_1206_3216Metric,BASE
+13pF,C556,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 140k,R602,Resistor_SMD:R_0603_1608Metric,C25742
-1500pF,C510,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-15pF,C544,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-1600pF,"C500,C506",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-160pF,"C528,C534,C538",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-180pF,"C505,C523",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-19R1,"R404,R410",Resistor_SMD:R_0603_1608Metric,?
+1500pF,C513,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+15pF,C512,Capacitor_SMD:C_1206_3216Metric,BASE
+1600pF,"C500,C508",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+160pF,"C529,C536,C544,C549",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+180pF,C506,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+19R1,"R404,R410",Resistor_SMD:R_0603_1608Metric,C400656
 1N4148WS,"D607,D610,D611,D612,D613,D614,D615,D616",Diode_SMD:D_SOD-323,C129905
 1R,"R200,R201",Resistor_SMD:R_2512_6332Metric,C22859
 1k,"R244,R245,R246,R247",Resistor_SMD:R_0603_1608Metric,C21190
@@ -30,71 +35,76 @@ Comment,Designator,Footprint,LCSC
 1uF,"C303,C307,C311,C315",Capacitor_SMD:C_0603_1608Metric,C52923
 1uF,C203,Capacitor_SMD:C_1206_3216Metric,C52923
 1uH bogucu,L10,Inductor_SMD:L_0805_2012Metric,C1016
+2.2pF,C548,Capacitor_SMD:C_1206_3216Metric,BASE
 2.2uF,C663,Capacitor_SMD:C_1210_3225Metric,BASE
 2.2uH,L51,Inductor_SMD:L_Taiyo-Yuden_NR-30xx,C1017
+200pF,C511,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 20k,R605,Resistor_SMD:R_0603_1608Metric,C25765
 220pF,"C406,C412",Capacitor_SMD:C_0603_1608Metric,BASE
-220pF,C509,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 22nF,C661,Capacitor_SMD:C_0805_2012Metric,BASE
+22pF,C551,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,C1554
 22uF,C666,Capacitor_SMD:C_0603_1608Metric,C45783
 22uF,C664,Capacitor_SMD:C_1206_3216Metric,C45783
 247R,"R405,R411",Resistor_SMD:R_0603_1608Metric,C25100
-24pF,C540,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-2700pF,C503,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-270pF,"C521,C527,C531",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+2700pF,C504,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+270pF,"C527,C535,C540",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+27pF,C542,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 2N7002,"Q31,Q32,QL1,QL2,QL3,QL4,QL5,QL6,QL7",Package_TO_SOT_SMD:SOT-23,C8545
-30pF,C533,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-430pF,"C502,C524",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+3.6pF,"C525,C543",Capacitor_SMD:C_1206_3216Metric,BASE
+360pF,C502,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+3pF,C521,Capacitor_SMD:C_1206_3216Metric,BASE
+4.7pF,"C507,C516",Capacitor_SMD:C_1206_3216Metric,BASE
+430pF,C531,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 470uF,"C601,C602",Capacitor_THT:CP_Radial_D16.0mm_P7.50mm,BASE
 47uH,L50,Inductor_SMD:L_Taiyo-Yuden_NR-30xx,C1020
+5.1pF,C560,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 500R,"R160,R161",Resistor_SMD:R_0603_1608Metric,BASE
 50V giris,J30,TerminalBlock_CUI:TerminalBlock_CUI_TB007-508-02_1x02_P5.08mm_Horizontal,C395880
 51R,R416,Resistor_SMD:R_0603_1608Metric,BASE
 51R 1%,"R400,R402",Resistor_SMD:R_2512_6332Metric,C22790
-51pF,C537,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-560pF,"C514,C520",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+51pF,"C524,C547",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+560pF,"C518,C526",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 56R 1W,R10,Resistor_SMD:R_2512_6332Metric,C22787
-56pF,C519,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-6.2pF,C547,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-62pF,"C542,C548",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-68pF,C530,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+56pF,C503,Capacitor_SMD:C_1206_3216Metric,BASE
+6.8pF,C539,Capacitor_SMD:C_1206_3216Metric,BASE
+62pF,"C538,C554,C562",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 74HC595D,U56,Package_SO:SOIC-16_3.9x9.9mm_P1.27mm,C5947
-75pF,C526,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+75pF,C533,Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 820R,"R205,R207",Resistor_SMD:R_2512_6332Metric,C23253
-820pF,"C507,C513",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
-91pF,"C512,C535,C541",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+820pF,"C509,C517",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
+91pF,"C515,C545,C553",Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm,BASE
 A kartina,J31,Connector_PinHeader_2.54mm:PinHeader_2x10_P2.54mm_Vertical,EL
 A kartindan TX1,J10,Connector_Coaxial:SMA_Amphenol_132289_EdgeMount,C496550
 AD8318ACPZ,"U60,U61",Package_DFN_QFN:NXP_VQFN-16-1EP_4x4mm_P0.65mm_EP2.1x2.1mm,C578694
-ANTEN -> panel SO-239,J40,TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm,?
-BN43-202 2:1,T10,dogrudan-sdr:XFMR_Toroid_4P_Vertical,?
-BN43-202 2:3 CT,T12,dogrudan-sdr:XFMR_Toroid_5P_Vertical,?
-BN43-202 3:1,T30,dogrudan-sdr:XFMR_Toroid_4P_Vertical,?
-BN43-3312 2:4 CT,T31,dogrudan-sdr:XFMR_Toroid_5P_Vertical,?
+ANTEN -> panel SO-239,J40,TerminalBlock_Altech:Altech_AK100_1x02_P5.00mm,EL
+BN43-202 2:1,T10,dogrudan-sdr:XFMR_Toroid_4P_Vertical,EL
+BN43-202 2:3 CT,T12,dogrudan-sdr:XFMR_Toroid_5P_Vertical,EL
+BN43-202 3:1,T30,dogrudan-sdr:XFMR_Toroid_4P_Vertical,EL
+BN43-3312 2:4 CT,T31,dogrudan-sdr:XFMR_Toroid_5P_Vertical,EL
 C kartindan,J32,Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical,EL
 DPD -> C karti,J20,Connector_Coaxial:SMA_Amphenol_132289_EdgeMount,C496550
-FT50-43 1:32,"T20,T21",dogrudan-sdr:XFMR_Toroid_4P_Vertical,?
+FT50-43 1:32,"T20,T21",dogrudan-sdr:XFMR_Toroid_4P_Vertical,EL
 G2RL-2 DC12,"KL1,KL2,KL3,KL4,KL5,KL6,KL7",Relay_THT:Relay_DPDT_Omron_G2RL-2,C120133
 G6K-2F-Y,K20,Relay_SMD:Relay_DPDT_Omron_G6K-2F-Y,C80087
 INA240A1DR,"U31,U32,U33,U34",Package_SO:SOIC-8_3.9x4.9mm_P1.27mm,C2060769
 IRF530N,"Q20,Q21",Package_TO_SOT_THT:TO-220-3_Vertical,C2565
-IRFB4110PBF,Q30,Package_TO_SOT_THT:TO-220-3_Vertical,?
+IRFB4110PBF,Q30,Package_TO_SOT_THT:TO-220-3_Vertical,C2650
 IRFP250N,"Q10,Q11,Q12,Q13",Package_TO_SOT_THT:TO-247-3_Vertical,C2580
 LM358,"U41,U42",Package_SO:SOIC-8_3.9x4.9mm_P1.27mm,C7950
 LM5164DDAR,U50,Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.29x3mm_ThermalVias,C477928
-LM74700QDBVRQ1,U52,Package_TO_SOT_SMD:SOT-23-6,?
+LM74700QDBVRQ1,U52,Package_TO_SOT_SMD:SOT-23-6,C2941042
 MCP3208T-CI/SL,U57,Package_SO:SOIC-16_3.9x9.9mm_P1.27mm,C626764
 MCP4922-E/SL,"U20,U21",Package_SO:SOIC-14_3.9x8.7mm_P1.27mm,C39851
 MCP9700AT,U55,Package_TO_SOT_SMD:SOT-23,C97258
 PE4312C-Z,U10,Package_DFN_QFN:TQFN-20-1EP_4x4mm_P0.5mm_EP2.1x2.1mm,C500480
 PGA-103+,U11,Package_TO_SOT_SMD:SOT-89-3,C3008207
-SMBJ54A,D31,Diode_SMD:D_SMB,?
-T50-6 7s,"L543,L546",dogrudan-sdr:L_Toroid_T50_Vertical,?
-T50-6 9s,"L536,L539",dogrudan-sdr:L_Toroid_T50_Vertical,?
-T68-2 10s,"L529,L532",dogrudan-sdr:L_Toroid_T68_Vertical,?
-T68-2 12s,"L522,L525",dogrudan-sdr:L_Toroid_T68_Vertical,?
-T94-2 15s,"L515,L518",dogrudan-sdr:L_Toroid_T94_Vertical,?
-T94-2 17s,"L508,L511",dogrudan-sdr:L_Toroid_T94_Vertical,?
-T94-2 24s,"L501,L504",dogrudan-sdr:L_Toroid_T94_Vertical,?
+SMBJ54A,D31,Diode_SMD:D_SMB,C151266
+T50-6 7s,"L555,L559",dogrudan-sdr:L_Toroid_T50_Vertical,EL
+T50-6 9s,"L546,L550",dogrudan-sdr:L_Toroid_T50_Vertical,EL
+T68-2 10s,"L537,L541",dogrudan-sdr:L_Toroid_T68_Vertical,EL
+T68-2 12s,"L528,L532",dogrudan-sdr:L_Toroid_T68_Vertical,EL
+T94-2 15s,"L519,L523",dogrudan-sdr:L_Toroid_T94_Vertical,EL
+T94-2 17s,"L510,L514",dogrudan-sdr:L_Toroid_T94_Vertical,EL
+T94-2 24s,"L501,L505",dogrudan-sdr:L_Toroid_T94_Vertical,EL
 TPS62130,U51,Package_DFN_QFN:VQFN-16-1EP_3x3mm_P0.5mm_EP1.68x1.68mm,C337502
-sonraki PA,J33,Connector_PinHeader_2.54mm:PinHeader_2x10_P2.54mm_Vertical,?
+sonraki PA,J33,Connector_PinHeader_2.54mm:PinHeader_2x10_P2.54mm_Vertical,EL

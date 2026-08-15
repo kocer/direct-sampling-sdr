@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // spi_ana testi — karsisina GERCEK bir cihaz modeli konuyor.
 //
 // Modul kendi kendini dogrulayamaz: "sekiz kenar urettim" demek,

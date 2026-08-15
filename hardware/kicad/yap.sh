@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 # Kart uretim zinciri — ADIM ATLAMAK MUMKUN OLMASIN.
 #
 #   ./yap.sh D          yerlesim + elle cekim + DSN
@@ -95,7 +97,14 @@ if true; then
   # AYIRMA KONDANSATORLERI — AYIR'DAN SONRA.
   # Yerlesimin icinde, ayir'dan once kosuyordu ve ayir onlari
   # bacaklarindan uzaga itiyordu (olculdu: 4.7 mm -> 17.9 mm).
-  python3 gercek_yerlesim.py --ayirma $K 2>/dev/null | grep -a cekildi || true
+  # "|| true" BIR COKMEYI GIZLEDI. Gecise ikinci bir adim eklenince
+  # NameError aldi ve hicbir sey yapmadi; zincir rc=0 ile bitti,
+  # ozet satiri kayboldu, kart ayirma kondansatorleri cekilmemis
+  # halde uretildi. Ayni sinif hata daha once ayir'da da olmustu.
+  # Gecis EN AZ BIR ozet satiri yazmali; yazmiyorsa dur.
+  ayirma_ozet=$(python3 gercek_yerlesim.py --ayirma $K 2>/dev/null | grep -a cekildi)
+  [ -n "$ayirma_ozet" ] || { echo "HATA: ayirma gecisi cikti vermedi"; exit 1; }
+  echo "$ayirma_ozet"
   # AYIRMA GECISINDEN SONRA KISA BIR AYIRMA TURU DAHA.
   # Kondansatorleri bacaklarina cekerken bos yer aramasi bazilarini
   # buyuk parcalarin (LPF toroidleri) courtyard'ina sokuyor. Ikinci

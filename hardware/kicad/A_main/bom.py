@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """A karti BOM'unu semadan uretir, LCSC kodlariyla eslestirir.
 
 Calistir:  python3 bom.py            ekrana ozet
@@ -29,16 +31,23 @@ LCSC = {
     "W25Q128JVSIQ":       ("C97521",    1.80, "base"),
     "TPS62130":           ("C337502",   0.67, "extended"),
     # TPS7A2018 = 1.8 V surumu. Eski eslemedeki kod 3.3 V'luk
-    # parcaya aitti; siparis oncesi dogrulanacak.
-    "TPS7A2018":          ("DOGRULA",  0.55, "extended"),
+    # parcaya aitti. LCSC C963430 = TPS7A2018PDBVR, SOT-23-5L,
+    # 1.8 V cikis (LCSC urun sayfasindan okundu, Agu 2026: 3256 stok).
+    # Semadaki ayak izi SOT-23-5 (DBV) — tutuyor.
+    "TPS7A2018":          ("C963430",  0.55, "extended"),
     # ADP150 SABIT CIKISLI: HER GERILIM AYRI PARCA NUMARASI.
     # Alti LDO tek koda (C144257 = ADP150AUJZ-2.5) baglanmisti ve
     # siparis edilse uc ray yanlis gerilimde gelirdi; 1.8 V bekleyen
     # ADC'ler 2.5 V gorurdu ve mutlak azamileri 2.0 V.
-    # -2.5 kodu dogrulanmis; oteki ikisi SIPARIS ONCESI BAKILACAK.
+    # Uc kod da LCSC urun sayfasindan okundu (Agu 2026). Hepsi TSOT-5,
+    # semadaki TSOT-23-5 ayak iziyle tutuyor. Stok: 1.8 -> 5835,
+    # 2.5 -> 302 (DUSUK, siparis oncesi bak), 3.3 -> 4200.
+    # ADP150-3.3 artik kullanilmiyor (U6/U7 ferrite donustu); kod
+    # tabloda kaliyor cunku ADP150-2.5 stogu tukenirse ray sasar ve
+    # o zaman hangi varyantin var oldugunu bilmek gerekiyor.
     "ADP150-2.5":         ("C144257",   1.00, "extended"),
-    "ADP150-1.8":         ("DOGRULA",   1.00, "extended"),
-    "ADP150-3.3":         ("DOGRULA",   1.00, "extended"),
+    "ADP150-1.8":         ("C141959",   1.00, "extended"),
+    "ADP150-3.3":         ("C29149",    1.00, "extended"),
     "ABLNO-V-80.000MHZ":  ("C5378891", 22.00, "extended"),
     "25MHz CL12pF":       ("C9006",     0.05, "base"),   # YXC X322525MOB4SI, CL=12pF
     "SMBJ20A":            ("C364296",   0.03, "extended"),
@@ -46,7 +55,13 @@ LCSC = {
     "2A":                 ("C371166",   0.05, "extended"),
     "12V":                ("C8062",     0.02, "extended"),
     "PROG":               ("C318884",   0.05, "extended"),
+    # LED renkleri — hepsi 0805, JLCPCB'den okundu (Agu 2026).
+    # Kirmizi NCD0805R1; sari/yesil/mavi KT-0805 ailesi. Mavi
+    # genisletilmis kutuphanede, otekiler temel.
     "yesil":              ("C72043",    0.02, "extended"),
+    "kirmizi":            ("C84256",    0.01, "base"),
+    "sari":               ("C2296",     0.01, "base"),
+    "mavi":               ("C2293",     0.02, "extended"),
     "ferrit 600R":        ("C1015",     0.01, "base"),
     "2.2uH":              ("C1017",     0.10, "extended"),
     "4.7uH":              ("C1018",     0.12, "extended"),
@@ -68,6 +83,7 @@ LCSC = {
     "DAC modul":          ("EL",        0.05, "elde"),
     "C kartina":          ("EL",        0.15, "elde"),
     "C kartina #2":       ("EL",        0.05, "elde"),
+    "D kartina":          ("EL",        0.15, "elde"),
     "UART 3.3V":          ("EL",        0.04, "elde"),
 }
 # Pasifler: deger -> LCSC. Hepsi 0402/0603 temel kutuphane.
@@ -83,6 +99,8 @@ PASIF = {
     "100R":  ("C25076", 0.0008), "22R":   ("C25092", 0.0008),
     "33R 1%": ("C25105", 0.002), "0R":    ("C21189", 0.0008),
     "220R":  ("C25091", 0.0008), "32k":   ("C25768", 0.002),
+    # 0603 temel kutuphane, JLCPCB'den okundu (Agu 2026)
+    "470R":  ("C23179", 0.0008), "4.7k":  ("C23162", 0.0008),
     "26.7k": ("C25765", 0.002),  "10k 1%": ("C25744", 0.002),
     "2.2k 1%": ("C4190", 0.002), "1.92k 1%": ("C23025", 0.002),
     "1.5k":  ("C4310",  0.0008), "50R":   ("C22775", 0.002),

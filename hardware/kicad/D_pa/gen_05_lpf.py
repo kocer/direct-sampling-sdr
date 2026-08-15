@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """05_lpf: cikis harmonik filtreleri, 7 bant. Kaynak: ../../PA_TASARIM.md §7."""
-import json, os, math
+import json, os, math, sys
 from schlib import Sheet
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# TUZAK DEGERI ILE OLCUM ARACI AYNI KAYNAKTAN BESLENSIN.
+# Deger burada, dogrulamasi lpf_sim.py'de hesaplanirsa ikisi
+# ayrisabiliyor ve tam da bu oldu: arac yuvarlanmamis, sema
+# yuvarlanmis degerle calisiyordu, arada 19 dB fark vardi.
+sys.path.insert(0, os.path.dirname(HERE))
+from lpf_sim import e24_cift          # noqa: E402
 UU = json.load(open(os.path.join(HERE, "sheet_uuids.json")))
 
 # LPF bankasi G2RL-2 kullaniyor, G6K DEGIL. G6K sinyal rolesi
@@ -26,6 +34,8 @@ FLT = {"T50": "dogrudan-sdr:L_Toroid_T50_Vertical",
        "T68": "dogrudan-sdr:L_Toroid_T68_Vertical",
        "T94": "dogrudan-sdr:L_Toroid_T94_Vertical"}
 FCP = "Capacitor_THT:C_Disc_D7.5mm_W5.0mm_P5.00mm"
+# Tuzagin AYAR kondansatoru: kucuk deger, kucuk govde, C0G 500 V.
+FCTRIM = "Capacitor_SMD:C_1206_3216Metric"
 R = "Device:R"
 FR = "Resistor_SMD:R_0603_1608Metric"
 
@@ -171,13 +181,43 @@ def bolum(bant, fc, tuzak1, tuzak2, x, y, idx, son=False):
             ci += 1
             s.pin_label(L, "2", fx + i * 22, y, 90, node[ci], "passive")
             # TUZAK: bobine PARALEL kondansator, iletim sifiri harmonikte.
+            #
+            # IKI KONDANSATOR, BIR DEGIL — TEK E24 DEGERI YETMIYOR.
+            # Tuzak dar bir cukur ve kondansator %5 kayinca cukurun
+            # dibi harmonigin yanina duşuyor. Olculdu (lpf_sim.py):
+            # 40/30 m'de tam deger 172 pF, en yakin E24 180 pF, cukur
+            # 14.0 yerine 13.7 MHz'e kayiyor ve ikinci harmonik
+            # bastirmasi 58 dB'den 39 dB'ye iniyor. Yasal sinir 43 dB,
+            # yani kart E24 degeriyle YASADISI yayin yapardi. Bunu
+            # gorunmez kilan sey, tasarim notunun tam degerle
+            # olculmus olmasiydi: sema E24'e yuvarliyordu ve olcum
+            # yuvarlanmamis filtreyi olcuyordu.
+            #
+            # Iki E24 degerinin toplami hedefi tam tutturuyor
+            # (172 = 12 + 160) ve paralel mika/ATC kondansator PA
+            # filtrelerinde zaten olagan — akimi da bolusuyorlar.
             ft = (tuzak1 if a_dugum == node[0] else tuzak2) * 1e6
             Ct = 1.0 / ((2 * _m.pi * ft) ** 2 * (v * 1e-9)) * 1e12
-            s.sym(C, cnt("C"), f"{e24(Ct):g}pF", fx + i * 22 + 11, y - 18,
+            # AYAR KONDANSATORU 1206, DISK DEGIL — YER YOK.
+            # Ilk denemede iki tuzak kondansatoru da 7.5 mm'lik disk
+            # ayak izini aldi ve D kartinda ayirici dort cakismayi
+            # cozemedi (0 -> 4): role sirasi ile toroid seridi
+            # arasindaki bosluk 6 mm. Ciftin KUCUK olani 1.1-56 pF,
+            # yani akimin kucuk bir payini tasiyor; temel frekansta
+            # bobinin ustundeki gerilim 100 W'ta ~93 V, C0G 1206'nin
+            # 500 V sinifi bunu rahat kaldiriyor.
+            buyuk, kucuk = sorted(e24_cift(Ct), reverse=True)
+            s.sym(C, cnt("C"), f"{buyuk:g}pF", fx + i * 22 + 11, y - 18,
                   rot=90, fp=FCP)
             s.pin_label(C, "1", fx + i * 22 + 11, y - 18, 90, a_dugum,
                         "passive")
             s.pin_label(C, "2", fx + i * 22 + 11, y - 18, 90, node[ci],
+                        "passive")
+            s.sym(C, cnt("C"), f"{kucuk:g}pF", fx + i * 22 + 11, y - 34,
+                  rot=90, fp=FCTRIM)
+            s.pin_label(C, "1", fx + i * 22 + 11, y - 34, 90, a_dugum,
+                        "passive")
+            s.pin_label(C, "2", fx + i * 22 + 11, y - 34, 90, node[ci],
                         "passive")
 
 

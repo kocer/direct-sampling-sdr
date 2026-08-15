@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """01_power: C karti guc. Kaynak: ../NETLIST_C.md §6.
 
 REFERANS ARALIGI — BU DOSYA: U90-U99, R80-R89, C80-C89, L80-L89.
@@ -7,7 +9,7 @@ uretiyordu: U80 CAKISTI, kartta DRV8833 kazandi ve TPS62130 HIC
 OLUSMADI. Sonucu iki kat kotu:
   - C kartinda +5V uretilmiyordu; 40 pedin kaynagi yoktu, yani
     roleler, zayiflaticilar ve surucu lojigi komple beslemesiz.
-  - A kartindan gelen ham giris (VIN_PROT, 9-18 V) bir DRV8833'un
+  - A kartindan gelen ham giris (VIN_PROT, 9-17 V) bir DRV8833'un
     besleme pinlerine bagliydi. DRV8833'un azami beslemesi 11.8 V;
     12 V ustu bir kaynakta parca aninda gider ve o hat sigortadan
     sonra 2 A tasiyabiliyor.
@@ -33,7 +35,7 @@ s = Sheet("01_power", "Guc", UU["01_power"],
           "VIN_PROT -> +5V buck (role bobinleri), +3V3 A kartindan")
 
 s.text("C KARTI GUCU", 16, 14, 2.0)
-s.text("Iki ray geliyor: VIN_PROT (9-18 V) ve +3V3, ikisi de A kartindan\\n"
+s.text("Iki ray geliyor: VIN_PROT (9-17 V) ve +3V3, ikisi de A kartindan\\n"
        "kart arasi bagliktan. Burada uretilen tek sey role bobinlerinin\\n"
        "+5V'u.", 16, 20, 1.35)
 
@@ -99,7 +101,7 @@ s.text("Vout = 0.8 x (1 + R80/R81).  5 V icin oran 5.25 -> 105k / 20k.\\n\\n"
 # ---------------------------------------------------------------- gelen raylar
 s.text("A KARTINDAN GELEN RAYLAR", 16, 180, 1.6)
 for i, (net, aciklama) in enumerate([
-        ("VIN_PROT", "9-18 V, A kartinda ters polarite korumali"),
+        ("VIN_PROT", "9-17 V, A kartinda ters polarite korumali"),
         ("+3V3", "PE4312 VDD, 74HC595 ve DRV8833 lojik")]):
     yy = 200 + i * 20
     s.glabel(net, 40, yy, "input")

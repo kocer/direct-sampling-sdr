@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // rgmii_alis testi — gercek bir cerceve, gercek bir FCS.
 //
 // Modulun tek isi PHY'den gelen nibble akisini bayta cevirip

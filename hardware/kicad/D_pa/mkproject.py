@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """
 A karti KiCad proje iskeletini uretir: kok sema + hiyerarsik sayfalar
 + kutuphane tablolari.
@@ -7,7 +9,13 @@ Calistir:  python3 mkproject.py
 Dogrula:   kicad-cli sch erc dogrudan_sdr_A.kicad_sch -o /tmp/erc.rpt
 Ac:        kicad dogrudan_sdr_A.kicad_pro
 """
-import json, os, uuid
+import json, os, uuid, sys
+# Telif satiri TEK kaynaktan geliyor: kicad/telif.py. Sema dosyalari
+# her ./yap.sh kosusunda sifirdan yaziliyor, bu yuzden satir uretilmis
+# .kicad_sch'e elle degil, URETECIN CIKTISINA basiliyor.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from telif import SEMA_TELIF, SEMA_LISANS  # noqa: E402
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJ = "dogrudan_sdr_D"
@@ -40,6 +48,8 @@ def root():
         '    (company "TEVITOL amator telsiz kulubu / TA4DTA")',
         '    (comment 1 "Lisans: CERN-OHL-S v2 (donanim) · GPL-3.0 (HDL) · CC-BY-SA 4.0 (dok)")',
         '    (comment 2 "Baglantilar PA_TASARIM.md sartnamesinden")',
+        f'    (comment 3 "{SEMA_TELIF}")',
+        f'    (comment 4 "{SEMA_LISANS}")',
         '  )',
         '  (lib_symbols)',
     ]
@@ -86,6 +96,8 @@ def blank(name, title, desc, page):
     (rev "A")
     (company "{PROJ}")
     (comment 1 "{desc}")
+    (comment 3 "{SEMA_TELIF}")
+    (comment 4 "{SEMA_LISANS}")
   )
   (lib_symbols)
   (text "{title}\\n\\n{desc}\\n\\nBaglantilar: ../NETLIST.md" (at 30 40 0)

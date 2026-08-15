@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """05_driver: 32 kilitlenen role surucusu. Kaynak: ../NETLIST_C.md §5."""
 import json, os
 from schlib import Sheet, g

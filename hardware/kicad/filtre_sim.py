@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 """C kartinin bant filtrelerini ngspice ile olc.
 
     python3 filtre_sim.py
@@ -112,6 +114,14 @@ def db_at(veri, f):
 
 
 if __name__ == "__main__":
+    # BU ARAC ESKI TOPOLOJIYI OLCUYOR — GECERLI OLAN filtre_tasarim.py.
+    # Kart tepeden kuplajli yapidan MERDIVEN bant gecirene gecti
+    # (gen_03_filter.py). Buradaki model o degisikligi izlemiyor, yani
+    # asagidaki "KENAR ZAYIF" satirlarinin hepsi kartta OLMAYAN bir
+    # filtreye ait. Arac tarihsel kayit olarak duruyor: yeniden
+    # sentezin gerekcesi olan olcum budur.
+    print("** ESKI TOPOLOJI (tepeden kuplajli). Karttaki filtre icin "
+          "filtre_tasarim.py kullan. **")
     print("C KARTI BANT FILTRELERI — ngspice AC analizi")
     print("%-9s %8s %8s %9s %9s  %s" %
           ("bant", "tepe MHz", "kayip dB", "kenar dB", "2.harm", "kapsam"))

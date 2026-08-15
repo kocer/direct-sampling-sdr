@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: CERN-OHL-S-2.0
 """Kat planlari — parcalar tek tek, elektriksel mantiga gore.
 
 Kuvvet-guduml u yerlesim baglantilari kisaltti ama kart hala "kume"

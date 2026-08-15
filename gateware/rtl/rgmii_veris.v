@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+// SPDX-License-Identifier: GPL-3.0-only
 // RGMII veris — bayt akisindan ethernet cercevesine.
 //
 // RTL8211F ile 1000BASE-T. RGMII 4 bit veri yolu ve DDR kullaniyor:

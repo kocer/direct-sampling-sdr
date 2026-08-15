@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
 """Guc yollarini SERI IZLE, genisligi akima gore denetle.
 
     python3 guc_yolu.py            # uc karti da dener
