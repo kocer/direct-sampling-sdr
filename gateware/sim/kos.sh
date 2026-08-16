@@ -13,6 +13,9 @@ cd "$(dirname "$0")/.."
 export PATH=~/opt/oss-cad-suite/bin:$PATH
 
 testler=(
+  # ECP5 ilkel modelleri — bunlar YANLIS olursa tb_ust gecer ama
+  # hicbir sey kanitlamaz, o yuzden ONCE kosuyor.
+  "tb_ecp5     sim/tb_ecp5_sim.v sim/ecp5_sim.v"
   "tb_nco      sim/tb_nco.v      rtl/nco.v"
   "tb_cic      sim/tb_cic.v      rtl/cic_azalt.v"
   "tb_telafi   sim/tb_telafi.v   rtl/fir_telafi.v"
@@ -82,6 +85,22 @@ for t in "${testler[@]}"; do
     printf "  %-12s KALDI\n" "$ad"; kalan=$((kalan+1))
   fi
 done
+# ---------------------------------------------------------------------
+# TUM SISTEM TESTI — ayri kosuyor cunku BUTUN rtl'i istiyor.
+#
+# Bu tezgah gelene kadar sim/ dizininde ondokuz test vardi ve hicbiri
+# ust modulu kosturmuyordu; ust.v sadece sentezden geciyordu. Yani her
+# modul tek basina dogruydu ve birlestirilmis sistem hic
+# calistirilmamisti. Entegrasyon hatalari tam o boslukta yasar.
+printf "  %-12s " "tb_ust"
+cikti=$(iverilog -g2012 -o /tmp/tb_ust sim/tb_ust.v sim/ecp5_sim.v rtl/*.v 2>&1) \
+  && cikti=$(timeout 900 vvp /tmp/tb_ust 2>&1)
+if echo "$cikti" | grep -aq "TUM SISTEM TESTI GECTI"; then
+  echo "GECTI"; gecen=$((gecen+1))
+else
+  echo "KALDI"; kalan=$((kalan+1)); echo "$cikti" | grep -a "HATA" | head -6
+fi
+
 echo "  ----"
 echo "  $gecen gecti, $kalan kaldi"
 [ "$kalan" -eq 0 ]

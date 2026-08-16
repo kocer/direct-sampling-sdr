@@ -192,6 +192,45 @@ module ust (
     );
 
     // ---------------------------------------------------------------
+    // IC SINYAL BILDIRIMLERI — KULLANIMDAN ONCE
+    //
+    // Bu blok once kayit dosyasinin yanindaydi, yani KULLANILDIGI
+    // YERDEN SONRA. `default_nettype none` altinda ortuk tel
+    // yaratilmadigi icin sentez dogru calisiyordu, ama Icarus
+    // tanim-once-kullanim kuralini uyguluyor ve ust modul HIC
+    // SIMULE EDILEMIYORDU.
+    //
+    // Entegrasyon boslugunun kok sebebi buydu: sim/ dizininde
+    // ondokuz test vardi ve hicbiri ust modulu kosturmuyordu —
+    // cunku kosturulamiyordu. Her modul tek tek dogruydu ve
+    // birlestirilmis sistem hic calistirilmamisti.
+    // ---------------------------------------------------------------
+    wire        alis_ac, veris_ac, yazilim_rst, nco_yukle;
+    wire [3:0]  kanal_maske;
+    wire [11:0] azalt_orani, tx_oran;
+    wire        tx_yukle, tx_iqsel_ters;
+    wire [31:0] tx_ofs1, tx_ofs2, tx_ofs3;
+    wire [31:0] nco_artis, ofs0, ofs1, ofs2, ofs3, tx_artis;
+    wire [4:0]  zincir_uzun, zincir_adr;
+    wire        zincir_gonder, zincir_yaz;
+    wire [7:0]  zincir_veri;
+    wire        zincir_darbe_kip, zincir_maske_bank;
+    wire [7:0]  zincir_darbe_ms;
+    wire [31:0] kayit_oku;
+    wire [13:0] adc_desen_a, adc_desen_b;
+    wire        adc_desen_dene;
+    wire [31:0] spi_veri, spi_okunan;
+    wire [5:0]  spi_uzunluk, spi_oku_bit;
+    wire [2:0]  spi_cihaz;
+    wire        spi_yol, spi_basla, spi_mesgul;
+    wire        phy_rst_zorla;
+    wire        pa_besle;
+    wire [4:0]  mdio_phy, mdio_kayit;
+    wire [15:0] mdio_veri, mdio_okunan;
+    wire        mdio_yaz, mdio_basla, mdio_mesgul;
+    wire        mdio_o, mdio_yon;
+
+    // ---------------------------------------------------------------
     // ADC arayuzleri
     // ---------------------------------------------------------------
     wire [13:0] a1_a, a1_b, a2_a, a2_b;
@@ -274,30 +313,6 @@ module ust (
     // ---------------------------------------------------------------
     // Kayit dosyasi
     // ---------------------------------------------------------------
-    wire        alis_ac, veris_ac, yazilim_rst, nco_yukle;
-    wire [3:0]  kanal_maske;
-    wire [11:0] azalt_orani, tx_oran;
-    wire        tx_yukle, tx_iqsel_ters;
-    wire [31:0] tx_ofs1, tx_ofs2, tx_ofs3;
-    wire [31:0] nco_artis, ofs0, ofs1, ofs2, ofs3, tx_artis;
-    wire [4:0]  zincir_uzun, zincir_adr;
-    wire        zincir_gonder, zincir_yaz;
-    wire [7:0]  zincir_veri;
-    wire        zincir_darbe_kip, zincir_maske_bank;
-    wire [7:0]  zincir_darbe_ms;
-    wire [31:0] kayit_oku;
-    wire [13:0] adc_desen_a, adc_desen_b;
-    wire        adc_desen_dene;
-    wire [31:0] spi_veri, spi_okunan;
-    wire [5:0]  spi_uzunluk, spi_oku_bit;
-    wire [2:0]  spi_cihaz;
-    wire        spi_yol, spi_basla, spi_mesgul;
-    wire        phy_rst_zorla;
-    wire        pa_besle;
-    wire [4:0]  mdio_phy, mdio_kayit;
-    wire [15:0] mdio_veri, mdio_okunan;
-    wire        mdio_yaz, mdio_basla, mdio_mesgul;
-    wire        mdio_o, mdio_yon;
 
     kayit u_kayit (
         .clk(clk_sys), .rst(rst),
@@ -477,6 +492,7 @@ module ust (
     wire [7:0] paket_bayt;
     wire       paket_gecerli, paket_basi, paket_sonu;
 
+    wire        rgmii_hazir_sys;
     paketleyici #(.PAKET_ORNEK(PAKET_ORNEK)) u_paket (
         .clk(clk_sys), .rst(rst),
         .i0(i0), .q0(q0), .i1(i1), .q1(q1),
@@ -503,7 +519,6 @@ module ust (
     // sayacini bozmaz ama veriyi bozar, ve o hata ancak spektrumda
     // gorunur.
     // ---------------------------------------------------------------
-    wire        rgmii_hazir_sys;
     wire [7:0]  eth_bayt;
     wire        eth_gecerli, eth_hazir;
 
@@ -638,6 +653,7 @@ module ust (
     //
     // Dogrusu: gecerli olan her bayti ayni cevrimde tuket.
     // host_arayuz cevrimde bir bayt aliyor, yani biriktirme yok.
+    wire eth_al_var_w;
     fifo_gecis #(.GENISLIK(8), .DERINLIK(256)) u_eth_fifo (
         .yaz_clk(rgmii_rxc), .yaz_rst(rst),
         .yaz_veri(yuk_bayt_rx), .yaz(yuk_gecerli_rx), .yaz_hazir(),
@@ -645,7 +661,6 @@ module ust (
         .oku_veri(eth_al_bayt), .oku(eth_al_var), .oku_gecerli(eth_al_var_w),
         .oku_doluluk()
     );
-    wire eth_al_var_w;
     assign eth_al_var = eth_al_var_w;
 
     // KAYNAK SECIMI: ethernet varsa o, yoksa UART.
