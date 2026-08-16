@@ -278,17 +278,27 @@ To transmit on 6 m, use an external transverter.
 
 | Parameter | Value | Source |
 |---|---|---|
-| Logic cells used | 11507 / 24288 (47 %) | measured (nextpnr), `sentez/pnr.log` |
-| Flip-flops used | 11113 / 24288 (45 %) | measured (nextpnr) |
+| Logic cells used | 11885 / 24288 (49 %) | measured (nextpnr), `sentez/pnr.log` |
+| Flip-flops used | 11186 / 24288 (46 %) | measured (nextpnr) |
 | Multipliers used | 22 / 28 (78 %) | measured (nextpnr) |
 | Block RAM used | 12 / 56 (21 %) | measured (nextpnr) |
 | Input/output pins used | 121 / 197 (61 %) | measured (nextpnr) |
-| `clk_sys` maximum frequency | 87.54 MHz (target 80.00 MHz) | measured (nextpnr) |
-| `clk_eth` maximum frequency | 129.15 MHz (target 125.00 MHz) | measured (nextpnr) |
-| ADC capture clock margin | 150.56 MHz and 145.03 MHz | measured (nextpnr) |
+| `clk_sys` maximum frequency | 86.57 MHz (target 80.00 MHz) | measured (nextpnr) |
+| `clk_eth` maximum frequency | 134.59 MHz (target 125.00 MHz) | measured (nextpnr) |
+| `rgmii_rxc` maximum frequency | 140.06 MHz (target 125.00 MHz) | measured (nextpnr) |
+| ADC capture clock margin | 164.20 MHz and 168.01 MHz (target 80.00 MHz) | measured (nextpnr) |
+| Placement seeds that meet timing | 4 of 5 | measured (nextpnr) |
 
 The multiplier use is 78 %. This is the tightest resource. A fifth receive
 channel does not fit in this device.
+
+`clk_eth` was the bottleneck. The CRC32 byte step in the transmit path
+was written as a bit-serial loop, and the eight steps depend on each
+other, so the tool builds a long chain. Six placement seeds failed in
+a row at 112 MHz to 124 MHz. The function is linear, so it was
+flattened into a balanced XOR tree by a generator that extracts the
+transform from the reference algorithm. The equivalence is proven in
+`sim/tb_crc32.v`. Four of five seeds now meet timing.
 
 ---
 

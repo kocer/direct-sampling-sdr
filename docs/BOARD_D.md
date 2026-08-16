@@ -57,8 +57,26 @@ The four final transistors dissipate 233 W at 100 W of output. Each
 transistor dissipates 58 W.
 
 The four transistors are in one line at the top edge of the board. The
-tab of each transistor points away from the board. Thus one copper bar
-holds all four tabs.
+tab of each transistor points away from the board.
+
+**Do not put the tabs on one common bar.** The tab of the TO-247
+package is the drain, and this is a push-pull stage: the two arms have
+different drain voltages. A common bar short-circuits the primary of
+the output transformer. Each device needs an insulated pad.
+
+The insulation costs temperature, and the cost is more than half of
+the budget. At 58.3 W the device drops 70 °C inside itself with mica
+and grease, 55 °C with an AlN ceramic pad, and 50 °C with a thick AlN
+pad. No heatsink can correct that drop: even with a perfect heatsink
+the junction sits that much above the heatsink surface.
+
+The first two thermal steps see the power of ONE device. The
+heatsink-to-air step sees the TOTAL power. Confusing these changes the
+answer by a factor of two.
+
+For a 40 °C ambient and a 150 °C junction limit, the heatsink must be
+0.24 °C/W or better, with forced air. Natural convection cannot remove
+233 W.
 
 **Warning:** The transistors must be in one line and they must have the
 same thermal path. A transistor at a different temperature has a
@@ -107,6 +125,30 @@ The relays are the G2RL-2 type. The contact rating is 8 A at 250 VAC.
 **Note:** A signal relay is not sufficient. At 100 W into 50 ohm the
 current is 1.4 A and the peak voltage is 100 V. A 1 A signal relay welds
 at the first operation.
+
+## Bias fault protection
+
+Each device has its own closed-loop bias servo: a sense resistor, an
+INA240A1 current amplifier, an LM358 integrator, and the gate.
+
+The measurement arm is a single point of failure. If it opens, the
+measured current reads zero, the integrator cannot close the error,
+and it drives the gate to the supply rail. Simulation gives 57.6 A
+and 2878 W in each device against a continuous limit of 214 W.
+
+A gate clamp does not solve this. The transconductance is 8 S, so 1 V
+above the threshold already gives 8 A, and a safe clamp voltage would
+be too near the operating point.
+
+`PA_INHIBIT` alone does not solve it either. It removes the driver
+supply, and in a class-A stage the quiescent current does the damage,
+not the drive.
+
+`BIAS_KILL` short-circuits the integrator capacitor. A pull-down on
+the gate is not sufficient: the integrator would stay charged at the
+rail and the gate would jump when the fault cleared. With the
+capacitor short-circuited the op-amp follows the set voltage and the
+gate stays at 0.33 V, against a threshold of 3.2 V.
 
 ## Measurement
 

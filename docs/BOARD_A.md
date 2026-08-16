@@ -140,6 +140,43 @@ a grid with 2.5 mm between the positions. A capacitor at each ball is
 not possible: the balls have 0.8 mm between them and a 0402 capacitor
 needs 1.5 mm.
 
+**Counting the capacitors is not enough.** What matters is the
+impedance that the chip sees on the rail, against frequency. No
+connectivity check can see this: the schematic is correct, the netlist
+is correct, the design rule check is clean, and the rail still rings.
+
+A simulation of the network found that the 1.8 V rails had no bulk
+capacitor at all. The regulator loop holds the impedance low to about
+100 kHz, and the ceramics hold it above about 1 MHz. Between them
+there was nothing. This result does not depend on any assumption about
+the transient current: a rail with no bulk capacitor is a gap whatever
+you assume.
+
+In the upper band the impedance comes from the mounting inductance
+divided by the number of capacitors, not from the value of the
+capacitor. So where the impedance was too high, the number changed and
+not the value.
+
+## Reset
+
+There is no external reset and no button. A counter in the `clk_sys`
+domain makes the power-on reset.
+
+The chip has five clock domains. The reset went directly to all of
+them, and a structural check found that it was the source of 44
+crossings. The danger is at the release: the falling edge of the reset
+is random against the edges of the other clocks, so one register
+catches it and its neighbour does not, and they leave reset in
+different cycles.
+
+Each domain now has its own two-register reset synchroniser. The
+synchroniser is fully synchronous, with an initial value. An
+asynchronous reset was tried first, in the usual form, and all five
+placement seeds then failed timing: on the ECP5 an asynchronous reset
+goes to the LSR input of each flip-flop and the reset becomes a global
+signal on a limited routing resource. An asynchronous assert is not
+necessary here, because the FPGA sets all registers at configuration.
+
 ## Status indicators
 
 | Reference | Color | Function |

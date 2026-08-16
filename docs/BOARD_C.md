@@ -84,27 +84,67 @@ of the adjacent channel.
 
 ## Band filters
 
-Each band uses a Chebyshev bandpass filter. The design targets a
-reactance of 200 ohm at the resonator.
+Each position is a three-pole ladder bandpass filter. All inductors
+are SMD.
 
-**Note:** Do not calculate the capacitance first. The first design
-calculated the capacitance and it gave an inductance of 68 microhenry
-for the 160 m band. No RF inductor has this value.
+**The first design passed nothing.** It used three top-coupled
+resonators. Simulation showed that the peak of every band was BELOW
+the band it had to pass, and the band itself was 24 dB to 41 dB down.
+The receiver would have been deaf on every band.
 
-Two bands need toroid inductors. The other bands use SMD inductors.
+The cause: the coupling capacitors sit in parallel with the
+resonators and pull the frequency down, and the design did not
+compensate. A top-coupled structure is for a narrow band. The
+positions here are wide: 80 m and 60 m together need 3.5 MHz to
+5.4 MHz, which is 44 % fractional bandwidth. A ladder is the correct
+structure at that width.
 
-| Band | Inductor type | Loss with SMD |
-|---|---|---|
-| 160 m | Toroid | 3.5 dB |
-| 6 m | Toroid | 2.4 dB |
-| Other bands | SMD | Acceptable |
+```
+F_A --+-- Ls --- Cs --+-- F_B
+      |               |
+    Lp||Cp          Lp||Cp
+      |               |
+     GND             GND
+```
 
-The insertion loss follows this relation:
+**No toroids.** The first ladder design used T50 toroids on the three
+lowest bands, for the higher Q of 150 against 40. Two costs were
+measured. Three toroids do not fit in one filter section: the
+courtyard is 13.8 mm and three need 42.4 mm, and eight overlaps
+appeared across four channels. And four channels × three bands ×
+three inductors is 48 parts to wind by hand, which no assembly
+machine can place.
 
-    IL = 4.343 x sum(g) x Qbp / Qu
+With Q = 40 the worst band edge goes from 0.68 dB to 1.71 dB on
+160 m. At the low end of HF the atmospheric noise sets the noise
+floor, so 1 dB of noise figure has no measurable effect. The
+transmit side is different: there is 100 W there, and board D does
+use toroids.
 
-The unloaded Q of the inductor sets the loss. An SMD inductor has a low
-unloaded Q at the two ends of the frequency range.
+**Two positions have a transmission zero.** The ADC samples at
+80 MSPS, so any signal above 40 MHz folds onto the band and cannot
+then be separated from the wanted signal. The band filter is the
+only protection.
+
+On 15 m to 10 m a signal at 50.3 MHz folds onto 29.7 MHz, and that
+frequency is inside the 6 m band: the station's own transmitter
+lands on its own receiver. A capacitor across the series inductor
+gives a zero above the band.
+
+On 6 m the interference comes from below, at 30 MHz. A series-arm
+trap cannot help, because it always puts the zero above the
+passband. A capacitor in series with the shunt inductor gives a zero
+below the band.
+
+**The values are chosen for tolerance, not for nominal.** The first
+values maximised the nominal result. Monte Carlo analysis then
+showed that only 54 % of boards would pass on 6 m, because that band
+is 7.7 % wide and a ±5 % tolerance moves the resonance by about 5 %.
+The filters are now designed for a band that is wider than the
+necessary band, by the tolerance. The nominal rejection is lower and
+99.9 % of boards pass.
+
+`ardc/VERIFICATION.md` carries the current numbers.
 
 ## Relay control
 

@@ -16,7 +16,7 @@ L, C = "Device:L", "Device:C"
 #
 # Butun bobinler 0805 pedindeydi. LCSC'de stokta olan gercek
 # parcalara bakildiginda (21 degerin 21'i var, kodlariyla birlikte
-# ardc/dogrulama.md'de) govdeler soyle:
+# docs/dogrulama-arsiv.md'de) govdeler soyle:
 #
 #   33/150/220 nH   0603
 #   470/820 nH      0805
