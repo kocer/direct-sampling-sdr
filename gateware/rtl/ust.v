@@ -380,10 +380,37 @@ module ust (
     // tanimlamali (sentez/ust.lpf). Kisit yoksa yerlestirici bu yolu
     // serbest birakir ve kurulum penceresi tesadufe kalir.
     // ---------------------------------------------------------------
-    wire [13:0] s1_a = a1_a, s1_b = a1_b;
-    wire [13:0] s2_a = a2_a, s2_b = a2_b;
-    wire        adc_al = a1_gecerli;
-    wire        adc_asim = a1_asim_a | a1_asim_b | a2_asim_a | a2_asim_b;
+    // GECISIN TAM BASINDA YAKALAMA YAZMACI.
+    //
+    // Once ADC ornekleri DCO alanindan cikip DOGRUDAN ddc_dort'un
+    // birlesimsel mantigina giriyordu. nextpnr'in cross-domain
+    // raporu bunu gosterdi:
+    //
+    //   u_adc1.ornek_a -> NCO carpani -> mikser toplayici zinciri
+    //   -> yakalama yazmaci  =  10.32 ns
+    //
+    // sentez/faz_butcesi.py ile hesaplaninca kurulum KARSILANMIYORDU:
+    // 10.32 ns yol + 3.6 ns ADC ic gecikmesi = 13.92 ns, periyot
+    // 12.5 ns. Kart izleri sifir alinsa bile kapanmiyordu.
+    //
+    // Sebep yapisaldi: bir saat alanindan gelen veri, otekinin butun
+    // mantigini AYNI cevrimde besliyordu. Yakalama yazmaci konunca
+    //   gecis yolu    = adc_giris cikisindan bu yazmaca, kisa
+    //   mikser yolu   = normal alan ici yol, nextpnr kisitliyor
+    //
+    // HIZALAMAYI BOZMUYOR. Yakalayan yine clk_sys ve dort kanal ayni
+    // kenarda yakalaniyor — sabit, esit gecikme. Elastik tampon
+    // (denendi, geri alindi) bunun tersini yapiyordu.
+    reg [13:0] s1_a, s1_b, s2_a, s2_b;
+    reg        adc_al, adc_asim;
+    always @(posedge clk_sys) begin
+        s1_a     <= a1_a;
+        s1_b     <= a1_b;
+        s2_a     <= a2_a;
+        s2_b     <= a2_b;
+        adc_al   <= a1_gecerli;
+        adc_asim <= a1_asim_a | a1_asim_b | a2_asim_a | a2_asim_b;
+    end
 
     adc_giris u_adc1 (
         .dco(adc1_dco), .d(adc1_d), .asim(adc1_or),

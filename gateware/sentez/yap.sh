@@ -37,7 +37,7 @@ echo "== LPF uretiliyor (karttan)"
 python3 sentez/lpf_yaz.py 2>/dev/null || { echo "LPF uretilemedi"; exit 1; }
 
 echo "== sentez"
-yosys -q -p "read_verilog rtl/*.v; synth_ecp5 -top ust -json sentez/ust.json" \
+yosys -q -p "verilog_defaults -add -Irtl; read_verilog rtl/*.v; synth_ecp5 -top ust -json sentez/ust.json" \
   || { echo "SENTEZ KALDI"; exit 1; }
 
 kos_pnr() {

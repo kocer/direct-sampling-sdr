@@ -71,6 +71,40 @@ ISTISNA = {
         "uretebilirdi.",
     "adc_desen_b":
         "Ayni gerekce: desen_dene ile niteleniyor.",
+
+    # --- ADC ornek yolu: MEZOKRON, tek kademeli yakalama BILINCLI
+    #
+    # ust.v'de a1_a/a1_b/a2_a/a2_b/a1_gecerli clk_sys alaninda TEK
+    # yazmacla yakalaniyor ve cikisi DDC ardisik duzenine dagiliyor.
+    # Iki kademeli senkronlayici kurali burada UYGULANMIYOR ve bu bir
+    # ihmal degil, olculmus bir karar:
+    #
+    #   Gecis asenkron degil MEZOKRON: iki saat de ayni 80 MHz
+    #   VCXO'dan turuyor, DCO ADC'den kaynak-senkron geri geliyor ve
+    #   aradaki faz yol gecikmesiyle SABIT.
+    #
+    #   Iki kademeli senkronlayici cok bitlik VERI icin zaten yanlis
+    #   olurdu: bitler farkli cevrimlerde gecip ara bir deger uretir.
+    #
+    #   Dort kanalin ornek hizasi bu alette pazarlik konusu degil
+    #   (huzme yonlendirme). Elastik tampon denendi ve kanallari bir
+    #   ornek kaydirdi; olcum tb_ust'un hizalama denetiminde.
+    #
+    # GUVENLIK OLCULEN BIR SEY, VARSAYILAN DEGIL:
+    # sentez/faz_butcesi.py kurulum/tutma paylarini nextpnr'in gercek
+    # yol olcumu ve AD9251 veri sayfasi uzerinden hesapliyor. Su anki
+    # deger: kurulum +6.57 ns, tutma +3.73 ns, izin verilen faz
+    # penceresi periyodun %81'i. O arac kalirsa bu istisna gecersizdir.
+    "a1_a": "ADC ornek yolu — mezokron, faz butcesi ile guvence altinda "
+            "(sentez/faz_butcesi.py). Ayrinti icin ust.v'deki nota bak.",
+    "a1_b": "Ayni gerekce.",
+    "a2_a": "Ayni gerekce.",
+    "a2_b": "Ayni gerekce.",
+    "a1_gecerli": "Ayni gerekce.",
+    "a1_asim_a": "Ayni gerekce.",
+    "a1_asim_b": "Ayni gerekce.",
+    "a2_asim_a": "Ayni gerekce.",
+    "a2_asim_b": "Ayni gerekce.",
 }
 
 FF_TURLERI = {"$dff", "$adff", "$sdff", "$dffe", "$adffe", "$sdffe",

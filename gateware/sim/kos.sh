@@ -16,6 +16,10 @@ testler=(
   # ECP5 ilkel modelleri — bunlar YANLIS olursa tb_ust gecer ama
   # hicbir sey kanitlamaz, o yuzden ONCE kosuyor.
   "tb_ecp5     sim/tb_ecp5_sim.v sim/ecp5_sim.v"
+  # CRC duzlestirmesinin ozgun bicimle esdegerligi. Bir CRC hatasi
+  # kartta "butun cerceveler bozuk" diye gorunur ve insan once
+  # PHY'de, kabloda, saatte arar.
+  "tb_crc32    sim/tb_crc32.v"
   "tb_nco      sim/tb_nco.v      rtl/nco.v"
   "tb_cic      sim/tb_cic.v      rtl/cic_azalt.v"
   "tb_telafi   sim/tb_telafi.v   rtl/fir_telafi.v"
@@ -77,7 +81,7 @@ for t in "${testler[@]}"; do
   # Once sadece "GECTI" ariyordu. Bir tezgah once GECTI yazip sonra
   # duserse ya da ikinci bir asamada kalirsa, o kosu GECTI sayiliyordu.
   # Simdi cikti tutuluyor: KALDI/HATA gecen bir kosu her halukarda duser.
-  cikti=$(iverilog -g2012 -o "/tmp/$ad" "$@" 2>&1) || { printf "  %-12s KALDI (derleme)\n" "$ad"; kalan=$((kalan+1)); echo "$cikti" | head -3; continue; }
+  cikti=$(iverilog -g2012 -Irtl -o "/tmp/$ad" "$@" 2>&1) || { printf "  %-12s KALDI (derleme)\n" "$ad"; kalan=$((kalan+1)); echo "$cikti" | head -3; continue; }
   cikti=$(timeout 400 vvp "/tmp/$ad" 2>&1)
   if echo "$cikti" | grep -aq "GECTI" && ! echo "$cikti" | grep -aq "KALDI\|HATA\|ERROR"; then
     printf "  %-12s GECTI\n" "$ad"; gecen=$((gecen+1))
@@ -93,12 +97,27 @@ done
 # modul tek basina dogruydu ve birlestirilmis sistem hic
 # calistirilmamisti. Entegrasyon hatalari tam o boslukta yasar.
 printf "  %-12s " "tb_ust"
-cikti=$(iverilog -g2012 -o /tmp/tb_ust sim/tb_ust.v sim/ecp5_sim.v rtl/*.v 2>&1) \
+cikti=$(iverilog -g2012 -Irtl -o /tmp/tb_ust sim/tb_ust.v sim/ecp5_sim.v rtl/*.v 2>&1) \
   && cikti=$(timeout 900 vvp /tmp/tb_ust 2>&1)
 if echo "$cikti" | grep -aq "TUM SISTEM TESTI GECTI"; then
   echo "GECTI"; gecen=$((gecen+1))
 else
   echo "KALDI"; kalan=$((kalan+1)); echo "$cikti" | grep -a "HATA" | head -6
+fi
+
+# ---------------------------------------------------------------------
+# KAPI DUZEYI KOSU.
+#
+# Buraya kadarki testler RTL'i kosturuyor; karta giden sey ise SENTEZ
+# CIKTISI. Aradaki fark sessiz bir hata sinifidir: baslangic degeri
+# olmayan yazmac, istemeden turetilmis mandal, X yayilimi, sessizce
+# kirpilan genislik. kapi_kos.sh ayni tezgahi sentezlenmis netliste
+# uyguluyor.
+printf "  %-12s " "kapi"
+if cikti=$(bash sim/kapi_kos.sh 2>&1) && echo "$cikti" | grep -q ", 0 kaldi"; then
+  echo "GECTI"; gecen=$((gecen+1))
+else
+  echo "KALDI"; kalan=$((kalan+1)); echo "$cikti" | grep -a "KALDI" | head -4
 fi
 
 # ---------------------------------------------------------------------

@@ -87,18 +87,24 @@ module rgmii_alis (
 
     reg [31:0] crc;
 
-    function [31:0] crc_bayt;
-        input [31:0] c;
-        input [7:0]  d;
-        integer i;
-        reg [31:0] x;
-        begin
-            x = c ^ {24'd0, d};
-            for (i = 0; i < 8; i = i + 1)
-                x = x[0] ? ((x >> 1) ^ 32'hEDB88320) : (x >> 1);
-            crc_bayt = x;
-        end
-    endfunction
+    // CRC BAYT ADIMI DUZLESTIRILDI — kritik yol buydu.
+    //
+    // Fonksiyon burada bit-seri dongu olarak yaziliydi: sekiz adim
+    // birbirine zincirli ve yosys onu birebir sentezliyor. nextpnr
+    // olcumu clk_eth'in kritik yolunun tam burasi oldugunu gosterdi
+    // ve azami frekans tohuma gore 112-138 MHz arasinda geziniyordu —
+    // hedef 125. Yani yapinin gecmesi tohum sansina kalmisti; alti
+    // tohum ust uste denendi, alti da dustu.
+    //
+    // Fonksiyon DOGRUSAL (kosullu gorunse de secim islemi XOR'un
+    // kendisi), o yuzden dengeli bir XOR agacina duzlestirilebiliyor.
+    // Denklemler elle yazilmadi: rtl/crc32_uret.py referans algoritmayi
+    // taban vektorleriyle kosturup dogrusal donusumu cikariyor.
+    //
+    // Esdegerlik sim/tb_crc32.v ile kanitlaniyor — taban vektorleri
+    // (dogrusal bir fonksiyon icin bu TAM ispattir), 102400 rastgele
+    // karsilastirma ve gercek bir cerceve uzerinde FCS.
+`include "crc32_bayt.vh"
 
     // gecen cevrimin dv'si: cerceve sonunu dv'nin DUSMESINDEN
     // anliyoruz, ayri bir sayacla degil
