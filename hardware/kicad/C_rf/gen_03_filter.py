@@ -120,11 +120,26 @@ s = Sheet("03_filter", "Filtre bankasi", UU["03_filter"],
 # (katlanma_tasarim.py): sifir eklemek gecirme bandini da bozuyor,
 # butun degerler birlikte taranip iki olcut ayni anda saglandi.
 #
-# OLCULEN (ngspice, uctan uca):
-#     15_10m   katlanma 25.4 -> 54.7 dB    kayip 2.63 -> 2.39 dB
-#     6m       katlanma 36.0 -> 68.6 dB    kayip 5.45 -> 3.73 dB
+# DEGERLER TOLERANSA GORE SECILDI, NOMINALE GORE DEGIL.
 #
-# 6 m'de kayip da dustu; yeni degerler o bandi ayrica iyilestirdi.
+# Ilk surumde nominal basarimi en iyileyen degerleri sectim:
+# 15/10 m katlanma 54.7 dB, 6 m 68.6 dB. tolerans_sim.py ile
+# olculunce sonuc kotu cikti — 6 m'de kartlarin sadece %54'u,
+# 15/10 m'de %77'si tolerans altinda geciyordu ve 6 m'de duzluk
+# 1.8 dB'den 10.2 dB'ye firliyordu.
+#
+# Sebep bandin DAR olmasi: 6 m %7.7 oransal genislik, ve +/-%5 parca
+# toleransi rezonansi ~%5 kaydirip bant kenarini duz bolgenin
+# disina cikariyor. Nominal olcumde bu hic gorunmuyor.
+#
+# Simdiki degerler filtreyi bandin kendisine degil, tolerans kadar
+# GENISLETILMIS bandina tasarliyor (katlanma_tasarim.KORUMA). Nominal
+# katlanma bastirmasi biraz dusuyor, ama uretimde gecen kart orani
+# cok yukseliyor — onemli olan ikincisi.
+#
+# OLCULEN (ngspice, uctan uca, nominal):
+#     15_10m   katlanma 25.4 -> 51.3 dB    kayip 2.63 -> 2.67 dB
+#     6m       katlanma 36.0 -> 55.6 dB    kayip 5.45 -> 3.29 dB
 #
 # (ad, Lp nH, Cp pF, Ls nH, Cs pF, Ct pF, Cx pF, bobin tipi)
 BANTLAR = [
@@ -147,8 +162,8 @@ BANTLAR = [
     ("80_60m", 1000, 1200,  3300, 390,    0,    0, "smd"),
     ("40_30m",  470,  680,  2200, 180,    0,    0, "smd"),
     ("20_17m",  220,  470,  1500,  68,    0,    0, "smd"),
-    ("15_10m",   82,  560,   560,  56,   15,    0, "smd"),
-    ("6m",       22,  680,  1200, 8.2,    0, 1200, "smd"),
+    ("15_10m",   68,  560,   390,  82,   22,    0, "smd"),
+    ("6m",       33,  390,   820,  12,    0, 1200, "smd"),
 ]
 
 nr = [0]

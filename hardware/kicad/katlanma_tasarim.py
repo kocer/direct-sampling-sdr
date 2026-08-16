@@ -88,6 +88,28 @@ KAYIP_VARSAYILAN = 3.0
 
 E12 = [1.0, 1.2, 1.5, 1.8, 2.2, 2.7, 3.3, 3.9, 4.7, 5.6, 6.8, 8.2]
 
+# KORUMA PAYI — FILTRE BANDIN KENDISINE DEGIL, GENISLETILMISINE.
+#
+# tolerans_sim.py ile olculdu: nominalde alti bant da geciyordu ama
+# 6 m'de kartlarin sadece %54'u, 15/10 m'de %77'si tolerans altinda
+# gecti. Duzluk 6 m'de 1.8 dB'den 10.2 dB'ye firliyordu.
+#
+# Sebep tasarimin kotu olmasi degil, bandin DAR olmasi: 6 m 50-54 MHz,
+# yani %7.7 oransal genislik. +/-%5 parca toleransi rezonansi ~%5
+# kaydiriyor ve bant kenari duz bolgenin disina cikiyor. Nominalde
+# bu gorunmuyor.
+#
+# Cozum, filtreyi bandin KENDISINE degil, tolerans kadar genisletilmis
+# haline tasarlamak. O zaman kayma bandi duz bolgenin icinde tutuyor.
+# Bedeli biraz ekleme kaybi ve biraz katlanma bastirmasi.
+KORUMA = 1.05           # +/-%5, parca toleransinin frekansa etkisi
+
+
+def korumali(araliklar):
+    """Bant araliklarini tolerans kadar genislet."""
+    return [(lo / KORUMA, hi * KORUMA) for lo, hi in araliklar]
+
+
 KAPSAM = {
     "160m":   [(1.8, 2.0)],
     "80_60m": [(3.5, 3.8), (5.3515, 5.3665)],
@@ -97,15 +119,19 @@ KAPSAM = {
     "6m":     [(50.0, 54.0)],
 }
 
-# mevcut tasarim: (Lp nH, Cp pF, Ls nH, Cs pF)
-MEVCUT = {
-    "160m":   (1000, 6800, 18000, 390),
-    "80_60m": (1000, 1200,  3300, 390),
-    "40_30m": ( 470,  680,  2200, 180),
-    "20_17m": ( 220,  470,  1500,  68),
-    "15_10m": ( 150,  270,   680,  56),
-    "6m":     (  33,  270,   820,  12),
-}
+# MEVCUT TASARIM URETECTEN OKUNUYOR, ELLE KOPYALANMIYOR.
+#
+# Burada once elle yazilmis bir tablo vardi ve gen_03_filter.py
+# guncellenince bu tablo eski kalmisti: arac "mevcut" diye artik
+# kartta olmayan degerleri raporluyordu. Ayni ayrisma bu depoda
+# lpf_sim.py'de de yasandi.
+def _mevcut():
+    import zincir_sim
+    return {ad: (Lp, Cp, Ls, Cs)
+            for ad, Lp, Cp, Ls, Cs, Ct, Cx in zincir_sim.bantlari_oku()}
+
+
+MEVCUT = _mevcut()
 
 
 def e12_yakin(x, alt=0.5, ust=2.0):
@@ -213,16 +239,21 @@ def katlanan(lo, hi, bolge=5):
     return sorted(set(out))
 
 
-def degerlendir(ad, p):
-    """(kayip, duzluk, katlanma_bastirma, en_kotu_frekans)."""
+def degerlendir(ad, p, koruma=False):
+    """(kayip, duzluk, katlanma_bastirma, en_kotu_frekans).
+
+    koruma=True ise gecirme bandi olcutu GENISLETILMIS bant uzerinden
+    okunuyor. Arama bunu kullaniyor; dogrulama gercek bant uzerinden.
+    """
     # BANT ICI IZGARA SIK OLMALI. Once 9 nokta kullaniyordum ve
     # analitik hesapla ngspice kayipta 1.9 dB ayristi: dar ve keskin
     # tepeli bir filtrede seyrek izgara tepeyi kaciriyor. Kayipta bu
     # kotumser tarafa hata, zarari yok; ama DUZLUK ayni sebeple
     # OLDUGUNDAN KUCUK cikiyor, yani dalgali bir filtreyi duz sanip
     # kabul edebilirdik. Izgara siklastirildi.
+    araliklar = korumali(KAPSAM[ad]) if koruma else KAPSAM[ad]
     ic = []
-    for lo, hi in KAPSAM[ad]:
+    for lo, hi in araliklar:
         n = 40
         for i in range(n + 1):
             ic.append(tepki((lo + (hi - lo) * i / n) * 1e6, p))
@@ -272,14 +303,14 @@ def ara(ad):
         ct_ad = [0]
 
     en_iyi = None
-    for Ls in e12_yakin(Ls0, 0.4, 1.6):
-        for Cs in e12_yakin(Cs0, 0.6, 2.6):
-            for Lp in e12_yakin(Lp0, 0.4, 2.6):
-                for Cp in e12_yakin(Cp0, 0.4, 2.6):
+    for Ls in e12_yakin(Ls0, 0.35, 1.8):
+        for Cs in e12_yakin(Cs0, 0.5, 3.0):
+            for Lp in e12_yakin(Lp0, 0.35, 3.0):
+                for Cp in e12_yakin(Cp0, 0.35, 3.0):
                     for Ct in ct_ad:
                         for Cx in cx_ad:
                             p = (Lp, Cp, Ls, Cs, Ct, Cx)
-                            k, d, b, f = degerlendir(ad, p)
+                            k, d, b, f = degerlendir(ad, p, koruma=True)
                             if k > esik_kayip or d > DUZLUK_ESIK:
                                 continue
                             # once katlanma esigini gecenler, sonra

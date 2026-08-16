@@ -40,10 +40,19 @@
 // AD9767 125 MSPS'lik bir parca ve 160 MHz yazma hizi veri sayfasi
 // sinirinin ustunde. O yuzden TX ornek hizi dort kanalda da 40 MSPS.
 //
-// SONUC — BU KARTIN TX YETENEGI: dort kanalli huzme yonlendirme
-// Nyquist 20 MHz'e kadar, yani 160 m'den 17 m'ye. 15/12/10 m'de
-// dort kanalli calisilamaz. Iki kanalli (sadece U30, cift port,
-// 80 MSPS) tum HF'yi kapsiyor. Bu bir KART kisiti, gateware degil;
+// SONUC — BU KARTIN TX YETENEGI. Burada once "Nyquist 20 MHz'e
+// kadar, yani 160 m'den 17 m'ye" yaziyordu. SADECE NYQUIST'E BAKMAK
+// YETMIYOR: imajlarin da filtrelenebiliyor olmasi gerekiyor ve
+// gercek sinir daha asagida. tx_zincir_sim.py ile olculdu:
+//
+//   dort kanal (fs=40)  160 m - 30 m. 20/17 m'de tasiyici 18.2 MHz,
+//                       ilk imaj 21.8 MHz; arada 1.2 kat var ve o
+//                       imaj -12 dBc'de kaliyor (sinir -43).
+//   iki kanal (fs=80)   160 m - 10 m.
+//   6 m                 verici YOK. 80 MSPS'te bile 50-54 MHz
+//                       Nyquist'in ustunde, temel bilesen 26-30
+//                       MHz'te ve tasiyicidan 7 dB guclu. Alis
+//                       tarafi calisiyor ve iyi durumda. Bu bir KART kisiti, gateware degil;
 // bir sonraki revizyonda U31 yerine ikinci bir cift-port AD9767
 // konmasi cozer (14 FPGA pini daha ister).
 // ---------------------------------------------------------------------
