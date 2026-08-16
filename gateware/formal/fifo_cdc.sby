@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# multiclock on: yaz_clk ve oku_clk bagimsiz. Cozucu iki saatin
+# butun sirali kombinasyonlarini deniyor — "ya ust uste gelirse"
+# sorusunu biz dusunmuyoruz.
+[options]
+mode bmc
+depth 20
+multiclock on
+
+[engines]
+smtbmc boolector
+
+[script]
+read -formal -DFORMAL fifo_gecis.v
+read -formal -DFORMAL fifo_cdc_formal.v
+prep -top fifo_cdc_formal
+
+[files]
+../rtl/fifo_gecis.v
+fifo_cdc_formal.v

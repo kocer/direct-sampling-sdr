@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
+# TUMEVARIM DEGIL, DERIN SINIRLI KONTROL.
+#
+# mode prove denendi: taban durum geciyor, tumevarim dusuyor. Sebep
+# beklenen — k-tumevarim, dut'un ic durumuyla bayt tarihcesini
+# baglayan degismezler olmadan ULASILAMAZ bir durumdan baslayabiliyor
+# (ornegin durum makinesi D_XOR'da ama tarihce ona uymuyor). Bunu
+# kapatmak dut'un icine giren degismezler yazmak demek.
+#
+# Onun yerine derinlik birkac cerceveyi kapsayacak kadar aciliyor:
+# 60 cevrim, yedi baytlik bir cerceveden fazlasi — araya bozuk
+# cerceve, yarim cerceve ve zaman asimi da giriyor. Kapsam sonsuz
+# degil ve bu durust bicimde yazili.
+[options]
+mode bmc
+depth 60
+
+[engines]
+smtbmc boolector
+
+[script]
+read -formal -DFORMAL host_arayuz.v
+read -formal -DFORMAL host_arayuz_formal.v
+prep -top host_arayuz_formal
+
+[files]
+../rtl/host_arayuz.v
+host_arayuz_formal.v

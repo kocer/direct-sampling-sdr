@@ -101,6 +101,41 @@ else
   echo "KALDI"; kalan=$((kalan+1)); echo "$cikti" | grep -a "HATA" | head -6
 fi
 
+# ---------------------------------------------------------------------
+# YAPISAL CDC DENETIMI.
+#
+# Formal ispat CDC'nin klasik hatalarini YAKALAMIYOR — bunu mutasyonla
+# olctuk: senkronlayiciyi tek kademeye indirmek ve gray kodu kaldirmak,
+# iki saatli formal ispatin ikisinden de gecti. Sebep temel: cozucu
+# yazmaclari ideal modelliyor, metastabilite diye bir sey yok.
+# O yuzden yapisal kural ayri denetleniyor.
+printf "  %-12s " "cdc"
+if cikti=$(python3 formal/cdc_denetim.py 2>&1) && echo "$cikti" | grep -q "TOPLAM 0"; then
+  echo "GECTI"; gecen=$((gecen+1))
+else
+  echo "KALDI"; kalan=$((kalan+1)); echo "$cikti" | grep -a "\*\*" | head -6
+fi
+
+# ---------------------------------------------------------------------
+# FORMAL ISPATLAR.
+#
+# Test tezgahi DENEDIGI durumlari kanitlar; formal, boyle bir girdinin
+# OLMADIGINI kanitlar. Her ikisi de mutasyonla sinandi — gecen ama
+# hicbir seyi yakalamayan bir ispat, guven verdigi icin en kotu
+# dogrulama turudur.
+#
+# Yavaslar (toplam ~4 dakika). SBY_ATLA=1 ile atlanabilir.
+if [ "${SBY_ATLA:-0}" != "1" ] && command -v sby >/dev/null; then
+  for f in host_arayuz fifo_gecis fifo_cdc; do
+    printf "  %-12s " "formal:$f"
+    if (cd formal && timeout 900 sby -f $f.sby >/dev/null 2>&1); then
+      echo "GECTI"; gecen=$((gecen+1))
+    else
+      echo "KALDI"; kalan=$((kalan+1))
+    fi
+  done
+fi
+
 echo "  ----"
 echo "  $gecen gecti, $kalan kaldi"
 [ "$kalan" -eq 0 ]

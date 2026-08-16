@@ -136,6 +136,7 @@ module ust (
 
     wire rst = ~por[12];
 
+
     // ---------------------------------------------------------------
     // ETHERNET SAATI PLL'DEN — KARTTA 125 MHz OSILATOR YOK.
     //
@@ -192,6 +193,58 @@ module ust (
     );
 
     // ---------------------------------------------------------------
+    // RESET HER SAAT ALANINA AYRI SENKRONLANIYOR.
+    //
+    // por sayaci clk_sys alaninda ve rst oradan cikiyor. Ama bu cipte
+    // BES saat alani var: clk_sys, clk_eth (PLL), rgmii_rxc (PHY'den),
+    // adc1_dco ve adc2_dco (ADC'den). rst dogrudan hepsine gidiyordu.
+    //
+    // formal/cdc_denetim.py bunu buldu: por, kirk dort ayri alanlar
+    // arasi gecisin kaynagiydi ve hicbirinde senkronlayici yoktu.
+    //
+    // NEDEN ONEMLI. Reset BIRAKILIRKEN tehlikeli. rst dusme ani, diger
+    // alanlarin saat kenarlarina gore rastgele; bir yazmac o kenari
+    // yakalar, komsusu yakalamaz ve iki yazmac FARKLI cevrimlerde
+    // resetten cikar. Sayac zincirinde ya da durum makinesinde bu,
+    // bozuk bir baslangic durumu demek. Belirtisi "bazen aciliyor
+    // bazen acilmiyor" olur — kartta kovalanmasi en zor hata turu.
+    //
+    // COZUM STANDART: iki yazmacli reset senkronlayicisi. Reset
+    // ASENKRON basiyor (saat gelmese de guvenli), SENKRON birakiyor
+    // (hedef alanin kendi kenarinda).
+    //
+    // Bunu fifo_cdc_formal.v'nin karsi ornegi de gostermisti: cozucu
+    // reseti bir alanin gordugu digerinin gormedigi bicimde uygulayip
+    // FIFO'nun iki yakasini ayri dusurmustu.
+    // ---------------------------------------------------------------
+    // ESZAMANSIZ RESET KULLANILMIYOR — DENENDI VE ZAMANLAMAYI BOZDU.
+    //
+    // Ilk yazdigimda standart "asenkron bas, senkron birak" bicimini
+    // kullandim: always @(posedge clk or posedge rst). Sonuc kotuydu:
+    // bes tohumun bes'i de yerlesimde dustu (clk_sys 68-80 MHz,
+    // clk_eth 117-122 MHz). Sebep ECP5'te asenkron resetin FF'in LSR
+    // girisine baglanmasi ve rst'nin global, kisitli bir yonlendirme
+    // kaynagina donusmesi — yerlestiricinin eli baglaniyor.
+    //
+    // ASENKRON BASMAYA BURADA GEREK DE YOK: kartta harici reset ya da
+    // buton yok, rst tamamen ic POR sayacindan geliyor ve acilista
+    // ECP5'in GSR'i butun yazmaclari baslangic degerine cekiyor.
+    //
+    // Bu yuzden tamamen SENKRON senkronlayici, baslangic degeri 11:
+    // acilista reset basili, rst dustukten sonra hedef alanin kendi
+    // iki kenarinda birakiliyor. Islevi ayni, yonlendirme baskisi yok.
+    reg [1:0] rs_eth = 2'b11, rs_rx = 2'b11, rs_a1 = 2'b11, rs_a2 = 2'b11;
+    always @(posedge clk_eth)   rs_eth <= {rs_eth[0], rst};
+    always @(posedge rgmii_rxc) rs_rx  <= {rs_rx[0],  rst};
+    always @(posedge adc1_dco)  rs_a1  <= {rs_a1[0],  rst};
+    always @(posedge adc2_dco)  rs_a2  <= {rs_a2[0],  rst};
+
+    wire rst_eth = rs_eth[1];
+    wire rst_rx  = rs_rx[1];
+    wire rst_a1  = rs_a1[1];
+    wire rst_a2  = rs_a2[1];
+
+    // ---------------------------------------------------------------
     // IC SINYAL BILDIRIMLERI — KULLANIMDAN ONCE
     //
     // Bu blok once kayit dosyasinin yanindaydi, yani KULLANILDIGI
@@ -243,12 +296,99 @@ module ust (
     // Onceki halde paketleyiciye sabit sifir gidiyordu, yani ADC
     // dolduysa host bunu hic ogrenmiyordu. Kirpilmis bir ornek
     // spektrumda gercek gibi duran sahte urunler uretir.
+    // ---------------------------------------------------------------
+    // ADC ORNEKLERI SAAT ALANINI FIFO ILE GECIYOR.
+    //
+    // BURADA FIFO YOKTU. a1_a/a1_b/a1_gecerli, adc1_dco alaninda
+    // yazmaclanip DOGRUDAN ddc_dort'un girisine gidiyordu — ve
+    // ddc_dort clk_sys'te calisiyor. adc_giris.v'nin kendi basligi
+    // "DCO ile yakalayip sonra FIFO ile sistem saatine geciyoruz"
+    // diyor; o FIFO gercekte yoktu. Belge ile devre ayrisiyordu.
+    //
+    // formal/cdc_denetim.py bulguyu netlistten cikardi.
+    //
+    // NEDEN TEHLIKELI. Iki saat AYNI FREKANSTA (ikisi de 80 MHz
+    // VCXO'dan) ama aralarindaki FAZ belirsiz ve sicaklikla kayiyor —
+    // mezokron. Faz, veri gecislerini clk_sys kenarina denk getirirse
+    // her ornek metastabil olur. Ayni frekans olmasi guvenlik degil:
+    // sabit ama BILINMEYEN bir faz, en kotu noktada da sabit kalir.
+    // Belirtisi "bir kartta calisiyor otekinde calismiyor" ya da
+    // "isindikca bozuluyor" olur; ikisi de sahada kovalanir.
+    //
+    // COZUM: her ADC icin bir gecis FIFO'su. Ayni fifo_gecis modulu —
+    // iki saatli formal ispati var (formal/fifo_cdc_formal.v) ve
+    // yapisal CDC denetiminden geciyor.
+    //
+    // DERINLIK 16 YETIYOR cunku iki taraf ayni hizda; FIFO sadece faz
+    // farkini ve kisa duraklamalari yutuyor, hiz farkini degil.
+    //
+    // ---------------------------------------------------------------
+    // TEK BITLIK ALAN GECISLERI — IKI KADEMELI SENKRONLAYICI.
+    //
+    // formal/cdc_denetim.py'nin bulgulari:
+    //   adc_desen_dene   clk_sys -> DCO   hizalama denetimini aciyor
+    //   a1/a2_hizali     DCO -> clk_sys   hizalama tamamlandi bayragi
+    //   a1/a2_takas      DCO -> clk_sys   bulunan kenar polaritesi
+    //
+    // Tek bit oldugu icin FIFO gerekmiyor; iki yazmac yetiyor.
+    //
+    // 14 BITLIK DESEN DEGERLERI SENKRONLANMIYOR ve bu bilincli: onlar
+    // VERI, niteleyicisi desen_dene. Yazilim once desenleri yaziyor,
+    // sonra denetimi aciyor. Cok bitlik bir veriyi bit bit
+    // senkronlamak zaten yanlis olurdu — bitler farkli cevrimlerde
+    // gecip ara bir deger uretebilirdi.
+    // ---------------------------------------------------------------
+    reg [1:0] sn_dene1, sn_dene2;
+    always @(posedge adc1_dco) sn_dene1 <= {sn_dene1[0], adc_desen_dene};
+    always @(posedge adc2_dco) sn_dene2 <= {sn_dene2[0], adc_desen_dene};
+
+    reg [1:0] sn_hz1, sn_hz2, sn_tk1, sn_tk2;
+    always @(posedge clk_sys) begin
+        sn_hz1 <= {sn_hz1[0], a1_hizali};
+        sn_hz2 <= {sn_hz2[0], a2_hizali};
+        sn_tk1 <= {sn_tk1[0], a1_takas};
+        sn_tk2 <= {sn_tk2[0], a2_takas};
+    end
+    wire hizali1 = sn_hz1[1], hizali2 = sn_hz2[1];
+    wire takas1  = sn_tk1[1], takas2  = sn_tk2[1];
+
+    // ---------------------------------------------------------------
+    // ADC ORNEKLERI DOGRUDAN — ARADA FIFO YOK, VE BU BILINCLI.
+    //
+    // Bir sure buraya iki gecis FIFO'su koydum (her ADC icin bir
+    // tane), gerekcesi de saglamdi: a1_a/a1_b adc1_dco alaninda
+    // yazmaclanip clk_sys'te calisan ddc_dort'a gidiyor.
+    //
+    // AMA TESTI YAZINCA DEGISIKLIK KENDI SORUNUNU URETTI. tb_ust'un
+    // kanal hizalama denetimi (iki ADC'ye ayri saat, aralarinda faz
+    // farki) sunu olctu: s2[n] = s1[n-1]. Iki FIFO farkli anda
+    // dolmaya basliyor ve elastik bir tampon o farki KALICI hale
+    // getiriyor. Doluluk esitleme de cozmedi — ayni SAYIDA ornek
+    // farkli INDISLERE ait olabiliyor.
+    //
+    // Bir ornek fark 30 MHz'te 135 derece faz demek. Dort kanalli
+    // huzme yonlendirmede huzme tamamen yanlis yone bakar.
+    //
+    // ASIL MESELE SU: bu gecis ASENKRON DEGIL, MEZOKRON. Iki saat de
+    // ayni 80 MHz VCXO'dan turuyor; DCO ADC'den kaynak-senkron geri
+    // geliyor ve aradaki faz YOL GECIKMESIYLE SABIT, kaymiyor. Sabit
+    // fazli bir gecisin dogru cozumu zamanlama kisitini BILDIRMEK,
+    // elastik tampon koymak degil — tampon belirlenimi bozuyor ve
+    // dort kanalin ornek hizasi bu alette pazarlik konusu degil.
+    //
+    // SART: sentez kisiti DCO ile clk_sys arasindaki faz iliskisini
+    // tanimlamali (sentez/ust.lpf). Kisit yoksa yerlestirici bu yolu
+    // serbest birakir ve kurulum penceresi tesadufe kalir.
+    // ---------------------------------------------------------------
+    wire [13:0] s1_a = a1_a, s1_b = a1_b;
+    wire [13:0] s2_a = a2_a, s2_b = a2_b;
+    wire        adc_al = a1_gecerli;
     wire        adc_asim = a1_asim_a | a1_asim_b | a2_asim_a | a2_asim_b;
 
     adc_giris u_adc1 (
         .dco(adc1_dco), .d(adc1_d), .asim(adc1_or),
         .desen_a(adc_desen_a), .desen_b(adc_desen_b),
-        .desen_dene(adc_desen_dene),
+        .desen_dene(sn_dene1[1]),
         .clk_adc(clk_adc1),
         .ornek_a(a1_a), .ornek_b(a1_b),
         .asim_a(a1_asim_a), .asim_b(a1_asim_b),
@@ -259,7 +399,7 @@ module ust (
     adc_giris u_adc2 (
         .dco(adc2_dco), .d(adc2_d), .asim(adc2_or),
         .desen_a(adc_desen_a), .desen_b(adc_desen_b),
-        .desen_dene(adc_desen_dene),
+        .desen_dene(sn_dene2[1]),
         .clk_adc(clk_adc2),
         .ornek_a(a2_a), .ornek_b(a2_b),
         .asim_a(a2_asim_a), .asim_b(a2_asim_b),
@@ -319,7 +459,7 @@ module ust (
         .adr(kayit_adr), .veri(kayit_veri), .yaz(kayit_yaz),
         .oku_veri(kayit_oku), .oku_adr(kayit_adr),
         .pll_kilit(pll_kilit),
-        .adc_hizali(a1_hizali & a2_hizali),
+        .adc_hizali(hizali1 & hizali2),
         .tasma(adc_asim),
         .alis_ac(alis_ac), .veris_ac(veris_ac),
         .yazilim_rst(yazilim_rst),
@@ -339,7 +479,7 @@ module ust (
         .zincir_maske_bank(zincir_maske_bank),
         .adc_desen_a(adc_desen_a), .adc_desen_b(adc_desen_b),
         .adc_desen_dene(adc_desen_dene),
-        .adc_takas({a2_takas, a1_takas}),
+        .adc_takas({takas2, takas1}),
         .spi_veri(spi_veri), .spi_uzunluk(spi_uzunluk),
         .spi_oku_bit(spi_oku_bit), .spi_cihaz(spi_cihaz),
         .spi_yol(spi_yol), .spi_basla(spi_basla),
@@ -448,8 +588,8 @@ module ust (
 
     ddc_dort u_ddc (
         .clk(clk_sys), .rst(rst | yazilim_rst),
-        .adc0(a1_a), .adc1(a1_b), .adc2(a2_a), .adc3(a2_b),
-        .adc_gecerli(a1_gecerli & alis_ac),
+        .adc0(s1_a), .adc1(s1_b), .adc2(s2_a), .adc3(s2_b),
+        .adc_gecerli(adc_al & alis_ac),
         .faz_artis(nco_artis),
         .faz_ofset0(ofs0), .faz_ofset1(ofs1),
         .faz_ofset2(ofs2), .faz_ofset3(ofs3),
@@ -504,7 +644,7 @@ module ust (
         // degistirilebiliyor; host basligda hep 6 gorup spektrum
         // olcegini sessizce yanlis hesaplardi.
         .azalt_log2(azalt_log2),
-        .tasma(adc_asim), .saat_kayip(~(a1_hizali & a2_hizali)),
+        .tasma(adc_asim), .saat_kayip(~(hizali1 & hizali2)),
         .bayt(paket_bayt), .bayt_gecerli(paket_gecerli),
         .paket_basi(paket_basi), .paket_sonu(paket_sonu),
         .hazir(rgmii_hazir_sys)
@@ -532,7 +672,7 @@ module ust (
         .yaz_clk(clk_sys), .yaz_rst(rst),
         .yaz_veri(paket_bayt), .yaz(paket_gecerli),
         .yaz_hazir(rgmii_hazir_sys),
-        .oku_clk(clk_eth), .oku_rst(rst),
+        .oku_clk(clk_eth), .oku_rst(rst_eth),
         .oku_veri(eth_bayt), .oku(eth_hazir),
         .oku_gecerli(eth_gecerli),
         .oku_doluluk(fifo_doluluk)
@@ -549,7 +689,7 @@ module ust (
     wire       tctl_yuk, tctl_dus;
 
     rgmii_veris u_rgmii (
-        .clk(clk_eth), .rst(rst),
+        .clk(clk_eth), .rst(rst_eth),
         .veri(eth_bayt), .veri_gecerli(paket_hazir), .veri_son(1'b0),
         .veri_hazir(eth_hazir),
         .yuk_uzunluk(PAKET_BAYT[15:0]),
@@ -574,15 +714,15 @@ module ust (
     // ---------------------------------------------------------------
     genvar gi;
     generate for (gi = 0; gi < 4; gi = gi + 1) begin : g_td
-        ODDRX1F u_td (.SCLK(clk_eth), .RST(rst),
+        ODDRX1F u_td (.SCLK(clk_eth), .RST(rst_eth),
                       .D0(td_yuk[gi]), .D1(td_dus[gi]),
                       .Q(rgmii_td[gi]));
     end endgenerate
 
-    ODDRX1F u_tctl (.SCLK(clk_eth), .RST(rst),
+    ODDRX1F u_tctl (.SCLK(clk_eth), .RST(rst_eth),
                     .D0(tctl_yuk), .D1(tctl_dus), .Q(rgmii_tctl));
 
-    ODDRX1F u_tclk (.SCLK(clk_eth), .RST(rst),
+    ODDRX1F u_tclk (.SCLK(clk_eth), .RST(rst_eth),
                     .D0(1'b1), .D1(1'b0), .Q(rgmii_tclk));
 
     // ---------------------------------------------------------------
@@ -602,18 +742,18 @@ module ust (
 
     genvar gr;
     generate for (gr = 0; gr < 4; gr = gr + 1) begin : rgmii_rx
-        IDDRX1F u_rd (.SCLK(rgmii_rxc), .RST(rst), .D(rgmii_rd[gr]),
+        IDDRX1F u_rd (.SCLK(rgmii_rxc), .RST(rst_rx), .D(rgmii_rd[gr]),
                       .Q0(rd_yuk[gr]), .Q1(rd_dus[gr]));
     end endgenerate
 
-    IDDRX1F u_rctl (.SCLK(rgmii_rxc), .RST(rst), .D(rgmii_rctl),
+    IDDRX1F u_rctl (.SCLK(rgmii_rxc), .RST(rst_rx), .D(rgmii_rctl),
                     .Q0(rctl_yuk), .Q1(rctl_dus));
 
     wire [7:0] al_bayt_rx;
     wire       al_gecerli_rx, al_son_rx, al_crc_rx;
 
     rgmii_alis u_rgmii_al (
-        .clk(rgmii_rxc), .rst(rst),
+        .clk(rgmii_rxc), .rst(rst_rx),
         .rd_yuk(rd_yuk), .rd_dus(rd_dus),
         .rctl_yuk(rctl_yuk), .rctl_dus(rctl_dus),
         .bayt(al_bayt_rx), .bayt_gecerli(al_gecerli_rx),
@@ -624,7 +764,7 @@ module ust (
     wire       yuk_gecerli_rx;
 
     udp_ayikla #(.PORT(16'd5001)) u_udp (
-        .clk(rgmii_rxc), .rst(rst),
+        .clk(rgmii_rxc), .rst(rst_rx),
         .bayt(al_bayt_rx), .bayt_gecerli(al_gecerli_rx),
         .cerceve_sonu(al_son_rx), .crc_dogru(al_crc_rx),
         .yuk_bayt(yuk_bayt_rx), .yuk_gecerli(yuk_gecerli_rx)
@@ -655,7 +795,7 @@ module ust (
     // host_arayuz cevrimde bir bayt aliyor, yani biriktirme yok.
     wire eth_al_var_w;
     fifo_gecis #(.GENISLIK(8), .DERINLIK(256)) u_eth_fifo (
-        .yaz_clk(rgmii_rxc), .yaz_rst(rst),
+        .yaz_clk(rgmii_rxc), .yaz_rst(rst_rx),
         .yaz_veri(yuk_bayt_rx), .yaz(yuk_gecerli_rx), .yaz_hazir(),
         .oku_clk(clk_sys), .oku_rst(rst),
         .oku_veri(eth_al_bayt), .oku(eth_al_var), .oku_gecerli(eth_al_var_w),
@@ -799,7 +939,7 @@ module ust (
 
     wire kopek_canli = (kopek != 25'd0);
 
-    assign pa_inhibit = veris_ac & a1_hizali & a2_hizali & kopek_canli;
+    assign pa_inhibit = veris_ac & hizali1 & hizali2 & kopek_canli;
 
     // ---------------------------------------------------------------
     // Durum LED'leri — aktif dusuk (anot +3V3'te)
@@ -828,7 +968,7 @@ module ust (
 
     reg led_status_r, led_rx_r, led_tx_r, led_data_r;
     always @(posedge clk_sys) begin
-        led_status_r <= ~(a1_hizali & a2_hizali);
+        led_status_r <= ~(hizali1 & hizali2);
         led_rx_r     <= ~(alis_ac  & yanip[22]);
         led_tx_r     <= ~(veris_ac & yanip[22]);
         led_data_r   <= ~veri_akiyor;

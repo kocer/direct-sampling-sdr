@@ -45,8 +45,26 @@ module tb_ust;
     reg clk_sys = 1'b0;
     always #6.25 clk_sys = ~clk_sys;        // 80 MHz
 
+    // IKI ADC'NIN SAATI AYRI VE ARALARINDA FAZ FARKI VAR.
+    //
+    // Once ikisine de TEK bir saat veriyordum. Sonucu su oldu: iki
+    // gecis FIFO'sunu bilerek bagimsiz bosaltip testi mutasyona
+    // soktum ve test YAKALAMADI — ayni saatle iki FIFO kilitli adimda
+    // doluyor, bagimsiz bosalsalar bile kaymiyorlar. Yani hizalama
+    // denetimi gecen ama hicbir sey kanitlamayan bir denetimdi.
+    //
+    // Gercekte iki AD9251'in DCO'su ayri cikislar: ayni frekans (ayni
+    // VCXO'dan turuyorlar) ama yol uzunlugu ve cip ici gecikme
+    // yuzunden faz farki var. Fark modellenince FIFO'lar farkli
+    // anlarda doluyor ve bagimsiz bosaltma gercekten kaydiriyor.
     reg adc_dco = 1'b0;
-    always #6.25 adc_dco = ~adc_dco;        // 80 MHz, ADC'den
+    always #6.25 adc_dco = ~adc_dco;        // ADC1, 80 MHz
+
+    reg adc2_dco_r = 1'b0;
+    initial begin
+        #3.1;                                // faz farki, yarim cevrimden az
+        forever #6.25 adc2_dco_r = ~adc2_dco_r;
+    end
 
     reg rgmii_rxc = 1'b0;
     always #4 rgmii_rxc = ~rgmii_rxc;       // 125 MHz, PHY'den
@@ -75,7 +93,7 @@ module tb_ust;
     ust dut (
         .clk_sys(clk_sys),
         .adc1_dco(adc_dco), .adc1_d(adc1_d), .adc1_or(adc1_or),
-        .adc2_dco(adc_dco), .adc2_d(adc2_d), .adc2_or(adc2_or),
+        .adc2_dco(adc2_dco_r), .adc2_d(adc2_d), .adc2_or(adc2_or),
         .dac_a(dac_a), .dac_wrt_a(dac_wrt_a),
         .dac_b(dac_b), .dac_wrt_b(dac_wrt_b),
         .dac2_d(dac2_d), .dac2_iqwrt(dac2_iqwrt),
@@ -122,6 +140,16 @@ module tb_ust;
     // Yani "verici acilmiyor" bulgusunun altindan "hizalama test
     // edilmemis" cikti. Tasarim dogru: ADC hizalanmadan yayin
     // yapilmamali.
+    // IKI ADC'YE AYRI VERI. Yorumda "farkli frekans veriliyor"
+    // yaziyordu ama kod ikisine de AYNI degeri suruyordu; yani iki
+    // ADC'nin yer degistirmesi ya da FIFO'larin birbirine gore
+    // kaymasi bu testte hic gorunmezdi. Yorum dogru, kod yanlisti.
+    //
+    // Simdi ADC2, ADC1'in sabit bir ofset kaymisi. Boylece hizalama
+    // dogrudan olculebiliyor: FIFO cikisinda fark HER ZAMAN AYRIM
+    // olmali. Kayarlarsa fark degisir.
+    localparam signed [13:0] AYRIM = 14'sd1000;
+
     reg        hiza_kip = 1'b0;
     localparam [13:0] DESEN_A = 14'h1234;
     localparam [13:0] DESEN_B = 14'h2ABC;
@@ -139,21 +167,37 @@ module tb_ust;
         end
     endfunction
 
+    // ADC1 kendi saatine gore. Surdugu degerleri SAKLIYOR.
+    reg [13:0] son_a, son_b;
     initial begin
         forever begin
-            // A ornegi: dusen kenardan once sur
-            @(negedge adc_dco);
-            #1;
+            @(negedge adc_dco); #1;
             faz_a = faz_a + 2.0 * PI * 2.0 / 80.0;   // 2 MHz
-            adc1_d = hiza_kip ? DESEN_A : sinus(faz_a);
-            adc2_d = hiza_kip ? DESEN_A : sinus(faz_a);
-            // B ornegi: yukselen kenardan once sur
-            @(posedge adc_dco);
-            #1;
+            son_a  = hiza_kip ? DESEN_A : sinus(faz_a);
+            adc1_d = son_a;
+            @(posedge adc_dco); #1;
             faz_b = faz_b + 2.0 * PI * 7.1 / 80.0;   // 7.1 MHz
-            adc1_d = hiza_kip ? DESEN_B : sinus(faz_b);
-            adc2_d = hiza_kip ? DESEN_B : sinus(faz_b);
+            son_b  = hiza_kip ? DESEN_B : sinus(faz_b);
+            adc1_d = son_b;
             ornek_sayaci = ornek_sayaci + 1;
+        end
+    end
+
+    // ADC2 KENDI saatine gore, ADC1'IN SURDUGU degerin AYRIM kadar
+    // kaymisi.
+    //
+    // ONCE faz degiskenlerinden YENIDEN HESAPLIYORDU ve dogru tasarim
+    // 200/200 hizasiz cikti — hata tezgahtaydi: ADC2'nin sureci,
+    // ADC1'in fazi bir sonraki ornege ilerlettikten SONRA okuyordu,
+    // yani iki ADC farkli ornek indislerini suruyordu. Saklanan
+    // degeri kullanmak bunu kesin cozuyor: fark her zaman AYRIM,
+    // faz farki ne olursa olsun.
+    initial begin
+        forever begin
+            @(negedge adc2_dco_r); #1;
+            adc2_d = hiza_kip ? DESEN_A : (son_a + AYRIM);
+            @(posedge adc2_dco_r); #1;
+            adc2_d = hiza_kip ? DESEN_B : (son_b + AYRIM);
         end
     end
 
@@ -440,6 +484,41 @@ module tb_ust;
         end else
             $display("  DAC yollari suruldu (A %0d, B %0d, cogullanmis %0d)",
                      gecis[0], gecis[2], gecis[4]);
+
+        // --- 4b. KANAL HIZALAMASI — FIFO'lar kanallari kaydiriyor mu
+        //
+        // ADC ornekleri saat alanini gecis FIFO'lariyla geciyor ve iki
+        // ADC'nin ayri FIFO'su var. Bagimsiz bosalsalardi kanallar
+        // birbirine gore kayardi; dort kanalli huzme yonlendirmede o
+        // kayma huzmenin yanlis yone bakmasi demek — kartta ancak
+        // aynayla olculur, yani sahada.
+        //
+        // ADC2 = ADC1 + AYRIM oldugu icin FIFO cikisinda fark her
+        // zaman AYRIM olmali.
+        $display("");
+        $display("4b. KANAL HIZALAMASI");
+        // ADC'lerin ic boluculerini hizala ve gecis FIFO'larini
+        // bosalt. Kartta bu, AD9251'in SYNC girisini surmek demek.
+
+        begin : hiza
+            integer n, yanlis;
+            n = 0; yanlis = 0;
+            while (n < 200) begin
+                @(posedge clk_sys);
+                if (dut.adc_al) begin
+                    n = n + 1;
+                    if ($signed(dut.s2_a) - $signed(dut.s1_a) !== AYRIM ||
+                        $signed(dut.s2_b) - $signed(dut.s1_b) !== AYRIM)
+                        yanlis = yanlis + 1;
+                end
+            end
+            if (yanlis) begin
+                $display("  HATA: %0d/%0d ornekte kanallar hizasiz", yanlis, n);
+                $display("        iki gecis FIFO'su birbirine gore kaymis");
+                hata = hata + 1;
+            end else
+                $display("  %0d ornekte dort kanal hizali", n);
+        end
 
         // --- 5. SPI CEVRE YOLU
         //

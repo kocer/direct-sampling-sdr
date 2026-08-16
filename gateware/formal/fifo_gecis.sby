@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 TA4DTA
+# SPDX-License-Identifier: GPL-3.0-only
+[options]
+mode bmc
+depth 24
+
+[engines]
+smtbmc boolector
+
+[script]
+read -formal -DFORMAL fifo_gecis.v
+read -formal -DFORMAL fifo_gecis_formal.v
+prep -top fifo_gecis_formal
+
+[files]
+../rtl/fifo_gecis.v
+fifo_gecis_formal.v
